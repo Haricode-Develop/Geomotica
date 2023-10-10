@@ -1,0 +1,62 @@
+/* Estilo general de la vista de inicio de sesión */
+.login-background {
+    background: url('path_to_your_image.jpg') no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.5); /* Overlay negro */
+}
+
+.login-container {
+    background-color: #A1B6D7;
+    border-radius: 10px;
+    width: 60%; /* Ajusta como necesites */
+    height: 60%; /* Ajusta como necesites */
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.login-form-container {
+    background-color: #fff;
+    border-radius: 10px;
+    width: 50%;
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.logo {
+    display: block;
+    margin: 0 auto;
+    margin-bottom: 20px; /* Ajusta como necesites */
+}
+
+.input {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
+.button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #333; /* Color del botón */
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.forgot-password {
+    text-align: right;
+    margin-top: 10px;
+}
