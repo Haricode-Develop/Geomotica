@@ -1,6 +1,5 @@
-/* Estilo general de la vista de inicio de sesión */
 .login-background {
-    background: url('path_to_your_image.jpg') no-repeat center center fixed;
+    background: url('../../assets/login/background.jpg') no-repeat center center fixed;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
@@ -9,14 +8,26 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0, 0, 0, 0.5); /* Overlay negro */
+    position: relative;
+}
+
+.login-background::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    filter: blur(5px);
+    z-index: -1;
 }
 
 .login-container {
     background-color: #A1B6D7;
     border-radius: 10px;
-    width: 60%; /* Ajusta como necesites */
-    height: 60%; /* Ajusta como necesites */
+    width: 60%;
+    height: 60%;
     position: relative;
     display: flex;
     justify-content: flex-end;
@@ -33,8 +44,9 @@
 
 .logo {
     display: block;
+    width: 70%;  /* ajusta el tamaño del logo aquí */
     margin: 0 auto;
-    margin-bottom: 20px; /* Ajusta como necesites */
+    margin-bottom: 20px;
 }
 
 .input {
@@ -49,7 +61,7 @@
     display: block;
     width: 100%;
     padding: 10px;
-    background-color: #333; /* Color del botón */
+    background-color: #333;
     color: #fff;
     border: none;
     border-radius: 5px;
@@ -59,4 +71,32 @@
 .forgot-password {
     text-align: right;
     margin-top: 10px;
+}
+.button-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.login-button,
+.register-button {
+    width: 48%;
+}
+
+
+
+@media screen and (max-width: 768px){
+    .login-container {
+        width: 100%;
+        height: auto;
+        flex-direction: column;
+    }
+    .login-form-container {
+        width: 100%;
+        margin: 10px 0;
+    }
+    .logo {
+        width: 50%;
+    }
+
 }
