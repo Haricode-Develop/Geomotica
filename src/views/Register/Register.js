@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import './Register.css';
 import logo from '../../assets/logo.png';
+import axios from 'axios';
+import {API_BASE_URL} from "../../utils/config";
 
-function Register() {
+function Registro() {
+    const [nombre, setNombre] = useState('');
+    const [apellido, setApellido] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -10,16 +14,51 @@ function Register() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Logica de registro aquí
+
+        if(password !== confirmPassword) {
+            setError('Las contraseñas no coinciden.');
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${API_BASE_URL}/auth/register`, {
+                nombre: nombre,
+                apellido: apellido,
+                email: email,
+                password: password
+            });
+
+            if (response.data && response.data.success) {
+                window.location.href = "/login";
+            } else {
+                setError('Error al registrarse. Por favor, intenta de nuevo.');
+            }
+        } catch (err) {
+            setError('Error al registrarse. Por favor, intenta de nuevo.');
+        }
     };
 
     return (
-        <div className="register-background">
-            <div className="register-container">
-                <div className="register-form-container">
+        <div className="registro-background">
+            <div className="registro-container">
+                <div className="registro-form-container">
                     <img src={logo} alt="Logo de la empresa" className="logo" />
                     {error && <p className="error-message">{error}</p>}
                     <form onSubmit={handleSubmit}>
+                        <input
+                            type="text"
+                            placeholder="Nombre"
+                            className="input"
+                            value={nombre}
+                            onChange={(e) => setNombre(e.target.value)}
+                        />
+                        <input
+                            type="text"
+                            placeholder="Apellido"
+                            className="input"
+                            value={apellido}
+                            onChange={(e) => setApellido(e.target.value)}
+                        />
                         <input
                             type="email"
                             placeholder="Correo"
@@ -36,18 +75,17 @@ function Register() {
                         />
                         <input
                             type="password"
-                            placeholder="Confirmar contraseña"
+                            placeholder="Confirmar Contraseña"
                             className="input"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                         />
-                        <button type="submit" className="button">Registrar</button>
+                        <button type="submit" className="button register-submit-button">Registrar</button>
                     </form>
-                    <p className="have-account">¿Ya tienes una cuenta? <a href="/login">Inicia sesión</a></p>
                 </div>
             </div>
         </div>
     );
 }
 
-export default Register;
+export default Registro;

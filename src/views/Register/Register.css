@@ -1,4 +1,4 @@
-.register-background {
+.registro-background {
     background: url('../../assets/login/background.jpg') no-repeat center center fixed;
     -webkit-background-size: cover;
     -moz-background-size: cover;
@@ -11,7 +11,7 @@
     position: relative;
 }
 
-.register-background::before {
+.registro-background::before {
     content: "";
     position: absolute;
     top: 0;
@@ -19,25 +19,25 @@
     bottom: 0;
     left: 0;
     background-color: rgba(0, 0, 0, 0.5);
+    filter: blur(5px);
+    z-index: -1;
 }
 
-.register-container {
+.registro-container {
     background-color: #A1B6D7;
     border-radius: 10px;
-    width: 90%;
-    height: auto;
+    width: 60%;
+    height: 60%;
     position: relative;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
+    justify-content: flex-end;
 }
 
-.register-form-container {
+.registro-form-container {
     background-color: #fff;
     border-radius: 10px;
-    width: 100%;
-    max-width: 400px; /* O un valor que prefieras */
+    width: 50%;
+    height: 100%;
     padding: 20px;
     box-sizing: border-box;
 }
@@ -68,21 +68,20 @@
     cursor: pointer;
 }
 
-.error-message, .have-account {
-    color: red;
-    text-align: center;
+.register-submit-button {
     margin-top: 10px;
 }
 
-.have-account a {
-    color: blue;
-}
-
-@media screen and (min-width: 768px) {
-    .register-container {
-        width: 50%;
+@media screen and (max-width: 768px){
+    .registro-container {
+        width: 100%;
+        height: auto;
+        flex-direction: column;
     }
-
+    .registro-form-container {
+        width: 100%;
+        margin: 10px 0;
+    }
     .logo {
         width: 50%;
     }

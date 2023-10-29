@@ -1,35 +1,39 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
 import logo from '../../assets/logo.png';
 import axios from 'axios';
+import {API_BASE_URL} from "../../utils/config";
 
 import { useAuth } from '../../context/AuthContext';
 
 function Login() {
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-
     const { login } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         try {
-            const response = await axios.post('http://localhost:3001/login', {
-                CorreoElectronico: email,
-                Contraseña: password
+            const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+                email: email,
+                password: password
             });
 
-            if (response.data && response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                login();
+            if (response.data) {
+                navigate('/dashboard');
             } else {
-                setError('Error en el inicio de sesión. Por favor, intenta de nuevo.');
+                setError(response.data.message || 'Error en el inicio de sesión. Por favor, intenta de nuevo.');
             }
         } catch (err) {
-            setError('Error en el inicio de sesión. Por favor, intenta de nuevo.');
+            setError(err.response?.data?.message || 'Error en el inicio de sesión. Por favor, intenta de nuevo.');
         }
+    };
+
+    const handleRegisterClick = () => {
+        navigate('/registrar');
     };
 
     return (
@@ -55,7 +59,7 @@ function Login() {
                         />
                         <div className="button-container">
                             <button type="submit" className="button login-button">Iniciar sesión</button>
-                            <button type="button" className="button register-button">Registrar</button>
+                            <button type="button" className="button register-button" onClick={handleRegisterClick}>Registrar</button>
                         </div>
                     </form>
                     <p className="forgot-password">¿Haz olvidado tu contraseña?</p>

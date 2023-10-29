@@ -1,0 +1,91 @@
+/* dashboard.css */
+.sidebar {
+    width: 300px;
+    height: 100vh;
+    background-color: #202424;
+    color: white;
+}
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        overflow-x: scroll;
+    }
+}
+
+.profile-image {
+    width: 100px;
+    height: 100px;
+    background-color: grey;
+    background-size: cover;
+    background-position: center;
+    border-radius: 50%;
+    margin: 20px auto;
+}
+
+.user-info {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    cursor: pointer;
+    padding: 15px 10px;
+    font-weight: normal;
+    text-transform: none;
+    background-color: transparent;
+    border-top: 1px solid #6B6B6B;
+    border-bottom: 1px solid #6B6B6B;
+    transition: all 0.5s ease;
+}
+.menu-item:hover {
+    background-color: rgb(0, 191, 165);
+}
+.menu-item.bold {
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.menu-item.active {
+    background-color: #00BFA5;
+}
+@media (max-width: 768px) {
+    .menu-item {
+        padding: 10px;
+    }
+}
+
+.sub-menu {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.5s ease;
+}
+.sub-menu.active {
+    max-height: 500px;
+}
+@media (max-width: 768px) {
+    .sub-menu {
+        display: none;
+    }
+}
+
+.sub-menu-item {
+    padding: 10px 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-top: none;
+    background-color: transparent;
+}
+
+.chevron-icon {
+    transition: transform 0.5s ease;
+}
+
+.chevron-icon.rotate {
+    transform: rotate(180deg);
+}
