@@ -1,12 +1,14 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 
 import './DashboardStyle.css';
 import logo from '../../assets/logo.png';
 import axios from "axios";
 import {API_BASE_URL} from "../../utils/config";
+import { useAuth } from '../../context/AuthContext';
 
 function Dashboard() {
+    const { userData } = useAuth();
     const [activeMenu, setActiveMenu] = useState(null);
     const [promedioVelResult, setPromedioVelResult] = useState(null);
     const [promedioFertilizacionResult, setPromedioFertilizacionResult] = useState(null);
@@ -18,15 +20,14 @@ function Dashboard() {
     const [operadorResult, setOperadorResult] = useState(null);
     const [fechaActividAdResult, setFechaActividAdResult] = useState(null);
     const [file, setFile] = useState(null);
+    const [nombreTabla, setNombreTabla] = useState(null);
+    const [idAnalisis, setIdAnalisis] = useState(null);
+    const [idAnalisisBash, setIdAnalisisBash] = useState(null);
+    const [mapUrl, setMapUrl] = useState(null);
+    const selectedAnalysisTypeRef = useRef(); // Creando la referencia
+    const [socket, setSocket] = useState(null);
 
     const [selectedAnalysisType, setSelectedAnalysisType] = useState('');
-
-    const nombreTabla = '';
-    const idAnalisis = '';
-    const idAnalisisBash = '';
-    const idUsuario = '';
-    const tipoAnalisis = '';
-    const mapUrl = '';
     const analysisTemplates = {
         APS: "/templates/APS.csv",
         COSECHA_MECANICA: "/templates/COSECHA_MECANICA.csv",
@@ -34,15 +35,20 @@ function Dashboard() {
         HERBICIDAS: "/templates/HERBICIDAS.csv"
     };
 
-    const ultimoAnalisis = async()=>{
-        return await axios.get(`${API_BASE_URL}/ultimo_analisis/${tipoAnalisis}/${idUsuario}`);
+    const ultimoAnalisis = async() => {
+        return await axios.get(`${API_BASE_URL}/dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`);
     };
-    useEffect(() => {
-        // Conectarse al servidor Socket.io
-        const socket = io(API_BASE_URL);
 
+    useEffect(() => {
+
+        const socket = io(API_BASE_URL);
+        setSocket(socket);
         // Escuchar el evento 'datosInsertados'
         socket.on('datosInsertados', async () => {
+            console.log("SE EJECUTA DATOS INSERTADOS =====");
+            console.log(nombreTabla);
+            console.log("SE EJECUTA DATOS INSERTADOS ID=====");
+            console.log(idAnalisis);
             await promedioVelocidad();
             await promedioFertilizacionDosisReal();
             await promedioAlturaGps();
@@ -58,58 +64,151 @@ function Dashboard() {
             // Desconectar el socket cuando el componente se desmonte
             socket.disconnect();
         };
-    }, []);
 
+    }, [nombreTabla, idAnalisis]);
+    useEffect(() => {
+        selectedAnalysisTypeRef.current = selectedAnalysisType;
+        console.log( selectedAnalysisTypeRef.current);
+        switch (selectedAnalysisType) {
+            case 'APS':
+                setNombreTabla('APS');
+                setIdAnalisisBash(1);
+                break;
+            case 'COSECHA_MECANICA':
+                setNombreTabla('COSECHA_MECANICA');
+                setIdAnalisisBash(2);
+                break;
+            case 'HERBICIDAS':
+                setNombreTabla('HERBICIDAS');
+                setIdAnalisisBash(3);
+                break;
+            case 'FERTILIZACION':
+                setNombreTabla('FERTILIZACION');
+                setIdAnalisisBash(4);
+                break;
+            default:
+                break;
+        }
+
+        if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
+            ultimoAnalisis().then(response => {
+
+                setIdAnalisis(response.data.ID_ANALISIS);
+            }).catch(error => {
+                console.error("Error al obtener último análisis:", error);
+            });
+        }
+        console.log("ESTO ES AFUERA=====");
+        console.log(nombreTabla);
+        console.log("ESTO ES AFUERA=====");
+        console.log(idAnalisis);
+    }, [selectedAnalysisType]);
+    const simulateEvent = () => {
+        if(socket) {
+            socket.emit('datosInsertados', { data: "mi data" });
+        console.log("Entre al socket");
+        }else{
+
+        }
+    };
     const promedioVelocidad = async () => {
-        const response = await axios.get(`${API_BASE_URL}/promedio_velocidad/${nombreTabla}/${idAnalisis}`);
-        setPromedioVelResult(response.data);
+        try {
+
+            const response = await axios.get(`${API_BASE_URL}/dashboard/promedio_velocidad/${nombreTabla}/${idAnalisis}`);
+            setPromedioVelResult(response.data);
+        } catch (error) {
+            console.error("Error en promedioVelocidad:", error);
+        }
     };
 
     const promedioFertilizacionDosisReal = async () => {
-        const response = await axios.get(`${API_BASE_URL}/promedio_fertilizacion_dosis_real/${idAnalisis}`);
-        setPromedioFertilizacionResult(response.data);
+        try {
+            const response = await axios.get(`${API_BASE_URL}/dashboard/promedio_fertilizacion_dosis_real/${idAnalisis}`);
+            setPromedioFertilizacionResult(response.data);
+        }catch (error) {
+            console.error("Error en promedioVelocidad:", error);
+        }
+
     };
 
     const promedioAlturaGps = async () => {
-        const response = await axios.get(`${API_BASE_URL}/promedio_altura_m/${idAnalisis}`);
+        try {
+
+            const response = await axios.get(`${API_BASE_URL}/dashboard/promedio_altura_m/${idAnalisis}`);
         setPromedioAlturaResult(response.data);
+    }catch (error) {
+        console.error("Error en promedioVelocidad:", error);
+    }
     };
 
     const tiempoTotalActividad = async () => {
-        const response = await axios.get(`${API_BASE_URL}/tiempo_total_actividad/${nombreTabla}/${idAnalisis}`);
-        setTiempoActividadResult(response.data);
+        try {
 
+            const response = await axios.get(`${API_BASE_URL}/dashboard/tiempo_total_actividad/${nombreTabla}/${idAnalisis}`);
+        setTiempoActividadResult(response.data);
+    }catch (error) {
+        console.error("Error en promedioVelocidad:", error);
+    }
     };
 
     const eficiencia = async () => {
-        const response = await axios.get(`${API_BASE_URL}/eficiencia/${nombreTabla}/${idAnalisis}`);
+        try {
+
+            const response = await axios.get(`${API_BASE_URL}/dashboard/eficiencia/${nombreTabla}/${idAnalisis}`);
         setEficienciaAnalisisResult(response.data);
+    }catch (error) {
+        console.error("Error en promedioVelocidad:", error);
+    }
     };
 
     const presionContadorBase = async () => {
-        const response = await axios.get(`${API_BASE_URL}/presion_contador/${idAnalisis}`);
+        try {
+
+            const response = await axios.get(`${API_BASE_URL}/dashboard/presion_contador/${idAnalisis}`);
         setPresionContBaseResult(response.data);
+    }catch (error) {
+        console.error("Error en promedioVelocidad:", error);
+    }
     };
 
     const promedioTch = async () => {
-        const response = await axios.get(`${API_BASE_URL}/promedio_tch/${nombreTabla}/${idAnalisis}`);
+        try {
+
+            const response = await axios.get(`${API_BASE_URL}/dashboard/promedio_tch/${nombreTabla}/${idAnalisis}`);
         setPromedioTchResult(response.data);
+    }catch (error) {
+        console.error("Error en promedioVelocidad:", error);
+    }
 
     };
 
     const operador = async () => {
-        const response = await axios.get(`${API_BASE_URL}/operador/${nombreTabla}/${idAnalisis}`);
+        try {
+
+            const response = await axios.get(`${API_BASE_URL}/dashboard/operador/${nombreTabla}/${idAnalisis}`);
         setOperadorResult(response.data);
+    }catch (error) {
+        console.error("Error en promedioVelocidad:", error);
+    }
     };
 
     const fechaActividad = async () => {
-        const response = await axios.get(`${API_BASE_URL}/fecha_actividad/${nombreTabla}/${idAnalisis}`);
+        try {
+
+            const response = await axios.get(`${API_BASE_URL}/dashboard/fecha_actividad/${nombreTabla}/${idAnalisis}`);
        setFechaActividAdResult(response.data);
+    }catch (error) {
+        console.error("Error en promedioVelocidad:", error);
+    }
     };
+    function displayValue(value) {
+        return value !== null ? value : 'N/A';
+    }
+
 
     const execBash = async () => {
         try {
-            await axios.get(`${API_BASE_URL}/execBash/${idUsuario}/${idAnalisisBash}`);
+            await axios.get(`${API_BASE_URL}/dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}`);
         } catch (error) {
             console.error("Error al ejecutar execBash:", error);
         }
@@ -162,40 +261,60 @@ function Dashboard() {
                 <section className="data-section">
                     <div className="data-card">
                         <h3>Promedio Velocidad</h3>
-                        <div className="data-value">{promedioVelResult}</div>
+                    <div className="data-value">
+                        {
+                            promedioVelResult &&
+                            (
+                                promedioVelResult.Promedio_Velocidad_Km_H
+                                    ? displayValue(promedioVelResult.Promedio_Velocidad_Km_H)
+                                    : displayValue(promedioVelResult.Promedio_Velocidad_m_s)
+                            )
+                        }
+                    </div>
+
                     </div>
                     <div className="data-card">
                         <h3>Promedio Fertilización</h3>
-                        <div className="data-value">{promedioFertilizacionResult}</div>
-                    </div>
-                    <div className="data-card">
-                        <h3>Promedio Altura GPS</h3>
-                        <div className="data-value">{promedioAlturaResult}</div>
+                        <div className="data-value">
+                            <span>Dosis Real Kg/Ha: </span>{displayValue(promedioFertilizacionResult?.Promedio_Dosis_Real_Kg_Ha)}
+                        </div>
+                        <div className="data-value">
+                            <span>Altura (m): </span>{displayValue(promedioAlturaResult?.Promedio_Altura_m)}
+                        </div>
                     </div>
 
                     <div className="data-card">
                         <h3>Tiempo Total Actividad</h3>
-                        <div className="data-value">{tiempoActividadResult}</div>
+                        <div className="data-value">{displayValue(tiempoActividadResult?.Tiempo_Total_Horas)}</div>
                     </div>
                     <div className="data-card">
                         <h3>Eficiencia</h3>
-                        <div className="data-value">{eficienciaAnalisisResult}</div>
+                        <div className="data-value">{displayValue(eficienciaAnalisisResult?.Eficiencia)}</div>
                     </div>
                     <div className="data-card">
                         <h3>presionContadorBase</h3>
-                        <div className="data-value">{presionContBaseResult}</div>
+                        <div className="data-value">{displayValue(presionContBaseResult?.Promedio_Presion_Cortador_Base_Bar)}</div>
                     </div>
                     <div className="data-card">
                         <h3>promedioTch</h3>
-                        <div className="data-value">{promedioTchResult}</div>
+                        <div className="data-value">{displayValue(promedioTchResult?.Promedio_TCH_herbicidas)}</div>
                     </div>
                     <div className="data-card">
                         <h3>operador</h3>
-                        <div className="data-value">{operadorResult}</div>
+                        <div className="data-value">{displayValue(operadorResult?.Operadores)}</div>
                     </div>
                     <div className="data-card">
                         <h3>fechaActividad</h3>
-                        <div className="data-value">{fechaActividAdResult}</div>
+
+
+
+                        <div className="data-value">
+                            {displayValue(fechaActividAdResult?.Fecha_Inicio)}
+
+                        </div>
+                        <div className="data-value">
+                        {displayValue(fechaActividAdResult?.Fecha_Final)}
+                        </div>
                     </div>
                 </section>
 
@@ -224,6 +343,8 @@ function Dashboard() {
                     </select>
 
                     <button onClick={execBash}>Realizar análisis</button>
+                    <button onClick={simulateEvent}>Emitir evento de prueba</button>
+
                 </div>
             </main>
         </div>

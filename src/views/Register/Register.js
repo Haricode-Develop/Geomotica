@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Register.css';
 import logo from '../../assets/logo.png';
 import axios from 'axios';
 import {API_BASE_URL} from "../../utils/config";
 
 function Registro() {
+    const navigate = useNavigate();
     const [nombre, setNombre] = useState('');
     const [apellido, setApellido] = useState('');
     const [email, setEmail] = useState('');
@@ -29,7 +31,7 @@ function Registro() {
             });
 
             if (response.data && response.data.success) {
-                window.location.href = "/login";
+                navigate('/login');
             } else {
                 setError('Error al registrarse. Por favor, intenta de nuevo.');
             }

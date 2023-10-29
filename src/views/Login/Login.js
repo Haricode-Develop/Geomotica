@@ -12,7 +12,7 @@ function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const { login, setUserData } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -23,6 +23,10 @@ function Login() {
             });
 
             if (response.data) {
+                login();
+                console.log("USUARIO ===============");
+                console.log(response.data.user);
+                setUserData(response.data.user);
                 navigate('/dashboard');
             } else {
                 setError(response.data.message || 'Error en el inicio de sesión. Por favor, intenta de nuevo.');
