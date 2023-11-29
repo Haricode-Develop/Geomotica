@@ -69,7 +69,7 @@
 }
 
 .forgot-password {
-    text-align: right;
+    text-align: center;
     margin-top: 10px;
 }
 .button-container {
@@ -84,7 +84,6 @@
 }
 
 
-
 @media screen and (max-width: 768px){
     .login-container {
         width: 100%;
@@ -94,9 +93,13 @@
     .login-form-container {
         width: 100%;
         margin: 10px 0;
+        text-align: center;
     }
     .logo {
         width: 50%;
+    }
+    .button-container {
+        flex-direction: column;
     }
 
 }
