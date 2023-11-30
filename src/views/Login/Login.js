@@ -5,6 +5,8 @@ import logo from "../../assets/logo.png";
 import axios from "axios";
 import { API_BASE_URL } from "../../utils/config";
 import { useAuth } from "../../context/AuthContext";
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 function Login() {
   const navigate = useNavigate();
@@ -30,13 +32,13 @@ function Login() {
       } else {
         setError(
           response.data.message ||
-            "Error en el inicio de sesión. Por favor, intenta de nuevo."
+          "Error en el inicio de sesión. Por favor, intenta de nuevo."
         );
       }
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Error en el inicio de sesión. Por favor, intenta de nuevo."
+        "Error en el inicio de sesión. Por favor, intenta de nuevo."
       );
     }
   };
@@ -52,24 +54,38 @@ function Login() {
     <div className="login-background">
       <header />
       <div className="login-container">
-        <div className="login-form-container">
+        <div className="login-form-container--left container">
+          <h2>¡Bienvenido de Vuelta!</h2>
+          <p>Ingresa para acceder a tu cuenta.</p>
+          <p>Recuerda no compartir tu contraseña con nadie</p>
+        </div>
+        <div className="login-form-container--right">
           <img src={logo} alt="Logo de la empresa" className="logo" />
           {error && <p className="error-message">{error}</p>}
           <form onSubmit={handleSubmit}>
-            <input
-              type="email"
-              placeholder="Correo"
-              className="input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Contraseña"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="mb-3 text-center">
+            <label for="emailInput" class="form-label">Introduce tu Correo Electronico:</label>
+              <input
+                type="email"
+                id="emailInput"
+                placeholder="persona@correo.com"
+                className="input form-control" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="mb-3 text-center">
+            <label for="passwordInput" class="form-label">Introduce tu Contraseña:</label>
+              <input
+                type="password"
+                id="passwordInput"
+                placeholder="****************"
+                className="input form-control"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
             <div className="button-container">
               <button
                 type="button"
