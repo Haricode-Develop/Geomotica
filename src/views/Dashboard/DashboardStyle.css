@@ -63,14 +63,21 @@
 }
 
 .main-content {
+    margin-left: 250px;
+    width: calc(100% - 250px);
     flex: 1;
     padding: 20px;
 }
-
+.main-content.expand {
+    margin-left: 50px;
+    width: calc(100% - 50px);
+}
 .dashboard-title {
     text-align: center;
     margin-bottom: 20px;
     color: #4A4A4A;
+    text-transform: uppercase;
+    font-weight: 700;
 }
 
 .data-section {
@@ -117,20 +124,99 @@
 
 .analysis-controls {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     align-items: center;
-    margin-bottom: 20px;
+    margin-top: 20px;
+    flex-wrap: wrap;
 }
 
 .custom-file-upload {
-    display: inline-block;
-    padding: 8px 12px;
+    margin: 10px;
+    padding: 10px 15px;
     cursor: pointer;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #ccc;
     border-radius: 5px;
-    background-color: #f6f6f6;
+    background-color: #f7f7f7;
+    text-align: center;
+    display: inline-block;
+}
+.custom-file-upload input[type="file"] {
+    display: none;
 }
 
+.download-template {
+    margin: 10px;
+    padding: 10px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    text-align: center;
+    display: inline-block;
+}
+.action-button {
+    margin: 10px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: #2196F3;
+    color: white;
+    cursor: pointer;
+}
+.action-button:hover {
+    background-color: #0b7dda;
+}
+
+.type-selector {
+    margin: 10px;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+}
 #file-upload {
     display: none;
+}
+
+
+
+.toggle-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1100;
+    cursor: pointer;
+    font-size: 24px;
+    color: white;
+}
+
+
+.sidebar.closed {
+    width: 50px;
+}
+
+.profile-section {
+    display: none;
+}
+
+.menu-items.hide {
+    display: none;
+}
+
+.icon {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .analysis-controls {
+        flex-direction: column;
+    }
+
+    .custom-file-upload,
+    .download-template,
+    .type-selector,
+    .action-button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
 }
