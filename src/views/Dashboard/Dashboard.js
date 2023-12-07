@@ -286,6 +286,8 @@ function Dashboard() {
   * ======================================================*/
     const obtenerResponsableAps = async () => {
         try {
+            console.log("ESTE ES EL ULTIMO ID ANALISIS =======");
+            console.log(idAnalisis);
             const response = await axios.get(`${API_BASE_URL}/dashboard/responsableAps/${idAnalisis}`);
             setResponsableAps(response.data);
         } catch (error) {
@@ -741,6 +743,8 @@ function Dashboard() {
         }
     };
     function displayValue(value) {
+        console.log("ESTO ES LO QUE DEVUELVE =======");
+        console.log(value);
         return value !== null ? value : 'N/A';
     }
 
@@ -914,8 +918,7 @@ function Dashboard() {
             setUploadResponse('Error al ejecutar el análisis');
         }
     };
-    console.log("CONTEXTO DEL USUARIO ========");
-    console.log(userData);
+
     return (
         <div className="dashboard">
             <Sidebar
