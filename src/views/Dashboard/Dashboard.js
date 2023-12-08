@@ -99,6 +99,11 @@ function Dashboard() {
 
     const [selectedAnalysisType, setSelectedAnalysisType] = useState('');
     const menuItems = ['Dashboard', 'Administrador', 'Configuración', 'Ayuda'];
+    const [datosCargadosAps, setDatosCargadosAps] = useState(false);
+    const [datosCargadosCosechaMecanica, setDatosCargadosCosechaMecanica] = useState(false);
+
+    const [datosCargadosFertilizacion, setDatosCargadosFertilizacion] = useState(false);
+    const [datosCargadosHerbicidas, setDatosCargadosHerbicidas] = useState(false);
 
     const analysisTemplates = {
         APS: "/templates/APS.csv",
@@ -148,79 +153,17 @@ function Dashboard() {
 
             switch (selectedAnalysisTypeRef.current) {
                 case 'APS':
-                    await obtenerResponsableAps();
-                    await obtenerFechaInicioCosechaAps();
-                    await obtenerFechaFinCosechaAps();
-                    await obtenerNombreFincaAps();
-                    await obtenerCodigoParcelasAps();
-                    await obtenerNombreOperadorAps();
-                    await obtenerEquipoAps();
-                    await obtenerActividadAps();
-                    await obtenerAreaNetaAps();
-                    await obtenerAreaBrutaAps();
-                    await obtenerDiferenciaEntreAreasAps();
-                    await obtenerHoraInicioAps();
-                    await obtenerHoraFinalAps();
-                    await obtenerTiempoTotalActividadesAps();
-                    await obtenerEficienciaAps();
-                    await obtenerPromedioVelocidadAps();
+                    await cargaDatosAps();
 
                     break;
                 case 'COSECHA_MECANICA':
-                    await obtenerNombreResponsableCm();
-                    await obtenerFechaInicioCosechaCm();
-                    await obtenerFechaFinCosechaCm();
-                    await obtenerNombreFincaCm();
-                    await obtenerCodigoParcelaResponsableCm();
-                    await obtenerNombreOperadorCm();
-                    await obtenerNombreMaquinaCm();
-                    await obtenerActividadCm();
-                    await obtenerAreaNetaCm();
-                    await obtenerAreaBrutaCm();
-                    await obtenerDiferenciaDeAreaCm();
-                    await obtenerHoraInicioCm();
-                    await obtenerHoraFinalCm();
-                    await obtenerTiempoTotalActividadCm();
-                    await obtenerEficienciaCm();
-                    await obtenerPromedioVelocidadCm();
-                    await obtenerPorcentajeAreaPilotoCm();
-                    await obtenerPorcentajeAreaAutoTrackerCm();
+                   await cargaDatosCosechaMecanica();
                     break;
                 case 'FERTILIZACION':
-                    await obtenerResponsableFertilizacion();
-                    await obtenerFechaInicioFertilizacion();
-                    await obtenerFechaFinalFertilizacion();
-                    await obtenerNombreFincaFertilizacion();
-                    await obtenerOperadorFertilizacion();
-                    await obtenerEquipoFertilizacion();
-                    await obtenerActividadFertilizacion();
-                    await obtenerAreaNetaFertilizacion();
-                    await obtenerAreaBrutaFertilizacion();
-                    await obtenerDiferenciaAreaFertilizacion();
-                    await obtenerHoraInicioFertilizacion();
-                    await obtenerHoraFinalFertilizacion();
-                    await obtenerTiempoTotalFertilizacion();
-                    await obtenerEficienciaFertilizacion();
-                    await obtenerPromedioDosisRealFertilizacion();
-                    await obtenerDosisTeoricaFertilizacion();
-
+                    await cargaDatosFertilizacion();
                     break;
                 case 'HERBICIDAS':
-                    await obtenerResponsableHerbicidas();
-                    await obtenerFechaHerbicidas();
-                    await obtenerNombreFincaHerbicidas();
-                    await obtenerParcelaHerbicidas();
-                    await obtenerOperadorHerbicidas();
-                    await obtenerEquipoHerbicidas();
-                    await obtenerActividadHerbicidas();
-                    await obtenerAreaNetaHerbicidas();
-                    await obtenerAreaBrutaHerbicidas();
-                    await obtenerDiferenciaDeAreaHerbicidas();
-                    await obtenerHoraInicioHerbicidas();
-                    await obtenerHoraFinalHerbicidas();
-                    await obtenerTiempoTotalHerbicidas();
-                    await obtenerEficienciaHerbicidas();
-                    await obtenerPromedioVelocidadHerbicidas();
+                    await cargaDatosHerbicidas();
                     break;
                 default:
                     toast.warn('Debes seleccionar un tipo de análisis.', {
@@ -281,6 +224,93 @@ function Dashboard() {
 
         }
     };
+    const cargaDatosHerbicidas = async() =>{
+        await Promise.all([
+             obtenerResponsableHerbicidas(),
+         obtenerFechaHerbicidas(),
+         obtenerNombreFincaHerbicidas(),
+         obtenerParcelaHerbicidas(),
+         obtenerOperadorHerbicidas(),
+         obtenerEquipoHerbicidas(),
+         obtenerActividadHerbicidas(),
+         obtenerAreaNetaHerbicidas(),
+         obtenerAreaBrutaHerbicidas(),
+         obtenerDiferenciaDeAreaHerbicidas(),
+         obtenerHoraInicioHerbicidas(),
+         obtenerHoraFinalHerbicidas(),
+         obtenerTiempoTotalHerbicidas(),
+         obtenerEficienciaHerbicidas(),
+         obtenerPromedioVelocidadHerbicidas()
+        ]);
+        setDatosCargadosHerbicidas(true);
+    }
+    const cargaDatosFertilizacion = async() =>{
+        await Promise.all([
+             obtenerResponsableFertilizacion(),
+         obtenerFechaInicioFertilizacion(),
+         obtenerFechaFinalFertilizacion(),
+         obtenerNombreFincaFertilizacion(),
+         obtenerOperadorFertilizacion(),
+         obtenerEquipoFertilizacion(),
+         obtenerActividadFertilizacion(),
+         obtenerAreaNetaFertilizacion(),
+         obtenerAreaBrutaFertilizacion(),
+         obtenerDiferenciaAreaFertilizacion(),
+         obtenerHoraInicioFertilizacion(),
+         obtenerHoraFinalFertilizacion(),
+         obtenerTiempoTotalFertilizacion(),
+         obtenerEficienciaFertilizacion(),
+         obtenerPromedioDosisRealFertilizacion(),
+         obtenerDosisTeoricaFertilizacion()
+
+    ]);
+        setDatosCargadosFertilizacion(true);
+    }
+    const cargaDatosCosechaMecanica = async () =>{
+        await Promise.all([
+             obtenerNombreResponsableCm(),
+         obtenerFechaInicioCosechaCm(),
+         obtenerFechaFinCosechaCm(),
+         obtenerNombreFincaCm(),
+         obtenerCodigoParcelaResponsableCm(),
+         obtenerNombreOperadorCm(),
+         obtenerNombreMaquinaCm(),
+         obtenerActividadCm(),
+         obtenerAreaNetaCm(),
+         obtenerAreaBrutaCm(),
+         obtenerDiferenciaDeAreaCm(),
+         obtenerHoraInicioCm(),
+         obtenerHoraFinalCm(),
+         obtenerTiempoTotalActividadCm(),
+         obtenerEficienciaCm(),
+         obtenerPromedioVelocidadCm(),
+         obtenerPorcentajeAreaPilotoCm(),
+         obtenerPorcentajeAreaAutoTrackerCm()
+        ]);
+
+        setDatosCargadosCosechaMecanica(true);
+    }
+    const cargaDatosAps = async () =>{
+        await Promise.all([
+             obtenerResponsableAps(),
+         obtenerFechaInicioCosechaAps(),
+         obtenerFechaFinCosechaAps(),
+         obtenerNombreFincaAps(),
+         obtenerCodigoParcelasAps(),
+         obtenerNombreOperadorAps(),
+         obtenerEquipoAps(),
+         obtenerActividadAps(),
+         obtenerAreaNetaAps(),
+         obtenerAreaBrutaAps(),
+         obtenerDiferenciaEntreAreasAps(),
+         obtenerHoraInicioAps(),
+         obtenerHoraFinalAps(),
+         obtenerTiempoTotalActividadesAps(),
+         obtenerEficienciaAps(),
+         obtenerPromedioVelocidadAps(),
+        ]);
+        setDatosCargadosAps(true);
+    }
   /*======================================================
   *  PETICIONES DE APS
   * ======================================================*/
@@ -298,7 +328,10 @@ function Dashboard() {
     const obtenerFechaInicioCosechaAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/fechaInicioCosechaAps/${idAnalisis}`);
-            setFechaInicioCosechaAps(response.data);
+            console.log("DATO COSECHA ======");
+            console.log(response);
+            console.log(response.data[0]);
+            setFechaInicioCosechaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaInicioCosechaAps:", error);
         }
@@ -307,7 +340,7 @@ function Dashboard() {
     const obtenerFechaFinCosechaAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/fechaFinCosechaAps/${idAnalisis}`);
-            setFechaFinCosechaAps(response.data);
+            setFechaFinCosechaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaFinCosechaAps:", error);
         }
@@ -316,7 +349,7 @@ function Dashboard() {
     const obtenerNombreFincaAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/nombreFincaAps/${idAnalisis}`);
-            setNombreFincaAps(response.data);
+            setNombreFincaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreFincaAps:", error);
         }
@@ -325,7 +358,7 @@ function Dashboard() {
     const obtenerCodigoParcelasAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/codigoParcelasAps/${idAnalisis}`);
-            setCodigoParcelasAps(response.data);
+            setCodigoParcelasAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerCodigoParcelasAps:", error);
         }
@@ -334,7 +367,7 @@ function Dashboard() {
     const obtenerNombreOperadorAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/nombreOperadorAps/${idAnalisis}`);
-            setNombreOperadorAps(response.data);
+            setNombreOperadorAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreOperadorAps:", error);
         }
@@ -343,7 +376,7 @@ function Dashboard() {
     const obtenerEquipoAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/equipoAps/${idAnalisis}`);
-            setEquipoAps(response.data);
+            setEquipoAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEquipoAps:", error);
         }
@@ -361,7 +394,7 @@ function Dashboard() {
     const obtenerAreaNetaAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/areaNetaAps/${idAnalisis}`);
-            setAreaNetaAps(response.data);
+            setAreaNetaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaNetaAps:", error);
         }
@@ -370,7 +403,7 @@ function Dashboard() {
     const obtenerAreaBrutaAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/areaBrutaAps/${idAnalisis}`);
-            setAreaBrutaAps(response.data);
+            setAreaBrutaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaBrutaAps:", error);
         }
@@ -379,7 +412,7 @@ function Dashboard() {
     const obtenerDiferenciaEntreAreasAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/diferenciaEntreAreasAps/${idAnalisis}`);
-            setDiferenciaEntreAreasAps(response.data);
+            setDiferenciaEntreAreasAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerDiferenciaEntreAreasAps:", error);
         }
@@ -397,7 +430,7 @@ function Dashboard() {
     const obtenerHoraFinalAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/horaFinalAps/${idAnalisis}`);
-            setHoraFinalAps(response.data);
+            setHoraFinalAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraFinalAps:", error);
         }
@@ -406,7 +439,7 @@ function Dashboard() {
     const obtenerTiempoTotalActividadesAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/tiempoTotalActividadesAps/${idAnalisis}`);
-            setTiempoTotalActividadesAps(response.data);
+            setTiempoTotalActividadesAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerTiempoTotalActividadesAps:", error);
         }
@@ -415,7 +448,7 @@ function Dashboard() {
     const obtenerEficienciaAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/eficienciaAps/${idAnalisis}`);
-            setEficienciaAps(response.data);
+            setEficienciaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEficienciaAps:", error);
         }
@@ -424,7 +457,7 @@ function Dashboard() {
     const obtenerPromedioVelocidadAps = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/promedioVelocidadAps/${idAnalisis}`);
-            setPromedioVelocidadAps(response.data);
+            setPromedioVelocidadAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPromedioVelocidadAps:", error);
         }
@@ -436,7 +469,7 @@ function Dashboard() {
     const obtenerNombreResponsableCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/nombreResponsableCm/${idAnalisis}`);
-            setNombreResponsableCm(response.data);
+            setNombreResponsableCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreResponsableCm:", error);
         }
@@ -445,7 +478,7 @@ function Dashboard() {
     const obtenerFechaInicioCosechaCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/fechaInicioCosechaCm/${idAnalisis}`);
-            setFechaInicioCosechaCm(response.data);
+            setFechaInicioCosechaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaInicioCosechaCm:", error);
         }
@@ -454,7 +487,7 @@ function Dashboard() {
     const obtenerFechaFinCosechaCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/fechaFinCosechaCm/${idAnalisis}`);
-            setFechaFinCosechaCm(response.data);
+            setFechaFinCosechaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaFinCosechaCm:", error);
         }
@@ -463,7 +496,7 @@ function Dashboard() {
     const obtenerNombreFincaCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/nombreFincaCm/${idAnalisis}`);
-            setNombreFincaCm(response.data);
+            setNombreFincaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreFincaCm:", error);
         }
@@ -472,7 +505,7 @@ function Dashboard() {
     const obtenerCodigoParcelaResponsableCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/codigoParcelaResponsableCm/${idAnalisis}`);
-            setCodigoParcelaResponsableCm(response.data);
+            setCodigoParcelaResponsableCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerCodigoParcelaResponsableCm:", error);
         }
@@ -481,7 +514,7 @@ function Dashboard() {
     const obtenerNombreOperadorCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/nombreOperadorCm/${idAnalisis}`);
-            setNombreOperadorCm(response.data);
+            setNombreOperadorCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreOperadorCm:", error);
         }
@@ -490,7 +523,7 @@ function Dashboard() {
     const obtenerNombreMaquinaCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/nombreMaquinaCm/${idAnalisis}`);
-            setNombreMaquinaCm(response.data);
+            setNombreMaquinaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreMaquinaCm:", error);
         }
@@ -499,7 +532,7 @@ function Dashboard() {
     const obtenerActividadCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/actividadCm/${idAnalisis}`);
-            setActividadCm(response.data);
+            setActividadCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerActividadCm:", error);
         }
@@ -508,7 +541,7 @@ function Dashboard() {
     const obtenerAreaNetaCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/areaNetaCm/${idAnalisis}`);
-            setAreaNetaCm(response.data);
+            setAreaNetaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaNetaCm:", error);
         }
@@ -517,7 +550,7 @@ function Dashboard() {
     const obtenerAreaBrutaCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/areaBrutaCm/${idAnalisis}`);
-            setAreaBrutaCm(response.data);
+            setAreaBrutaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaBrutaCm:", error);
         }
@@ -526,7 +559,7 @@ function Dashboard() {
     const obtenerDiferenciaDeAreaCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/diferenciaDeAreaCm/${idAnalisis}`);
-            setDiferenciaDeAreaCm(response.data);
+            setDiferenciaDeAreaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerDiferenciaDeAreaCm:", error);
         }
@@ -535,7 +568,7 @@ function Dashboard() {
     const obtenerHoraInicioCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/horaInicioCm/${idAnalisis}`);
-            setHoraInicioCm(response.data);
+            setHoraInicioCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraInicioCm:", error);
         }
@@ -544,7 +577,7 @@ function Dashboard() {
     const obtenerHoraFinalCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/horaFinalCm/${idAnalisis}`);
-            setHoraFinalCm(response.data);
+            setHoraFinalCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraFinalCm:", error);
         }
@@ -553,7 +586,7 @@ function Dashboard() {
     const obtenerTiempoTotalActividadCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/tiempoTotalActividadCm/${idAnalisis}`);
-            setTiempoTotalActividadCm(response.data);
+            setTiempoTotalActividadCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerTiempoTotalActividadCm:", error);
         }
@@ -562,7 +595,7 @@ function Dashboard() {
     const obtenerEficienciaCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/eficienciaCm/${idAnalisis}`);
-            setEficienciaCm(response.data);
+            setEficienciaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEficienciaCm:", error);
         }
@@ -571,7 +604,7 @@ function Dashboard() {
     const obtenerPromedioVelocidadCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/promedioVelocidadCm/${idAnalisis}`);
-            setPromedioVelocidadCm(response.data);
+            setPromedioVelocidadCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPromedioVelocidadCm:", error);
         }
@@ -580,7 +613,7 @@ function Dashboard() {
     const obtenerPorcentajeAreaPilotoCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/porcentajeAreaPilotoCm/${idAnalisis}`);
-            setPorcentajeAreaPilotoCm(response.data);
+            setPorcentajeAreaPilotoCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPorcentajeAreaPilotoCm:", error);
         }
@@ -589,7 +622,7 @@ function Dashboard() {
     const obtenerPorcentajeAreaAutoTrackerCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/porcentajeAreaAutoTrackerCm/${idAnalisis}`);
-            setPorcentajeAreaAutoTrackerCm(response.data);
+            setPorcentajeAreaAutoTrackerCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPorcentajeAreaAutoTrackerCm:", error);
         }
@@ -602,7 +635,7 @@ function Dashboard() {
     const obtenerResponsableFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/responsableFertilizacion/${idAnalisis}`);
-            setResponsableFertilizacion(response.data);
+            setResponsableFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerResponsableFertilizacion:", error);
         }
@@ -611,7 +644,7 @@ function Dashboard() {
     const obtenerFechaInicioFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/fechaInicioFertilizacion/${idAnalisis}`);
-            setFechaInicioFertilizacion(response.data);
+            setFechaInicioFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaInicioFertilizacion:", error);
         }
@@ -620,7 +653,7 @@ function Dashboard() {
     const obtenerFechaFinalFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/fechaFinalFertilizacion/${idAnalisis}`);
-            setFechaFinalFertilizacion(response.data);
+            setFechaFinalFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaFinalFertilizacion:", error);
         }
@@ -629,7 +662,7 @@ function Dashboard() {
     const obtenerNombreFincaFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/nombreFincaFertilizacion/${idAnalisis}`);
-            setNombreFincaFertilizacion(response.data);
+            setNombreFincaFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreFincaFertilizacion:", error);
         }
@@ -638,7 +671,7 @@ function Dashboard() {
     const obtenerOperadorFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/operadorFertilizacion/${idAnalisis}`);
-            setOperadorFertilizacion(response.data);
+            setOperadorFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerOperadorFertilizacion:", error);
         }
@@ -647,7 +680,7 @@ function Dashboard() {
     const obtenerEquipoFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/equipoFertilizacion/${idAnalisis}`);
-            setEquipoFertilizacion(response.data);
+            setEquipoFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEquipoFertilizacion:", error);
         }
@@ -656,7 +689,7 @@ function Dashboard() {
     const obtenerActividadFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/actividadFertilizacion/${idAnalisis}`);
-            setActividadFertilizacion(response.data);
+            setActividadFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerActividadFertilizacion:", error);
         }
@@ -665,7 +698,7 @@ function Dashboard() {
     const obtenerAreaNetaFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/areaNetaFertilizacion/${idAnalisis}`);
-            setAreaNetaFertilizacion(response.data);
+            setAreaNetaFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaNetaFertilizacion:", error);
         }
@@ -674,7 +707,7 @@ function Dashboard() {
     const obtenerAreaBrutaFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/areaBrutaFertilizacion/${idAnalisis}`);
-            setAreaBrutaFertilizacion(response.data);
+            setAreaBrutaFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaBrutaFertilizacion:", error);
         }
@@ -683,7 +716,7 @@ function Dashboard() {
     const obtenerDiferenciaAreaFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/diferenciaAreaFertilizacion/${idAnalisis}`);
-            setDiferenciaAreaFertilizacion(response.data);
+            setDiferenciaAreaFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerDiferenciaAreaFertilizacion:", error);
         }
@@ -692,7 +725,7 @@ function Dashboard() {
     const obtenerHoraInicioFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/horaInicioFertilizacion/${idAnalisis}`);
-            setHoraInicioFertilizacion(response.data);
+            setHoraInicioFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraInicioFertilizacion:", error);
         }
@@ -701,7 +734,7 @@ function Dashboard() {
     const obtenerHoraFinalFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/horaFinalFertilizacion/${idAnalisis}`);
-            setHoraFinalFertilizacion(response.data);
+            setHoraFinalFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraFinalFertilizacion:", error);
         }
@@ -710,7 +743,7 @@ function Dashboard() {
     const obtenerTiempoTotalFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/tiempoTotalFertilizacion/${idAnalisis}`);
-            setTiempoTotalFertilizacion(response.data);
+            setTiempoTotalFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerTiempoTotalFertilizacion:", error);
         }
@@ -719,7 +752,7 @@ function Dashboard() {
     const obtenerEficienciaFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/eficienciaFertilizacion/${idAnalisis}`);
-            setEficienciaFertilizacion(response.data);
+            setEficienciaFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEficienciaFertilizacion:", error);
         }
@@ -728,7 +761,7 @@ function Dashboard() {
     const obtenerPromedioDosisRealFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/promedioDosisRealFertilizacion/${idAnalisis}`);
-            setPromedioDosisRealFertilizacion(response.data);
+            setPromedioDosisRealFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPromedioDosisRealFertilizacion:", error);
         }
@@ -737,7 +770,7 @@ function Dashboard() {
     const obtenerDosisTeoricaFertilizacion = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/dosisTeoricaFertilizacion/${idAnalisis}`);
-            setDosisTeoricaFertilizacion(response.data);
+            setDosisTeoricaFertilizacion(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerDosisTeoricaFertilizacion:", error);
         }
@@ -745,8 +778,25 @@ function Dashboard() {
     function displayValue(value) {
         console.log("ESTO ES LO QUE DEVUELVE =======");
         console.log(value);
-        return value !== null ? value : 'N/A';
+
+        if (value === undefined || value === null) {
+            return 'N/A';
+        } else if (Array.isArray(value)) {
+            return value.join('\n');
+        } else if (typeof value === 'object') {
+            // Devolver solo los valores de las propiedades del objeto
+            return Object.values(value).join(', ');
+        } else if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/)) {
+            // Formatear la cadena de fecha
+            const date = new Date(value);
+            return date.toLocaleDateString(); // Formatea la fecha a un formato legible
+        } else {
+            return value;
+        }
     }
+
+
+
 
     /*======================================================
 *  PETICIONES DE HERBICIDAS
@@ -755,7 +805,7 @@ function Dashboard() {
     const obtenerResponsableHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/responsableHerbicidas/${idAnalisis}`);
-            setResponsableHerbicidas(response.data);
+            setResponsableHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerResponsableHerbicidas:", error);
         }
@@ -764,7 +814,7 @@ function Dashboard() {
     const obtenerFechaHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/fechaHerbicidas/${idAnalisis}`);
-            setFechaHerbicidas(response.data);
+            setFechaHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaHerbicidas:", error);
         }
@@ -773,7 +823,7 @@ function Dashboard() {
     const obtenerNombreFincaHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/nombreFincaHerbicidas/${idAnalisis}`);
-            setNombreFincaHerbicidas(response.data);
+            setNombreFincaHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreFincaHerbicidas:", error);
         }
@@ -782,7 +832,7 @@ function Dashboard() {
     const obtenerParcelaHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/parcelaHerbicidas/${idAnalisis}`);
-            setParcelaHerbicidas(response.data);
+            setParcelaHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerParcelaHerbicidas:", error);
         }
@@ -791,7 +841,7 @@ function Dashboard() {
     const obtenerOperadorHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/operadorHerbicidas/${idAnalisis}`);
-            setOperadorHerbicidas(response.data);
+            setOperadorHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerOperadorHerbicidas:", error);
         }
@@ -800,7 +850,7 @@ function Dashboard() {
     const obtenerEquipoHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/equipoHerbicidas/${idAnalisis}`);
-            setEquipoHerbicidas(response.data);
+            setEquipoHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEquipoHerbicidas:", error);
         }
@@ -809,7 +859,7 @@ function Dashboard() {
     const obtenerActividadHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/actividadHerbicidas/${idAnalisis}`);
-            setActividadHerbicidas(response.data);
+            setActividadHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerActividadHerbicidas:", error);
         }
@@ -818,7 +868,7 @@ function Dashboard() {
     const obtenerAreaNetaHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/areaNetaHerbicidas/${idAnalisis}`);
-            setAreaNetaHerbicidas(response.data);
+            setAreaNetaHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaNetaHerbicidas:", error);
         }
@@ -827,7 +877,7 @@ function Dashboard() {
     const obtenerAreaBrutaHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/areaBrutaHerbicidas/${idAnalisis}`);
-            setAreaBrutaHerbicidas(response.data);
+            setAreaBrutaHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaBrutaHerbicidas:", error);
         }
@@ -836,7 +886,7 @@ function Dashboard() {
     const obtenerDiferenciaDeAreaHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/diferenciaDeAreaHerbicidas/${idAnalisis}`);
-            setDiferenciaDeAreaHerbicidas(response.data);
+            setDiferenciaDeAreaHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerDiferenciaDeAreaHerbicidas:", error);
         }
@@ -845,7 +895,7 @@ function Dashboard() {
     const obtenerHoraInicioHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/horaInicioHerbicidas/${idAnalisis}`);
-            setHoraInicioHerbicidas(response.data);
+            setHoraInicioHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraInicioHerbicidas:", error);
         }
@@ -854,7 +904,7 @@ function Dashboard() {
     const obtenerHoraFinalHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/horaFinalHerbicidas/${idAnalisis}`);
-            setHoraFinalHerbicidas(response.data);
+            setHoraFinalHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraFinalHerbicidas:", error);
         }
@@ -863,7 +913,7 @@ function Dashboard() {
     const obtenerTiempoTotalHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/tiempoTotalHerbicidas/${idAnalisis}`);
-            setTiempoTotalHerbicidas(response.data);
+            setTiempoTotalHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerTiempoTotalHerbicidas:", error);
         }
@@ -872,7 +922,7 @@ function Dashboard() {
     const obtenerEficienciaHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/eficienciaHerbicidas/${idAnalisis}`);
-            setEficienciaHerbicidas(response.data);
+            setEficienciaHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEficienciaHerbicidas:", error);
         }
@@ -881,7 +931,7 @@ function Dashboard() {
     const obtenerPromedioVelocidadHerbicidas = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/dashboard/promedioVelocidadHerbicidas/${idAnalisis}`);
-            setPromedioVelocidadHerbicidas(response.data);
+            setPromedioVelocidadHerbicidas(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPromedioVelocidadHerbicidas:", error);
         }
@@ -904,6 +954,7 @@ function Dashboard() {
         }
         const formData = new FormData();
         formData.append('csv', selectedFile);
+        console.log(formData.get('csv'));
         formData.append('polygon', selectedZipFile);
         try {
             const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}`, formData, {
@@ -945,7 +996,7 @@ function Dashboard() {
 
                 <section className="data-section">
                     {
-                        selectedAnalysisType === 'APS' && (
+                        datosCargadosAps && selectedAnalysisType === 'APS' && (
                             <>
                                 <DataCard title="Responsable">
                                     {displayValue(ResponsableAps)}
@@ -993,7 +1044,7 @@ function Dashboard() {
                         )
                     }
                     {
-                        selectedAnalysisType === 'COSECHA_MECANICA' && (
+                        datosCargadosAps && selectedAnalysisType === 'COSECHA_MECANICA' && (
                             <>
                                 <DataCard title="Nombre Responsable">
                                     {displayValue(nombreResponsableCm)}
@@ -1053,7 +1104,7 @@ function Dashboard() {
                         )
                     }
                     {
-                        selectedAnalysisType === 'FERTILIZACION' && (
+                        datosCargadosFertilizacion && selectedAnalysisType === 'FERTILIZACION' && (
                             <>
                                 <DataCard title="Responsable">
                                     {displayValue(responsableFertilizacion)}
@@ -1107,7 +1158,7 @@ function Dashboard() {
                         )
                     }
                     {
-                        selectedAnalysisType === 'HERBICIDAS' && (
+                        datosCargadosHerbicidas && selectedAnalysisType === 'HERBICIDAS' && (
                             <>
                                 <DataCard title="Responsable">
                                     {displayValue(responsableHerbicidas)}
