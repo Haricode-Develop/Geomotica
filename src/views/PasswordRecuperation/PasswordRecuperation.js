@@ -3,7 +3,7 @@ import './PasswordRecuperation.css';
 import { API_BASE_URL } from "../../utils/config";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+//import { useAuth } from "../../context/AuthContext";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 
@@ -11,7 +11,6 @@ export const PasswordRecuperation = () => {
   const navigate = useNavigate();
   const [emailRecovery, setEmailRecovery] = useState("");
   const [errorRecovery, setErrorRecovery] = useState("");
-  const { login, setUserData } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,11 +20,10 @@ export const PasswordRecuperation = () => {
       });
 
       if (response.data) {
-        login();
+
         console.log("USUARIO ===============");
-        console.log(response.data.user);
-        setUserData(response.data.user);
-        navigate("/dashboard");
+        console.log(response.data);
+        navigate("/passwordRecuperationConfirmation");
       } else {
         setErrorRecovery(
           response.data.message ||

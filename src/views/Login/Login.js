@@ -53,13 +53,13 @@ function Login() {
   return (
     <div className="login-background">
       <header />
-      <div className="login-container">
+      <div className="login-container ">
         <div className="login-form-container--left container">
           <h2>¡Bienvenido de Vuelta!</h2>
           <p>Ingresa para acceder a tu cuenta.</p>
           <p>Recuerda no compartir tu contraseña con nadie</p>
         </div>
-        <div className="login-form-container--right">
+        <div className="login-form-container--right container">
           <img src={logo} alt="Logo de la empresa" className="logo" />
           {error && <p className="error-message">{error}</p>}
           <form onSubmit={handleSubmit}>
