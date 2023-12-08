@@ -133,58 +133,51 @@ function Dashboard() {
 
     };
     useEffect(() => {
+        const newSocket = io(API_BASE_URL);
+        setSocket(newSocket);
+        return () => newSocket.disconnect();
+    }, []);
+
+    useEffect(() => {
         if (socket) {
-            socket.on('sendMap', (receivedHtmlContent) => {
-                setHtmlContent(receivedHtmlContent);
+            socket.on('sendMap', setHtmlContent);
+
+            socket.on('datosInsertados', async () => {
+                switch (selectedAnalysisTypeRef.current) {
+                    case 'APS':
+                        await cargaDatosAps();
+                        break;
+                    case 'COSECHA_MECANICA':
+                        await cargaDatosCosechaMecanica();
+                        break;
+                    case 'FERTILIZACION':
+                        await cargaDatosFertilizacion();
+                        break;
+                    case 'HERBICIDAS':
+                        await cargaDatosHerbicidas();
+                        break;
+                    default:
+                        toast.warn('Debes seleccionar un tipo de análisis.', {
+                            position: "top-right",
+                            autoClose: 5000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                        });
+                        break;
+                }
+                socket.disconnect();
             });
 
             return () => {
                 socket.off('sendMap');
+                socket.off('datosInsertados');
             };
         }
     }, [socket]);
 
-    useEffect(() => {
-
-        const socket = io(API_BASE_URL);
-        setSocket(socket);
-        // Escuchar el evento 'datosInsertados'
-        socket.on('datosInsertados', async () => {
-
-            switch (selectedAnalysisTypeRef.current) {
-                case 'APS':
-                    await cargaDatosAps();
-
-                    break;
-                case 'COSECHA_MECANICA':
-                   await cargaDatosCosechaMecanica();
-                    break;
-                case 'FERTILIZACION':
-                    await cargaDatosFertilizacion();
-                    break;
-                case 'HERBICIDAS':
-                    await cargaDatosHerbicidas();
-                    break;
-                default:
-                    toast.warn('Debes seleccionar un tipo de análisis.', {
-                        position: "top-right",
-                        autoClose: 5000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                    });
-                    break;
-            }
-        });
-
-        return () => {
-            // Desconectar el socket cuando el componente se desmonte
-            socket.disconnect();
-        };
-
-    }, [nombreTabla, idAnalisis]);
     useEffect(() => {
         selectedAnalysisTypeRef.current = selectedAnalysisType;
         switch (selectedAnalysisType) {
@@ -215,13 +208,13 @@ function Dashboard() {
                 console.error("Error al obtener último análisis:", error);
             });
         }
+    }, [selectedAnalysisType, userData.ID_USUARIO]);
 
-    }, [selectedAnalysisType]);
     const simulateEvent = () => {
-        if(socket) {
+        if (socket) {
             socket.emit('datosInsertados', { data: "mi data" });
-        }else{
-
+        } else {
+            // Manejo cuando el socket no está conectado
         }
     };
     const cargaDatosHerbicidas = async() =>{
