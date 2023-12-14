@@ -7,7 +7,7 @@ import profilePicture from './img/user.png';
 import axios from "axios";
 import {API_BASE_URL} from "../../utils/config";
 import { useAuth } from '../../context/AuthContext';
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import DataCard from "../../components/CardData/cardData";
 function Dashboard() {
     const { userData } = useAuth();
@@ -118,6 +118,13 @@ function Dashboard() {
 
     const ultimoAnalisis = async() => {
         if(selectedAnalysisTypeRef.current !== null || selectedAnalysisTypeRef.current !== ''){
+            console.log("OBTENER ULTIMO ANALISIS =======");
+            console.log("ANALISIS SELECCIONADO:");
+            console.log(selectedAnalysisTypeRef.current);
+            console.log("ID DEL USUARIO: ");
+            console.log(userData.ID_USUARIO);
+            console.log("LA DATA DEL USUARIO AQUÍ: ");
+            console.log(userData);
             return await axios.get(`${API_BASE_URL}/dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`);
         }else{
             toast.warn('Debes seleccionar un tipo de análisis.', {
@@ -138,11 +145,14 @@ function Dashboard() {
         return () => newSocket.disconnect();
     }, []);
 
-    useEffect(() => {
+    /*useEffect(() => {
         if (socket) {
             socket.on('sendMap', setHtmlContent);
 
             socket.on('datosInsertados', async () => {
+
+                console.log("ENTRE A DATOS INSERTADOS ======");
+                console.log("ELEMENTO SELECCIONADO: " + selectedAnalysisTypeRef.current);
                 switch (selectedAnalysisTypeRef.current) {
                     case 'APS':
                         await cargaDatosAps();
@@ -176,7 +186,7 @@ function Dashboard() {
                 socket.off('datosInsertados');
             };
         }
-    }, [socket]);
+    }, [socket]);*/
 
     useEffect(() => {
         selectedAnalysisTypeRef.current = selectedAnalysisType;
@@ -931,6 +941,7 @@ function Dashboard() {
     };
 
     const execBash = async () => {
+        console.log("========== INICIA PROCESO DE EJECUCIÓN BASH EN REACT ==============");
 
         if (!selectedFile || !selectedZipFile) {
             toast.warn('Por favor, selecciona ambos archivos.', {
@@ -944,7 +955,14 @@ function Dashboard() {
             });
             return;
 
+        }else if(!idAnalisisBash){
+            toast.error('Debe seleccionar un análisis antes de continuar', {
+                position: toast.POSITION.TOP_RIGHT,
+                autoClose: 5000,
+                hideProgressBar: true,
+            });
         }
+
         const formData = new FormData();
         formData.append('csv', selectedFile);
         console.log(formData.get('csv'));
