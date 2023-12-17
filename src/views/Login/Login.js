@@ -18,7 +18,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${API_BASE_URL}auth/login`, {
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
         email: email,
         password: password,
       });
@@ -79,7 +79,7 @@ function Login() {
               <input
                 type="password"
                 id="passwordInput"
-                placeholder="****************"
+                placeholder="**************"
                 className="input form-control"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

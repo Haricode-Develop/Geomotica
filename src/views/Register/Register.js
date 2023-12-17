@@ -29,9 +29,9 @@ function Registro() {
                 email: email,
                 password: password
             });
-
             if (response.data && response.data.success) {
-                navigate('/login');
+                navigate(`/registerSender/${email}`);//navegar a una ruta diferente donde se le pida al usuario que confirme su correo
+
             } else {
                 setError('Error al registrarse. Por favor, intenta de nuevo.');
             }

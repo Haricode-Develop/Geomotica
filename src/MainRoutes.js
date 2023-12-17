@@ -6,6 +6,9 @@ import Dashboard from "./views/Dashboard/Dashboard";
 import {AuthContext} from "./context/AuthContext";
 import { PasswordRecuperation } from "./views/PasswordRecuperation/PasswordRecuperation";
 import { PasswordConfirmation } from "./views/Confirmations/passwordConfirmation.js";
+import { PasswordSender } from "./views/Confirmations/passwordSender.js";
+import { RegisterConfirmation } from "./views/Confirmations/registerConfirmation.js";
+import { RegisterSender } from "./views/Confirmations/registerSender.js";
 
 const MainRoutes = () => {
 
@@ -17,7 +20,9 @@ const MainRoutes = () => {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="passwordRecuperation" element={<PasswordRecuperation />} />
             <Route path="passwordRecuperationConfirmation" element={<PasswordConfirmation />} />
-
+            <Route path="passwordSender/:recipient" element={<PasswordSender/>} />
+            <Route path="registerSender/:recipient" element={<RegisterSender/>} />
+            <Route path="registerConfirmation/:recipient" element={<RegisterConfirmation/>} />
             <Route path="*" element={isAuthenticated ? <Dashboard /> : <Navigate to="/" />} />
 
         </Routes>
