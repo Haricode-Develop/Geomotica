@@ -1,6 +1,6 @@
 import React, {useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
-
+import Papa from 'papaparse';
 import './DashboardStyle.css';
 import ProgressBar from "../../components/ProgressBar/ProgressBar";
 import Sidebar from '../../components/LayoutSide';
@@ -10,10 +10,36 @@ import {API_BASE_URL} from "../../utils/config";
 import { useAuth } from '../../context/AuthContext';
 import { ToastContainer, toast } from 'react-toastify';
 import DataCard from "../../components/CardData/cardData";
+import L from 'leaflet';
+// Componente del Mapa
+const MapComponent = ({ layers }) => {
+    const mapRef = useRef(null);
+
+    useEffect(() => {
+        if (!mapRef.current) {
+            mapRef.current = L.map('map').setView([0, 0], 1); // Define una ubicación y zoom inicial
+            L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(mapRef.current);
+        }
+
+        // Agrega las capas al mapa
+        layers.forEach(layer => {
+            L.geoJSON(layer).addTo(mapRef.current);
+        });
+
+        return () => {
+            mapRef.current.eachLayer(layer => {
+                mapRef.current.removeLayer(layer);
+            });
+        };
+    }, [layers]);
+
+    return <div id="map" style={{ height: '700px', width: '100%' }}></div>;
+};
 function Dashboard() {
     const { userData } = useAuth();
     const [progress, setProgress] = useState(0);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [idMax, setIdMax] = useState(null);
     const [selectedPolygonFile, setSelectedPolygonFile] = useState(null);
     const [uploadResponse, setUploadResponse] = useState('');
     const [nombreTabla, setNombreTabla] = useState(null);
@@ -25,7 +51,6 @@ function Dashboard() {
     const [idAnalisisBash, setIdAnalisisBash] = useState(null);
     const selectedAnalysisTypeRef = useRef(); // Creando la referencia
     const [socket, setSocket] = useState(null);
-    const [analysisData, setAnalysisData] = useState({});
     const [htmlContent, setHtmlContent] = useState('');
     const [selectedZipFile, setSelectedZipFile] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -112,6 +137,8 @@ function Dashboard() {
 
     const [datosCargadosFertilizacion, setDatosCargadosFertilizacion] = useState(false);
     const [datosCargadosHerbicidas, setDatosCargadosHerbicidas] = useState(false);
+    const mapRef = useRef(null);
+    const [mapLayers, setMapLayers] = useState([]);
 
     const analysisTemplates = {
         APS: "/templates/APS.csv",
@@ -123,11 +150,28 @@ function Dashboard() {
     const handlePolygonChange = (e) => {
         setSelectedPolygonFile(e.target.files[0]);
     };
+    const insertarUltimoAnalisis = async() =>{
+
+        if(selectedAnalysisTypeRef.current !== null || selectedAnalysisTypeRef.current !== ''){
+            return await axios.post(`${API_BASE_URL}dashboard/insert_analisis/${userData.ID_USUARIO}/${nombreAnalisis(idAnalisisBash)}`)
+        }else{
+            toast.warn('No se pudo insertar el análisis', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+            });
+        }
+
+    }
 
     const ultimoAnalisis = async() => {
         if(selectedAnalysisTypeRef.current !== null || selectedAnalysisTypeRef.current !== ''){
 
-            return await axios.get(`${API_BASE_URL}/dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`);
+            return await axios.get(`${API_BASE_URL}dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`);
         }else{
             toast.warn('Debes seleccionar un tipo de análisis.', {
                 position: "top-right",
@@ -177,6 +221,7 @@ function Dashboard() {
                         await cargaDatosAps();
                         break;
                     case 'COSECHA_MECANICA':
+                        console.log("TRATE DE PODER EJECUTAR COSECHA=======");
                         await cargaDatosCosechaMecanica();
                         break;
                     case 'FERTILIZACION':
@@ -242,7 +287,95 @@ function Dashboard() {
             // Manejo cuando el socket no está conectado
         }
     };
+    function nombreAnalisis(idAnalisis){
+        switch (idAnalisis) {
+            case 1:
+                return "APS";
+                break;
+            case 2:
+                return "COSECHA_MECANICA";
+                break;
+            case 3:
+                return "HERBICIDAS";
+                break;
+            case 4:
+                return "FERTILIZACION";
+                break;
+            default:
+                break;
+        }
+    }
+    function procesarCsv(file, idTipoAnalisis) {
+        if (!(file instanceof Blob || file instanceof File)) {
+            console.error("El objeto para procesar no es un archivo válido.");
+            return;
+        }
+        Papa.parse(file, {
+            complete: function(results) {
+                const datos = results.data;
+                const datosProcesados = datos.slice(1).map((fila) => {
+                    // Procesa cada valor de la fila
+                    const filaProcesada = fila.map((valor, indice) => formatearValor(valor, indice));
 
+                    filaProcesada.splice(24, 0, idTipoAnalisis);
+
+                    return filaProcesada;
+                });
+                let csvProcesado = Papa.unparse(datosProcesados);
+                let blob = new Blob([csvProcesado], { type: 'text/csv' });
+                let archivoProcesado = new File([blob], 'archivo_procesado.csv');
+                setSelectedFile(archivoProcesado);
+            },
+            header: false
+        });
+    }
+    function formatearValor(valor, indice) {
+        switch (indice) {
+            case 14:
+            case 15:
+                return formatearFecha(valor);
+            case 16:
+            case 17:
+            case 18:
+                return formatearHora(valor);
+
+            default:
+                return valor;
+        }
+    }
+
+    function formatearFecha(fecha) {
+        if (fecha === '') return 'NULL';
+        const partes = fecha.split('/');
+        return `${partes[2]}-${partes[0].padStart(2, '0')}-${partes[1].padStart(2, '0')}`;
+    }
+
+    function formatearHora(hora) {
+        if (hora === '') return 'NULL';
+        // Aquí puedes agregar lógica de formateo de hora si es necesario
+        return hora;
+    }
+
+
+    async function manejarSubidaArchivo(event) {
+        console.log("ESTE ES EL INPUT QUE TENGO QUE MONITOREAR ========");
+        console.log(event);
+
+        if (!event.target.files || event.target.files.length === 0) {
+            console.error("No se seleccionó ningún archivo");
+            return;
+        }
+
+        let archivo = event.target.files[0];
+        console.log("ESTE ES EL ARCHIVO QUE TENGO QUE MONITOREAR ======");
+        console.log(archivo);
+
+        const idAnalisis = await insertarUltimoAnalisis();
+        console.log("ESTE ES EL ID DEL ANÁLISIS ======");
+        console.log(idAnalisis.data.idAnalisis);
+        setIdMax(idAnalisis.data.idAnalisis);
+        procesarCsv(archivo, idAnalisis.data.idAnalisis);
+    }
     useEffect(() => {
         if (idAnalisisHerbicidas) {
              Promise.all([
@@ -295,9 +428,9 @@ function Dashboard() {
 
     }
 
-    useEffect(() => {
+    useEffect(async () => {
         if (idAnalisisFertilizacion) {
-             Promise.all([
+            await Promise.all([
                 obtenerResponsableFertilizacion(),
                 obtenerFechaInicioFertilizacion(),
                 obtenerFechaFinalFertilizacion(),
@@ -316,10 +449,10 @@ function Dashboard() {
                 obtenerDosisTeoricaFertilizacion()
 
             ]).then(() => {
-                 setDatosCargadosFertilizacion(true);
-             }).catch(error => {
-                 console.error("Error al cargar datos de APS:", error);
-             });
+                setDatosCargadosFertilizacion(true);
+            }).catch(error => {
+                console.error("Error al cargar datos de APS:", error);
+            });
 
         }
     }, [idAnalisisFertilizacion]);
@@ -347,32 +480,38 @@ function Dashboard() {
 
 
     useEffect(() => {
-        if (idAnalisisCosechaMecanica) {
-            Promise.all([
-                obtenerNombreResponsableCm(),
-                obtenerFechaInicioCosechaCm(),
-                obtenerFechaFinCosechaCm(),
-                obtenerNombreFincaCm(),
-                obtenerCodigoParcelaResponsableCm(),
-                obtenerNombreOperadorCm(),
-                obtenerNombreMaquinaCm(),
-                obtenerActividadCm(),
-                obtenerAreaNetaCm(),
-                obtenerAreaBrutaCm(),
-                obtenerDiferenciaDeAreaCm(),
-                obtenerHoraInicioCm(),
-                obtenerHoraFinalCm(),
-                obtenerTiempoTotalActividadCm(),
-                obtenerEficienciaCm(),
-                obtenerPromedioVelocidadCm(),
-                obtenerPorcentajeAreaPilotoCm(),
-                obtenerPorcentajeAreaAutoTrackerCm()
-            ]).then(() => {
+        const fetchData = async () => {
+            try {
+                console.log("ENTRE PARA EJECUTAR LOS ANALISIS =======");
+                await Promise.all([
+                    obtenerNombreResponsableCm(),
+                    obtenerFechaInicioCosechaCm(),
+                    obtenerFechaFinCosechaCm(),
+                    obtenerNombreFincaCm(),
+                    obtenerCodigoParcelaResponsableCm(),
+                    obtenerNombreOperadorCm(),
+                    obtenerNombreMaquinaCm(),
+                    obtenerActividadCm(),
+                    obtenerAreaNetaCm(),
+                    obtenerAreaBrutaCm(),
+                    obtenerDiferenciaDeAreaCm(),
+                    obtenerHoraInicioCm(),
+                    obtenerHoraFinalCm(),
+                    obtenerTiempoTotalActividadCm(),
+                    obtenerEficienciaCm(),
+                    obtenerPromedioVelocidadCm(),
+                    obtenerPorcentajeAreaPilotoCm(),
+                    obtenerPorcentajeAreaAutoTrackerCm()
+                ]);
                 setDatosCargadosCosechaMecanica(true);
-            }).catch(error => {
-                console.error("Error al cargar datos de APS:", error);
-            });
-
+            } catch (error) {
+                console.error("Error al cargar datos de Cosecha:", error);
+            }
+        };
+        console.log("SE INTENTÓ LLAMAR AL ID ANALISIS COSECHA ======");
+        // Llamamos a fetchData solo si idAnalisisCosechaMecanica está disponible
+        if (idAnalisisCosechaMecanica) {
+            fetchData();
         }
     }, [idAnalisisCosechaMecanica]);
 
@@ -449,7 +588,7 @@ function Dashboard() {
     const obtenerResponsableAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/responsableAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/responsableAps/${idAnalisisAps}`);
             setResponsableAps(response.data);
         } catch (error) {
             console.error("Error en obtenerResponsableAps:", error);
@@ -459,7 +598,7 @@ function Dashboard() {
     const obtenerFechaInicioCosechaAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/fechaInicioCosechaAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/fechaInicioCosechaAps/${idAnalisisAps}`);
             
             setFechaInicioCosechaAps(response.data[0]);
         } catch (error) {
@@ -470,7 +609,7 @@ function Dashboard() {
     const obtenerFechaFinCosechaAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/fechaFinCosechaAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/fechaFinCosechaAps/${idAnalisisAps}`);
             setFechaFinCosechaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaFinCosechaAps:", error);
@@ -480,7 +619,7 @@ function Dashboard() {
     const obtenerNombreFincaAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/nombreFincaAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/nombreFincaAps/${idAnalisisAps}`);
             setNombreFincaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreFincaAps:", error);
@@ -490,7 +629,7 @@ function Dashboard() {
     const obtenerCodigoParcelasAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/codigoParcelasAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/codigoParcelasAps/${idAnalisisAps}`);
             setCodigoParcelasAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerCodigoParcelasAps:", error);
@@ -500,7 +639,7 @@ function Dashboard() {
     const obtenerNombreOperadorAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/nombreOperadorAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/nombreOperadorAps/${idAnalisisAps}`);
             setNombreOperadorAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreOperadorAps:", error);
@@ -510,7 +649,7 @@ function Dashboard() {
     const obtenerEquipoAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/equipoAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/equipoAps/${idAnalisisAps}`);
             setEquipoAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEquipoAps:", error);
@@ -520,7 +659,7 @@ function Dashboard() {
     const obtenerActividadAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/actividadAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/actividadAps/${idAnalisisAps}`);
             setActividadAps(response.data);
         } catch (error) {
             console.error("Error en obtenerActividadAps:", error);
@@ -530,7 +669,7 @@ function Dashboard() {
     const obtenerAreaNetaAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/areaNetaAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/areaNetaAps/${idAnalisisAps}`);
             setAreaNetaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaNetaAps:", error);
@@ -540,7 +679,7 @@ function Dashboard() {
     const obtenerAreaBrutaAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/areaBrutaAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/areaBrutaAps/${idAnalisisAps}`);
             setAreaBrutaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaBrutaAps:", error);
@@ -550,7 +689,7 @@ function Dashboard() {
     const obtenerDiferenciaEntreAreasAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/diferenciaEntreAreasAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/diferenciaEntreAreasAps/${idAnalisisAps}`);
             setDiferenciaEntreAreasAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerDiferenciaEntreAreasAps:", error);
@@ -560,7 +699,7 @@ function Dashboard() {
     const obtenerHoraInicioAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/horaInicioAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/horaInicioAps/${idAnalisisAps}`);
             setHoraInicioAps(response.data);
         } catch (error) {
             console.error("Error en obtenerHoraInicioAps:", error);
@@ -570,7 +709,7 @@ function Dashboard() {
     const obtenerHoraFinalAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/horaFinalAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/horaFinalAps/${idAnalisisAps}`);
             setHoraFinalAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraFinalAps:", error);
@@ -580,7 +719,7 @@ function Dashboard() {
     const obtenerTiempoTotalActividadesAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/tiempoTotalActividadesAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/tiempoTotalActividadesAps/${idAnalisisAps}`);
             setTiempoTotalActividadesAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerTiempoTotalActividadesAps:", error);
@@ -590,7 +729,7 @@ function Dashboard() {
     const obtenerEficienciaAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/eficienciaAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/eficienciaAps/${idAnalisisAps}`);
             setEficienciaAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEficienciaAps:", error);
@@ -600,7 +739,7 @@ function Dashboard() {
     const obtenerPromedioVelocidadAps = async () => {
         try {
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/promedioVelocidadAps/${idAnalisisAps}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/promedioVelocidadAps/${idAnalisisAps}`);
             setPromedioVelocidadAps(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPromedioVelocidadAps:", error);
@@ -612,7 +751,12 @@ function Dashboard() {
 
     const obtenerNombreResponsableCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/nombreResponsableCm/${idAnalisisCosechaMecanica}`);
+            console.log("ESTE ES EL ID DE LA COSECHA MECANICA ========");
+            console.log(idAnalisisCosechaMecanica);
+            const response = await axios.get(`${API_BASE_URL}dashboard/nombreResponsableCm/${idAnalisisCosechaMecanica}`);
+            console.log("ESTA ES LA RESPUESTA DE NOMBRE DE RESPONSABLE ======");
+            console.log(response);
+
             setNombreResponsableCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreResponsableCm:", error);
@@ -621,7 +765,7 @@ function Dashboard() {
 
     const obtenerFechaInicioCosechaCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/fechaInicioCosechaCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/fechaInicioCosechaCm/${idAnalisisCosechaMecanica}`);
             setFechaInicioCosechaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaInicioCosechaCm:", error);
@@ -630,7 +774,7 @@ function Dashboard() {
 
     const obtenerFechaFinCosechaCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/fechaFinCosechaCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/fechaFinCosechaCm/${idAnalisisCosechaMecanica}`);
             setFechaFinCosechaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerFechaFinCosechaCm:", error);
@@ -639,7 +783,7 @@ function Dashboard() {
 
     const obtenerNombreFincaCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/nombreFincaCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/nombreFincaCm/${idAnalisisCosechaMecanica}`);
             setNombreFincaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreFincaCm:", error);
@@ -648,7 +792,7 @@ function Dashboard() {
 
     const obtenerCodigoParcelaResponsableCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/codigoParcelaResponsableCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/codigoParcelaResponsableCm/${idAnalisisCosechaMecanica}`);
             setCodigoParcelaResponsableCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerCodigoParcelaResponsableCm:", error);
@@ -657,7 +801,7 @@ function Dashboard() {
 
     const obtenerNombreOperadorCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/nombreOperadorCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/nombreOperadorCm/${idAnalisisCosechaMecanica}`);
             setNombreOperadorCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreOperadorCm:", error);
@@ -666,7 +810,7 @@ function Dashboard() {
 
     const obtenerNombreMaquinaCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/nombreMaquinaCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/nombreMaquinaCm/${idAnalisisCosechaMecanica}`);
             setNombreMaquinaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerNombreMaquinaCm:", error);
@@ -675,7 +819,7 @@ function Dashboard() {
 
     const obtenerActividadCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/actividadCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/actividadCm/${idAnalisisCosechaMecanica}`);
             setActividadCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerActividadCm:", error);
@@ -684,7 +828,7 @@ function Dashboard() {
 
     const obtenerAreaNetaCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/areaNetaCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/areaNetaCm/${idAnalisisCosechaMecanica}`);
             setAreaNetaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaNetaCm:", error);
@@ -693,7 +837,7 @@ function Dashboard() {
 
     const obtenerAreaBrutaCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/areaBrutaCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/areaBrutaCm/${idAnalisisCosechaMecanica}`);
             setAreaBrutaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerAreaBrutaCm:", error);
@@ -702,7 +846,7 @@ function Dashboard() {
 
     const obtenerDiferenciaDeAreaCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/diferenciaDeAreaCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/diferenciaDeAreaCm/${idAnalisisCosechaMecanica}`);
             setDiferenciaDeAreaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerDiferenciaDeAreaCm:", error);
@@ -711,7 +855,7 @@ function Dashboard() {
 
     const obtenerHoraInicioCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/horaInicioCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/horaInicioCm/${idAnalisisCosechaMecanica}`);
             setHoraInicioCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraInicioCm:", error);
@@ -720,7 +864,7 @@ function Dashboard() {
 
     const obtenerHoraFinalCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/horaFinalCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/horaFinalCm/${idAnalisisCosechaMecanica}`);
             setHoraFinalCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerHoraFinalCm:", error);
@@ -729,7 +873,7 @@ function Dashboard() {
 
     const obtenerTiempoTotalActividadCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/tiempoTotalActividadCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/tiempoTotalActividadCm/${idAnalisisCosechaMecanica}`);
             setTiempoTotalActividadCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerTiempoTotalActividadCm:", error);
@@ -738,7 +882,7 @@ function Dashboard() {
 
     const obtenerEficienciaCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/eficienciaCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/eficienciaCm/${idAnalisisCosechaMecanica}`);
             setEficienciaCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerEficienciaCm:", error);
@@ -747,7 +891,7 @@ function Dashboard() {
 
     const obtenerPromedioVelocidadCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/promedioVelocidadCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/promedioVelocidadCm/${idAnalisisCosechaMecanica}`);
             setPromedioVelocidadCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPromedioVelocidadCm:", error);
@@ -756,7 +900,7 @@ function Dashboard() {
 
     const obtenerPorcentajeAreaPilotoCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/porcentajeAreaPilotoCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/porcentajeAreaPilotoCm/${idAnalisisCosechaMecanica}`);
             setPorcentajeAreaPilotoCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPorcentajeAreaPilotoCm:", error);
@@ -765,7 +909,7 @@ function Dashboard() {
 
     const obtenerPorcentajeAreaAutoTrackerCm = async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/dashboard/porcentajeAreaAutoTrackerCm/${idAnalisisCosechaMecanica}`);
+            const response = await axios.get(`${API_BASE_URL}dashboard/porcentajeAreaAutoTrackerCm/${idAnalisisCosechaMecanica}`);
             setPorcentajeAreaAutoTrackerCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPorcentajeAreaAutoTrackerCm:", error);
@@ -1079,9 +1223,36 @@ function Dashboard() {
             console.error("Error en obtenerPromedioVelocidadHerbicidas:", error);
         }
     };
+    function addLayerToMap(layerData) {
+        if (mapRef.current) {
+            L.geoJSON(layerData).addTo(mapRef.current.leafletElement);
+        }
+    }
+
+    useEffect(() => {
+        if (socket) {
+            socket.on('mapLayer', (layerData) => {
+                setMapLayers(prevLayers => [...prevLayers, JSON.parse(layerData)]);
+            });
+
+            socket.on('datosInsertados', async () => {
+                // Tu lógica existente aquí
+            });
+
+            return () => {
+                socket.off('mapLayer');
+                socket.off('datosInsertados');
+            };
+        }
+    }, [socket]);
+
 
     const execBash = async () => {
-        console.log("========== INICIA PROCESO DE EJECUCIÓN BASH EN REACT ==============");
+        let offset = 0;
+        let validar = "ok";
+        const limit = 10000;
+        let lastOffset = -1;
+        let mapsReceived = 0;
 
         if (!selectedFile || !selectedZipFile) {
             toast.warn('Por favor, selecciona ambos archivos.', {
@@ -1102,22 +1273,35 @@ function Dashboard() {
                 hideProgressBar: true,
             });
         }
-
         const formData = new FormData();
         formData.append('csv', selectedFile);
         formData.append('polygon', selectedZipFile);
-        try {
-            const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-            setUploadResponse(response.data);
+        console.log("======= POR EJECUTAR EL BASH =======");
+       const processBatch = async (offset) =>{
+           try{
+               const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}`, formData, {
+                   headers: {
+                       'Content-Type': 'multipart/form-data',
+                   },
+               });
 
-        } catch (error) {
-            console.error('Error al ejecutar el análisis:', error);
-            setUploadResponse('Error al ejecutar el análisis');
-        }
+               mapsReceived += 1;
+               if(response.data.lastOffset){
+                lastOffset = response.data.lastOffset;
+               }
+
+               if (lastOffset !== offset) {
+                   if(offset === 0){
+                       validar = "none";
+                   }
+                   processBatch(offset + limit);
+               }
+           }catch(error) {
+               console.error("error al procesar el lote: ", error);
+           }
+
+       }
+        processBatch(0);
     };
 
     return (
@@ -1132,18 +1316,13 @@ function Dashboard() {
                 setIsOpen={setSidebarOpen}
             />
             <main  className={`main-content ${!sidebarOpen ? 'expand' : ''}`}>
-                <h1 className="dashboard-title">Resumen de Análisis</h1>
-                <section className="map-section">
+                <div>
+                    <h1 className="dashboard-title">Resumen de Análisis</h1>
+                    <section className="map-section">
+                        <MapComponent layers={mapLayers} />
+                    </section>
+                </div>
 
-                    <iframe
-                        src={htmlContent}
-                        title="Mapeo"
-                        width="100%"
-                        height="700px"
-                        frameBorder="0"
-                        style={{border: '1px solid #ccc'}}
-                    ></iframe>
-                </section>
 
                 <section className="data-section">
                     {
@@ -1195,7 +1374,7 @@ function Dashboard() {
                         )
                     }
                     {
-                        datosCargadosAps && selectedAnalysisType === 'COSECHA_MECANICA' && (
+                        datosCargadosCosechaMecanica  && selectedAnalysisType === 'COSECHA_MECANICA' && (
                             <>
                                 <DataCard title="Nombre Responsable">
                                     {displayValue(nombreResponsableCm)}
@@ -1215,7 +1394,7 @@ function Dashboard() {
                                 <DataCard title="Nombre Operador">
                                     {displayValue(nombreOperadorCm)}
                                 </DataCard>
-                                <DataCard title="Nombre Maquina">
+                                <DataCard title="No. Maquina">
                                     {displayValue(nombreMaquinaCm)}
                                 </DataCard>
                                 <DataCard title="Actividad">
@@ -1363,11 +1542,23 @@ function Dashboard() {
 
                 <div className="analysis-controls">
                     <label htmlFor="csv-file" className="custom-file-upload">
-                        <input id="csv-file" type="file" accept=".csv" onChange={e => setSelectedFile(e.target.files[0])}/>
+                        <input
+                            id="csv-file"
+                            type="file"
+                            accept=".csv"
+                            onChange={manejarSubidaArchivo}
+                        />
                         Selecciona tu CSV
                     </label>
                     <label htmlFor="zip-file" className="custom-file-upload">
-                        <input id="zip-file" type="file" onChange={e => setSelectedZipFile(e.target.files[0])} accept=".zip" />
+                        <input
+                            id="zip-file"
+                            type="file"
+                            onChange={e => {
+                                setSelectedZipFile(e.target.files[0]);
+                            }}
+                            accept=".zip"
+                        />
                         Selecciona tu ZIP
                     </label>
                     <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template">
