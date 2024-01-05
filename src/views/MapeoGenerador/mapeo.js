@@ -10,8 +10,12 @@ const { BaseLayer } = LayersControl;
 const MapComponent = () => {
     const [points, setPoints] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]); // Estado para el centro del mapa
-    const workerRef = useRef(null);
+    const [filterAutoPilot, setFilterAutoPilot] = useState(false); // Estado para el filtro del piloto automático
 
+    const workerRef = useRef(null);
+    const isValidGeoJsonData = (data) => {
+        return data && Array.isArray(data.features) && data.features.every(feature => feature.geometry && Array.isArray(feature.geometry.coordinates));
+    };
     useEffect(() => {
         // Inicializar el worker
         workerRef.current = new Worker('dataWorker.js');
@@ -19,11 +23,28 @@ const MapComponent = () => {
         workerRef.current.onmessage = (e) => {
             if (e.data.action === 'geoJsonDataProcessed') {
                 // Actualizar los puntos del estado con los datos procesados
-                setPoints(e.data.data);
 
+
+                if(e.data.data === null){
+                    console.log("Este es el data: ", e.data.data);
+                    return;
+                }else{
+                    console.log("Este es el data lleno: ", e.data.data);
+                }
+                setPoints(e.data.data);
                 if (e.data.data.length > 0) {
-                    // Suponiendo que e.data.data contiene la geometría del polígono
-                    const polygon = L.polygon(e.data.data.map(point => [point[0], point[1]]));
+                    // Extraer las coordenadas de cada punto
+
+                    const latLngs = e.data.data.map(feature => {
+                        const [longitude, latitude] = feature.geometry.coordinates;
+                        return [longitude, latitude]; // Invierte las coordenadas para LatLng
+                    });
+                    // Crear un polígono con las coordenadas extraídas
+
+                    const polygon = L.polygon(latLngs);
+                    console.log("Este es el poligono: ", polygon);
+
+                    // Calcular el centro del polígono y actualizar el centro del mapa
                     const center = polygon.getBounds().getCenter();
                     setMapCenter([center.lat, center.lng]);
                 }
@@ -37,6 +58,7 @@ const MapComponent = () => {
                 console.log('Se recibieron datos GeoJSON nulos o indefinidos.');
                 return;
             }
+            console.log('Datos GeoJSON recibidos: ', geojsonData);
             // Enviar datos GeoJSON al worker para procesamiento
             workerRef.current.postMessage({ action: 'processGeoJsonData', geojsonData });
         });
@@ -48,8 +70,15 @@ const MapComponent = () => {
             socket.off('updateGeoJSONLayer');
         };
     }, []);
+    const toggleFilter = () => {
+        setFilterAutoPilot(!filterAutoPilot);
+    };
 
     return (
+        <>
+        <button onClick={toggleFilter}>
+            {filterAutoPilot ? 'Mostrar Todos' : 'Filtrar por Piloto Automático'}
+        </button>
         <MapContainer center={mapCenter} zoom={2} style={{ height: '100vh', width: '100%' }}>
             <LayersControl position="topright">
                 <BaseLayer checked name="Satellite View">
@@ -65,20 +94,34 @@ const MapComponent = () => {
                         maxZoom={19}
                     />
                 </BaseLayer>
-                {points.map((point, idx) => (
-                    <CircleMarker
-                        key={idx}
-                        center={[point[0], point[1]]}
-                        radius={5}
-                        fillColor="blue"
-                        color="blue"
-                        weight={1}
-                        opacity={1}
-                        fillOpacity={0.8}
-                    />
-                ))}
+                {points.map((point, idx) => {
+                    if (!point.geometry || !point.geometry.coordinates) {
+                        console.log("Este es el punto que viene null: ", point);
+                        return null;
+                    }
+                    const coordinates = point.geometry.coordinates;
+                    const pilotoAutomatico = point.properties.piloto_automatico;
+
+                    const fillColor = filterAutoPilot && pilotoAutomatico === 0 ? 'blue' : 'red';
+
+                    return (
+                        <CircleMarker
+                            key={idx}
+                            center={[coordinates[0], coordinates[1]]} // Latitud y Longitud invertidas
+                            radius={5}
+                            fillColor={fillColor}
+                            color={fillColor}
+                            weight={1}
+                            opacity={1}
+                            fillOpacity={0.8}
+                        />
+                    );
+                })}
+
             </LayersControl>
         </MapContainer>
+        </>
+
     );
 };
 

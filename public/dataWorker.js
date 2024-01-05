@@ -18,5 +18,5 @@ self.onmessage = function(e) {
 function processGeoJsonData(geojsonData) {
     // Filtra las features que no tienen una geometría definida
     const validFeatures = geojsonData.features.filter(feature => feature.geometry && feature.geometry.coordinates);
-    return validFeatures.map(feature => feature.geometry.coordinates);
+    return validFeatures;
 }
