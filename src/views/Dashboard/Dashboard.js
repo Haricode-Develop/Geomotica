@@ -9,39 +9,17 @@ import axios from "axios";
 import {API_BASE_URL} from "../../utils/config";
 import { useAuth } from '../../context/AuthContext';
 import { ToastContainer, toast } from 'react-toastify';
+import MapComponent from "../MapeoGenerador/mapeo";
 import DataCard from "../../components/CardData/cardData";
 import L from 'leaflet';
 // Componente del Mapa
-const MapComponent = ({ layers }) => {
-    const mapRef = useRef(null);
 
-    useEffect(() => {
-        if (!mapRef.current) {
-            mapRef.current = L.map('map').setView([0, 0], 1); // Define una ubicación y zoom inicial
-            L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(mapRef.current);
-        }
-
-        // Agrega las capas al mapa
-        layers.forEach(layer => {
-            L.geoJSON(layer).addTo(mapRef.current);
-        });
-
-        return () => {
-            mapRef.current.eachLayer(layer => {
-                mapRef.current.removeLayer(layer);
-            });
-        };
-    }, [layers]);
-
-    return <div id="map" style={{ height: '700px', width: '100%' }}></div>;
-};
 function Dashboard() {
     const { userData } = useAuth();
     const [progress, setProgress] = useState(0);
     const [selectedFile, setSelectedFile] = useState(null);
     const [idMax, setIdMax] = useState(null);
     const [selectedPolygonFile, setSelectedPolygonFile] = useState(null);
-    const [uploadResponse, setUploadResponse] = useState('');
     const [nombreTabla, setNombreTabla] = useState(null);
     const [idAnalisisAps, setIdAnalisisAps] = useState(null);
     const [idAnalisisCosechaMecanica, setIdAnalisisCosechaMecanica] = useState(null);
@@ -55,6 +33,7 @@ function Dashboard() {
     const [selectedZipFile, setSelectedZipFile] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [showProgressBar, setShowProgressBar] = useState(false);
+    const [datosMapeo, setDatosMapeo] = useState([]);
 
     //COSECHA APS
 
@@ -146,7 +125,8 @@ function Dashboard() {
         FERTILIZACION: "/templates/FERTILIZACION.csv",
         HERBICIDAS: "/templates/HERBICIDAS.csv"
     };
-
+    const CancelToken = axios.CancelToken;
+    let cancel;
     const handlePolygonChange = (e) => {
         setSelectedPolygonFile(e.target.files[0]);
     };
@@ -210,6 +190,19 @@ function Dashboard() {
     }, []);
 
     useEffect(() => {
+        return () => {
+            cancel && cancel();
+        };
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            setDatosMapeo([]); // Esto limpia el estado de los datos mapeados
+            setSelectedFile(null); // Esto limpia el archivo seleccionado
+        };
+    }, [setDatosMapeo, setSelectedFile]);
+
+    useEffect(() => {
         if (socket) {
             socket.on('sendMap', setHtmlContent);
 
@@ -221,7 +214,6 @@ function Dashboard() {
                         await cargaDatosAps();
                         break;
                     case 'COSECHA_MECANICA':
-                        console.log("TRATE DE PODER EJECUTAR COSECHA=======");
                         await cargaDatosCosechaMecanica();
                         break;
                     case 'FERTILIZACION':
@@ -305,61 +297,8 @@ function Dashboard() {
                 break;
         }
     }
-    function procesarCsv(file, idTipoAnalisis) {
-        if (!(file instanceof Blob || file instanceof File)) {
-            console.error("El objeto para procesar no es un archivo válido.");
-            return;
-        }
-        Papa.parse(file, {
-            complete: function(results) {
-                const datos = results.data;
-                const datosProcesados = datos.slice(1).map((fila) => {
-                    // Procesa cada valor de la fila
-                    const filaProcesada = fila.map((valor, indice) => formatearValor(valor, indice));
-
-                    filaProcesada.splice(24, 0, idTipoAnalisis);
-
-                    return filaProcesada;
-                });
-                let csvProcesado = Papa.unparse(datosProcesados);
-                let blob = new Blob([csvProcesado], { type: 'text/csv' });
-                let archivoProcesado = new File([blob], 'archivo_procesado.csv');
-                setSelectedFile(archivoProcesado);
-            },
-            header: false
-        });
-    }
-    function formatearValor(valor, indice) {
-        switch (indice) {
-            case 14:
-            case 15:
-                return formatearFecha(valor);
-            case 16:
-            case 17:
-            case 18:
-                return formatearHora(valor);
-
-            default:
-                return valor;
-        }
-    }
-
-    function formatearFecha(fecha) {
-        if (fecha === '') return 'NULL';
-        const partes = fecha.split('/');
-        return `${partes[2]}-${partes[0].padStart(2, '0')}-${partes[1].padStart(2, '0')}`;
-    }
-
-    function formatearHora(hora) {
-        if (hora === '') return 'NULL';
-        // Aquí puedes agregar lógica de formateo de hora si es necesario
-        return hora;
-    }
-
 
     async function manejarSubidaArchivo(event) {
-        console.log("ESTE ES EL INPUT QUE TENGO QUE MONITOREAR ========");
-        console.log(event);
 
         if (!event.target.files || event.target.files.length === 0) {
             console.error("No se seleccionó ningún archivo");
@@ -367,14 +306,40 @@ function Dashboard() {
         }
 
         let archivo = event.target.files[0];
-        console.log("ESTE ES EL ARCHIVO QUE TENGO QUE MONITOREAR ======");
-        console.log(archivo);
+
 
         const idAnalisis = await insertarUltimoAnalisis();
-        console.log("ESTE ES EL ID DEL ANÁLISIS ======");
-        console.log(idAnalisis.data.idAnalisis);
+     
         setIdMax(idAnalisis.data.idAnalisis);
-        procesarCsv(archivo, idAnalisis.data.idAnalisis);
+
+        // Aquí la la petición del end point para procesar el Csv:
+        //
+        let formData = new FormData();
+        formData.append('csv', archivo);
+        formData.append('idTipoAnalisis', idAnalisis.data.idAnalisis);
+        archivo = null;
+        const response = await axios.post(`${API_BASE_URL}dashboard/procesarCsv/`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            cancelToken: new CancelToken(function executor(c) {
+                cancel = c;
+            }),
+        });
+        formData = null;
+        const data = response.data;
+
+        // Genera un nuevo Blob y File para setSelectedFile
+        console.log("Este es la data del csv procesado:");
+        console.log(data);
+        const csvBlob = new Blob([Papa.unparse(data)], { type: 'text/csv' });
+        console.log("Este es el csvBlob:");
+        console.log(csvBlob);
+        const csvFile = new File([csvBlob], 'procesado.csv');
+        console.log("Este es el csvFile:");
+        console.log(csvFile);
+        setSelectedFile(csvFile);
+        setDatosMapeo(data.data);
     }
     useEffect(() => {
         if (idAnalisisHerbicidas) {
@@ -409,8 +374,7 @@ function Dashboard() {
         if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
             try {
                 const response = await ultimoAnalisis();
-                console.log("RESPUESTA DE ULTIMO ANALISIS ======");
-                console.log(response);
+
 
                 if (response && response.data && response.data.ID_ANALISIS) {
                     setIdAnalisisHerbicidas(response.data.ID_ANALISIS);
@@ -461,8 +425,7 @@ function Dashboard() {
         if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
             try {
                 const response = await ultimoAnalisis();
-                console.log("RESPUESTA DE ULTIMO ANALISIS ======");
-                console.log(response);
+
 
                 if (response && response.data && response.data.ID_ANALISIS) {
                     setIdAnalisisFertilizacion(response.data.ID_ANALISIS);
@@ -482,7 +445,6 @@ function Dashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                console.log("ENTRE PARA EJECUTAR LOS ANALISIS =======");
                 await Promise.all([
                     obtenerNombreResponsableCm(),
                     obtenerFechaInicioCosechaCm(),
@@ -508,7 +470,6 @@ function Dashboard() {
                 console.error("Error al cargar datos de Cosecha:", error);
             }
         };
-        console.log("SE INTENTÓ LLAMAR AL ID ANALISIS COSECHA ======");
         // Llamamos a fetchData solo si idAnalisisCosechaMecanica está disponible
         if (idAnalisisCosechaMecanica) {
             fetchData();
@@ -520,8 +481,7 @@ function Dashboard() {
         if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
             try {
                 const response = await ultimoAnalisis();
-                console.log("RESPUESTA DE ULTIMO ANALISIS ======");
-                console.log(response);
+
 
                 if (response && response.data && response.data.ID_ANALISIS) {
                     setIdAnalisisCosechaMecanica(response.data.ID_ANALISIS);
@@ -569,8 +529,6 @@ function Dashboard() {
         if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
             try {
                 const response = await ultimoAnalisis();
-                console.log("RESPUESTA DE ULTIMO ANALISIS ======");
-                console.log(response);
 
                 if (response && response.data && response.data.ID_ANALISIS) {
                     setIdAnalisisAps(response.data.ID_ANALISIS);
@@ -751,11 +709,9 @@ function Dashboard() {
 
     const obtenerNombreResponsableCm = async () => {
         try {
-            console.log("ESTE ES EL ID DE LA COSECHA MECANICA ========");
-            console.log(idAnalisisCosechaMecanica);
+
             const response = await axios.get(`${API_BASE_URL}dashboard/nombreResponsableCm/${idAnalisisCosechaMecanica}`);
-            console.log("ESTA ES LA RESPUESTA DE NOMBRE DE RESPONSABLE ======");
-            console.log(response);
+
 
             setNombreResponsableCm(response.data[0]);
         } catch (error) {
@@ -1223,36 +1179,11 @@ function Dashboard() {
             console.error("Error en obtenerPromedioVelocidadHerbicidas:", error);
         }
     };
-    function addLayerToMap(layerData) {
-        if (mapRef.current) {
-            L.geoJSON(layerData).addTo(mapRef.current.leafletElement);
-        }
-    }
 
-    useEffect(() => {
-        if (socket) {
-            socket.on('mapLayer', (layerData) => {
-                setMapLayers(prevLayers => [...prevLayers, JSON.parse(layerData)]);
-            });
-
-            socket.on('datosInsertados', async () => {
-                // Tu lógica existente aquí
-            });
-
-            return () => {
-                socket.off('mapLayer');
-                socket.off('datosInsertados');
-            };
-        }
-    }, [socket]);
 
 
     const execBash = async () => {
-        let offset = 0;
         let validar = "ok";
-        const limit = 10000;
-        let lastOffset = -1;
-        let mapsReceived = 0;
 
         if (!selectedFile || !selectedZipFile) {
             toast.warn('Por favor, selecciona ambos archivos.', {
@@ -1276,7 +1207,6 @@ function Dashboard() {
         const formData = new FormData();
         formData.append('csv', selectedFile);
         formData.append('polygon', selectedZipFile);
-        console.log("======= POR EJECUTAR EL BASH =======");
        const processBatch = async (offset) =>{
            try{
                const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}`, formData, {
@@ -1285,21 +1215,9 @@ function Dashboard() {
                    },
                });
 
-               mapsReceived += 1;
-               if(response.data.lastOffset){
-                lastOffset = response.data.lastOffset;
-               }
-
-               if (lastOffset !== offset) {
-                   if(offset === 0){
-                       validar = "none";
-                   }
-                   processBatch(offset + limit);
-               }
            }catch(error) {
                console.error("error al procesar el lote: ", error);
            }
-
        }
         processBatch(0);
     };
@@ -1319,7 +1237,8 @@ function Dashboard() {
                 <div>
                     <h1 className="dashboard-title">Resumen de Análisis</h1>
                     <section className="map-section">
-                        <MapComponent layers={mapLayers} />
+                        {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} />}
+
                     </section>
                 </div>
 
