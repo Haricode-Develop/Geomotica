@@ -7,6 +7,7 @@ import { FaFilter } from 'react-icons/fa';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField } from '@mui/material';
 import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
+import Slider from '@mui/material/Slider';
 
 const { BaseLayer } = LayersControl;
 
@@ -19,6 +20,12 @@ const MapComponent = () => {
     const [lowSpeed, setLowSpeed] = useState(-1);  // Inicializa como número
     const [medSpeed, setMedSpeed] = useState(-1);  // Inicializa como número
     const [highSpeed, setHighSpeed] = useState(-1); // Inicializa como número
+
+    const [gpsQuality, setGpsQuality] = useState(0);
+    const [fuel, setFuel] = useState(0);
+    const [cutterBase, setCutterBase] = useState(0);
+    const [rpm, setRpm] = useState(0);
+
 
 
     const [filterSpeed, setFilterSpeed] = useState(false);
@@ -116,6 +123,22 @@ const MapComponent = () => {
             }
         }
     }
+    const handleSliderChange = (name, newValue) => {
+        switch (name) {
+            case 'gpsQuality':
+                setGpsQuality(newValue);
+                break;
+            case 'fuel':
+                setFuel(newValue);
+                break;
+                case 'cutterBase':
+                    setCutterBase(newValue);
+                    break;
+                    case 'rpm':
+                        setRpm(newValue);
+                        break;
+        }
+    };
     return (
         <>
 
@@ -204,6 +227,43 @@ const MapComponent = () => {
                             value={highSpeed}
                             onChange={e => setHighSpeed(Number(e.target.value))}
                             margin="normal"
+                        />
+                        <p>Calidad GPS: {gpsQuality[0]} - {gpsQuality[1]}</p>
+                        <Slider
+                            value={gpsQuality}
+                            onChange={(e, newValue) => handleSliderChange('gpsQuality', newValue)}
+                            valueLabelDisplay="auto"
+                            min={0}
+                            max={1000}
+                        />
+                        <p>Combustible: {fuel[0]} - {fuel[1]}</p>
+
+                        <Slider
+                            value={fuel}
+                            onChange={(e, newValue) => handleSliderChange('fuel', newValue)}
+                            valueLabelDisplay="auto"
+                            min={0}
+                            max={1000}
+                        />
+                        <p>Cortador Base: {cutterBase[0]} - {cutterBase[1]}</p>
+
+                        <Slider
+                            value={cutterBase}
+                            onChange={(e, newValue) => handleSliderChange('cutterBase', newValue)}
+                            valueLabelDisplay="auto"
+                            min={0}
+                            max={1000}
+                        />
+
+
+                        <p>RPM: {rpm[0]} - {rpm[1]}</p>
+
+                        <Slider
+                            value={rpm}
+                            onChange={(e, newValue) => handleSliderChange('rpm', newValue)}
+                            valueLabelDisplay="auto"
+                            min={0}
+                            max={1000}
                         />
 
                     </FormGroup>
