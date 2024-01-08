@@ -330,14 +330,11 @@ function Dashboard() {
         const data = response.data;
 
         // Genera un nuevo Blob y File para setSelectedFile
-        console.log("Este es la data del csv procesado:");
-        console.log(data);
+
         const csvBlob = new Blob([Papa.unparse(data)], { type: 'text/csv' });
-        console.log("Este es el csvBlob:");
-        console.log(csvBlob);
+
         const csvFile = new File([csvBlob], 'procesado.csv');
-        console.log("Este es el csvFile:");
-        console.log(csvFile);
+
         setSelectedFile(csvFile);
         setDatosMapeo(data.data);
     }
@@ -1230,7 +1227,7 @@ function Dashboard() {
                 name={userData.NOMBRE}
                 apellido={userData.APELLIDO}
                 menuItems={menuItems}
-                isOpen={sidebarOpen}
+                isOpen={sidebarOpen}//
                 setIsOpen={setSidebarOpen}
             />
             <main  className={`main-content ${!sidebarOpen ? 'expand' : ''}`}>
