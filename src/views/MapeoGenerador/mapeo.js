@@ -8,6 +8,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, F
 import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
 import Slider from '@mui/material/Slider';
+import Draggable from 'react-draggable';
 
 const { BaseLayer } = LayersControl;
 
@@ -22,13 +23,16 @@ const MapComponent = () => {
     const [highSpeed, setHighSpeed] = useState(-1); // Inicializa como número
 
     const [gpsQuality, setGpsQuality] = useState(0);
+
     const [fuel, setFuel] = useState(0);
     const [cutterBase, setCutterBase] = useState(0);
     const [rpm, setRpm] = useState(0);
-
+    const [zoom, setZoom] = useState(2);
 
 
     const [filterSpeed, setFilterSpeed] = useState(false);
+    const [filterGpsQuality, setFilterGpsQuality] = useState(false);
+    const [filterFuel, setFilterFuel] = useState(false);
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
     const [mapKey, setMapKey] = useState(Date.now()); // Estado para la clave única del mapa
@@ -70,14 +74,28 @@ const MapComponent = () => {
 
     const toggleFilter = () => {
         setFilterAutoPilot(current => !current);
+        setZoom(7);
         setMapKey(Date.now());
     };
     const toggleFilterSpeed = () => {
         if(lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1){
             setFilterSpeed(current => !current);
+            setZoom(7);
             setMapKey(Date.now());
         }
     };
+
+    const toggleFilterGpsQuality = () => {
+        setFilterGpsQuality(current => !current);
+        setZoom(7);
+        setMapKey(Date.now());
+    };
+
+    const toggleFilterFuel = () => {
+        setFilterFuel(current => !current);
+        setZoom(7);
+        setMapKey(Date.now());
+    }
 
     useEffect(() => {
         if (filterSpeed) {
@@ -92,6 +110,28 @@ const MapComponent = () => {
         }
     }, [filterSpeed, lowSpeed, medSpeed, highSpeed, points]);
 
+    useEffect(() => {
+        if (filterGpsQuality) {
+            setFilteredPoints(points.filter(point => {
+                const quality = point.properties.calidad_senal; // Asegúrate de que 'calidad_gps' es la propiedad correcta
+                return quality <= gpsQuality;
+            }));
+        } else {
+            setFilteredPoints(points);
+        }
+    }, [filterGpsQuality, gpsQuality, points]);
+
+
+    useEffect(() => {
+        if (filterFuel) {
+            setFilteredPoints(points.filter(point => {
+                const quality = point.properties.consumo_combustible; // Asegúrate de que 'combustible' es la propiedad correcta
+                return quality <= fuel;
+            }));
+        } else {
+            setFilteredPoints(points);
+        }
+    }, [filterFuel, fuel, points]);
 
     useEffect(() => {
         if (filterAutoPilot) {
@@ -103,6 +143,14 @@ const MapComponent = () => {
         }
     }, [filterAutoPilot, points]);
 
+
+    const PaperComponent = (props) => {
+        return (
+            <Draggable handle="#draggable-dialog-title" cancel={'[class*="MuiDialogContent-root"]'}>
+                <div {...props} />
+            </Draggable>
+        );
+    };
 
     function choseColor(val, filtro){
         if(filtro === "autoPilot"){
@@ -123,6 +171,7 @@ const MapComponent = () => {
             }
         }
     }
+
     const handleSliderChange = (name, newValue) => {
         switch (name) {
             case 'gpsQuality':
@@ -131,12 +180,12 @@ const MapComponent = () => {
             case 'fuel':
                 setFuel(newValue);
                 break;
-                case 'cutterBase':
-                    setCutterBase(newValue);
-                    break;
-                    case 'rpm':
-                        setRpm(newValue);
-                        break;
+            case 'cutterBase':
+                setCutterBase(newValue);
+                break;
+            case 'rpm':
+                setRpm(newValue);
+                break;
         }
     };
     return (
@@ -148,7 +197,7 @@ const MapComponent = () => {
                 </Button>
             </div>
 
-            <MapContainer key={mapKey} center={mapCenter} zoom={2} style={{ height: '100vh', width: '100%' }}>
+            <MapContainer key={mapKey} center={mapCenter} zoom={zoom} style={{ height: '100vh', width: '100%' }}>
                 <LayersControl position="topright">
                     <BaseLayer checked name="Satellite View">
                         <TileLayer
@@ -188,8 +237,23 @@ const MapComponent = () => {
                     })}
                 </LayersControl>
             </MapContainer>
-            <Dialog open={isFilterDialogOpen} onClose={closeFilterDialog}>
-                <DialogTitle>Filtros de Mapa</DialogTitle>
+            <Dialog
+                open={isFilterDialogOpen}
+                onClose={closeFilterDialog}
+                aria-labelledby="draggable-dialog-title"
+                sx={{
+                    '& .MuiDialog-paper': {
+                        width: '30%',
+                        maxWidth: 'none',
+                        overflow: 'hidden',
+                        backgroundColor: 'white',
+                        resize: 'both',
+                    }
+                }}
+            >
+                <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+                    Filtros de Mapa
+                </DialogTitle>
                 <DialogContent>
                     <FormGroup>
                         <FormControlLabel
@@ -228,7 +292,12 @@ const MapComponent = () => {
                             onChange={e => setHighSpeed(Number(e.target.value))}
                             margin="normal"
                         />
-                        <p>Calidad GPS: {gpsQuality[0]} - {gpsQuality[1]}</p>
+
+                        <FormControlLabel
+                            control={<Switch checked={filterGpsQuality} onChange={toggleFilterGpsQuality} />}
+                            label="Filtrar Calidad Gps"
+                        />
+                        <p>Calidad GPS:</p>
                         <Slider
                             value={gpsQuality}
                             onChange={(e, newValue) => handleSliderChange('gpsQuality', newValue)}
@@ -236,7 +305,12 @@ const MapComponent = () => {
                             min={0}
                             max={1000}
                         />
-                        <p>Combustible: {fuel[0]} - {fuel[1]}</p>
+
+                        <FormControlLabel
+                            control={<Switch checked={filterFuel} onChange={toggleFilterFuel} />}
+                            label="Combustible"
+                        />
+                        <p>Combustible:</p>
 
                         <Slider
                             value={fuel}
@@ -245,6 +319,7 @@ const MapComponent = () => {
                             min={0}
                             max={1000}
                         />
+
                         <p>Cortador Base: {cutterBase[0]} - {cutterBase[1]}</p>
 
                         <Slider
