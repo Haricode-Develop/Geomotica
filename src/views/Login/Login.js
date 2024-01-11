@@ -18,6 +18,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log("Llega aca");
       const response = await axios.post(`${API_BASE_URL}auth/login`, {
         email: email,
         password: password,
@@ -64,7 +65,7 @@ function Login() {
           {error && <p className="error-message">{error}</p>}
           <form onSubmit={handleSubmit}>
             <div className="mb-3 text-center">
-            <label for="emailInput" class="form-label">Introduce tu Correo Electronico:</label>
+            <label htmlFor="emailInput" className="form-label">Introduce tu Correo Electronico:</label>
               <input
                 type="email"
                 id="emailInput"
@@ -75,7 +76,7 @@ function Login() {
               />
             </div>
             <div className="mb-3 text-center">
-            <label for="passwordInput" class="form-label">Introduce tu Contraseña:</label>
+            <label htmlFor="passwordInput" className="form-label">Introduce tu Contraseña:</label>
               <input
                 type="password"
                 id="passwordInput"
