@@ -5,6 +5,7 @@ import logo from "../../assets/logo.png";
 import axios from "axios";
 import { API_BASE_URL } from "../../utils/config";
 import { useAuth } from "../../context/AuthContext";
+import { useAuthLogin } from "../../context/AuthProvider";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 
@@ -15,6 +16,12 @@ function Login() {
   const [error, setError] = useState("");
   const { login, setUserData } = useAuth() || {};
   
+  const authLogin = useAuthLogin();
+
+  if (authLogin.isAuthenticated2) {
+    return navigate("/dashboard");
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {

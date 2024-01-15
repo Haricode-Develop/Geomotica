@@ -4,6 +4,7 @@ import './Register.css';
 import logo from '../../assets/logo.png';
 import axios from 'axios';
 import {API_BASE_URL} from "../../utils/config";
+import { useAuthLogin } from '../../context/AuthProvider';
 
 function Registro() {
     const navigate = useNavigate();
@@ -13,6 +14,12 @@ function Registro() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
+
+    const authLogin = useAuthLogin();
+
+    if (authLogin.isAuthenticated2) {
+      return navigate("/dashboard");
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
