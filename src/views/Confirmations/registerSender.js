@@ -11,9 +11,7 @@ function RegisterSender() {
   const navigate = useNavigate();
 
   const emailSender = async () => {
-    console.log(recipient + "Llega aca alo");
     try {
-      console.log("Llega aca");
       const response = await axios.post(
         `${API_BASE_URL}/auth/confirmGeneration`,
         {
@@ -25,13 +23,11 @@ function RegisterSender() {
           },
         }
       );
-      console.log("Este es el response" + response.status + "Llega aca");
       if (
         response.status === 200 ||
         response.status === 201 ||
         response.status === 202
       ) {
-        console.log("Contraseña reiniciada exitosamente");
       } else {
         console.error("Error al reiniciar la contraseña");
       }

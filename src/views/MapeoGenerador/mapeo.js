@@ -63,14 +63,18 @@ const MapComponent = () => {
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
     useEffect(() => {
+        console.log("INICIA AL DATA WORKER =====");
         workerRef.current = new Worker('dataWorker.js');
 
         workerRef.current.onmessage = (e) => {
+            console.log("Mensaje recibido desde el worker");
             if (e.data.action === 'geoJsonDataProcessed') {
+                console.log("Entre a los datos del geoJson");
                 if (e.data.data && e.data.data.length > 0) {
+                    console.log("Si obtiene datos del geoJson");
                     setPoints(e.data.data);
                     setFilteredPoints(e.data.data); // Inicializamos los puntos filtrados
-
+                    console.log("ESTOS SON LOS PUNTOS Y PUNTOS FILTRADOS", points, filteredPoints);
                     const polygon = L.polygon(e.data.data.map(point => {
                         const [longitude, latitude] = point.geometry.coordinates;
                         return [longitude, latitude];
@@ -84,7 +88,9 @@ const MapComponent = () => {
 
         const socket = io(API_BASE_URL);
         socket.on('updateGeoJSONLayer', (geojsonData) => {
+
             if (geojsonData) {
+                console.log("GEOJSONDATA", geojsonData);
                 workerRef.current.postMessage({ action: 'processGeoJsonData', geojsonData });
             }
         });
@@ -202,7 +208,7 @@ const MapComponent = () => {
     useEffect(() => {
         if (filterCutterBase) {
             setFilteredPoints(points.filter(point => {
-                const cutterBase = point.properties.cortador_base;
+                const cutterBase = point.properties.presion_cortador;
                 return cutterBase >= lowCutterBase && cutterBase <= highCutterBase;
             }));
         } else {
@@ -214,10 +220,8 @@ const MapComponent = () => {
      // ========= Filtro de Piloto Automático
     useEffect(() => {
         if (filterAutoPilot) {
-            // Aplicar el filtro solo cuando esté activo
-            setFilteredPoints(points); // Muestra todos los puntos pero con colores condicionales
+            setFilteredPoints(points);
         } else {
-            // Sin filtro, todos los puntos son azules
             setFilteredPoints(points);
         }
     }, [filterAutoPilot, points]);

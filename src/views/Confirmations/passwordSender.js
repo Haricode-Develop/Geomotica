@@ -11,7 +11,6 @@ function PasswordSender() {
   const [isSending, setIsSending] = useState(false);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
   const buttonRef = useRef(null);
-  console.log(recipient);
 
   const handleResetPassword = async () => {
     if (isSending) return;
@@ -19,7 +18,6 @@ function PasswordSender() {
     setIsSending(true);
     setIsButtonPressed(true);
     try {
-      console.log("Llega aca");
       const response = await axios.post(
         `${API_BASE_URL}/auth/confirmGeneration`,
         {
@@ -32,7 +30,6 @@ function PasswordSender() {
         }
       );
       buttonRef.current.style.cursor = "none";
-      console.log("Este es el response" + response.status + "Llega aca");
       if (
         response.status === 200 ||
         response.status === 201 ||
@@ -44,7 +41,6 @@ function PasswordSender() {
         buttonRef.current.style.cursor = "none";
         buttonRef.current.innerHTML =
           "Te hemos mandado un correo con la nueva contraseña";
-        console.log("Contraseña reiniciada exitosamente");
       } else {
         console.error("Error al reiniciar la contraseña");
       }

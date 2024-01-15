@@ -30,6 +30,7 @@ function Dashboard() {
     const selectedAnalysisTypeRef = useRef(); // Creando la referencia
     const [socket, setSocket] = useState(null);
     const [htmlContent, setHtmlContent] = useState('');
+    const [progressMessage, setProgressMessage] = useState("");
     const [selectedZipFile, setSelectedZipFile] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [showProgressBar, setShowProgressBar] = useState(false);
@@ -149,6 +150,7 @@ function Dashboard() {
     }
 
     const ultimoAnalisis = async() => {
+        console.log("ESTOS SON LOS LOGS: " , selectedAnalysisTypeRef.current, selectedAnalysisTypeRef.current);
         if(selectedAnalysisTypeRef.current !== null || selectedAnalysisTypeRef.current !== ''){
 
             return await axios.get(`${API_BASE_URL}dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`);
@@ -170,24 +172,28 @@ function Dashboard() {
         const newSocket = io(API_BASE_URL);
         setSocket(newSocket);
 
-        newSocket.on('progressUpdate', progress => {
-            const progressNumber = Number(progress);
+        newSocket.on('progressUpdate', data => {
+            const progressNumber = Number(data.progress);
+            const message = data.message;
 
             setProgress(progressNumber);
+            setProgressMessage(message);
             setShowProgressBar(true);
-            if (progressNumber === 75) {
+            setShowProgressBar(progressNumber < 100);
 
-                newSocket.emit('progressUpdate', 100);
+            if (progressNumber === 80) {
+                console.log("ENTRE AL 80: ");
+                newSocket.emit('progressUpdate', { progress: 100, message: "Finalizado"});
                 setShowProgressBar(false);
             }
         });
-
 
         return () => {
             newSocket.off('progressUpdate');
             newSocket.disconnect();
         };
     }, []);
+
 
     useEffect(() => {
         return () => {
@@ -203,9 +209,11 @@ function Dashboard() {
     }, [setDatosMapeo, setSelectedFile]);
 
     useEffect(() => {
+        console.log("VOY A ENTRAR AL SOCKET DE INSERCION: ");
         if (socket) {
+            console.log("YA ENTRE AL SOCKET DE INSERCION:");
             socket.on('sendMap', setHtmlContent);
-
+            console.log("ESTE ES EL SOCKET DE INSERCION: ");
             socket.on('datosInsertados', async () => {
 
 
@@ -214,6 +222,7 @@ function Dashboard() {
                         await cargaDatosAps();
                         break;
                     case 'COSECHA_MECANICA':
+                        console.log("ENTRE AL CASE DE MECANICA: ");
                         await cargaDatosCosechaMecanica();
                         break;
                     case 'FERTILIZACION':
@@ -243,6 +252,8 @@ function Dashboard() {
                 socket.off('sendMap');
                 socket.off('datosInsertados');
             };
+        }else{
+            console.log("NO ENTRE AL SOCKET: ");
         }
     }, [socket]);
 
@@ -442,6 +453,7 @@ function Dashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                console.log("INICIA EL PROCESO DE COSECHA");
                 await Promise.all([
                     obtenerNombreResponsableCm(),
                     obtenerFechaInicioCosechaCm(),
@@ -469,16 +481,18 @@ function Dashboard() {
         };
         // Llamamos a fetchData solo si idAnalisisCosechaMecanica está disponible
         if (idAnalisisCosechaMecanica) {
+            console.log("Llama al método de fetch de Cosecha Mecanica  ");
             fetchData();
         }
     }, [idAnalisisCosechaMecanica]);
 
     const cargaDatosCosechaMecanica = async () =>{
-
+        console.log("ESTOS SON LOS LOGS DE COSECHA: " , selectedAnalysisTypeRef.current, userData.ID_USUARIO);
         if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
+            console.log("ENTRE AL IF: ");
             try {
                 const response = await ultimoAnalisis();
-
+                console.log("RESPUESTA:", response);
 
                 if (response && response.data && response.data.ID_ANALISIS) {
                     setIdAnalisisCosechaMecanica(response.data.ID_ANALISIS);
@@ -1206,22 +1220,36 @@ function Dashboard() {
         formData.append('polygon', selectedZipFile);
        const processBatch = async (offset) =>{
            try{
+               console.log("ESTA ES LA RESPUESTA DE BASH: ");
                const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}`, formData, {
                    headers: {
                        'Content-Type': 'multipart/form-data',
                    },
                });
-
-           }catch(error) {
-               console.error("error al procesar el lote: ", error);
+            console.log(response);
+           }catch (error) {
+               // Registro detallado del error
+               console.error("Error al procesar el lote:");
+               console.error("Mensaje de error:", error.message);
+               console.error("Tipo de error:", error.name);
+               if (error.response) {
+                   // Detalles específicos cuando el error es de una respuesta HTTP
+                   console.error("Datos de la respuesta del error:", error.response.data);
+                   console.error("Estado de la respuesta del error:", error.response.status);
+                   console.error("Encabezados de la respuesta del error:", error.response.headers);
+               } else {
+                   // En caso de que el error no sea una respuesta HTTP
+                   console.error("Stack del error:", error.stack);
+               }
            }
        }
+       console.log("Se llama al método de bash");
         processBatch(0);
     };
 
     return (
         <div className="dashboard">
-            <ProgressBar progress={progress} show={showProgressBar} />
+            <ProgressBar progress={progress} message={progressMessage} show={showProgressBar} />
             <Sidebar
                 profileImage={profilePicture}
                 name={userData.NOMBRE}

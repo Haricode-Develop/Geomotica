@@ -25,8 +25,6 @@ function Login() {
 
       if (response.data) {
         login();
-        console.log("USUARIO ===============");
-        console.log(response.data.user);
         setUserData(response.data.user);
         navigate("/dashboard");
       } else {
