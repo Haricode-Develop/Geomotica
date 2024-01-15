@@ -21,8 +21,6 @@ export const PasswordRecuperation = () => {
 
       if (response.data) {
 
-        console.log("USUARIO ===============");
-        console.log(response.data);
         navigate("/passwordRecuperationConfirmation");
       } else {
         setErrorRecovery(

@@ -11,7 +11,6 @@ function RegisterConfirmation() {
   const [isSending, setIsSending] = useState(false);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
   const buttonRef = useRef(null);
-  console.log(recipient);
 
   const handleResetPassword = async () => {
     if (isSending) return;
@@ -31,7 +30,6 @@ function RegisterConfirmation() {
         }
       );
       buttonRef.current.style.cursor = "none";
-console.log( "Este es el response" + response.status + "Llega aca");
       if (response.status === 200 || response.status === 201 || response.status === 202) {
         buttonRef.current.setAttribute("disabled", true);
         buttonRef.current.style.pointerEvents = "none";
@@ -39,7 +37,6 @@ console.log( "Este es el response" + response.status + "Llega aca");
         buttonRef.current.style.cursor = "none";
         buttonRef.current.innerHTML =
           "Ya puedes ingresar a tu cuenta";
-        console.log("Cuenta confirmada exitosamente");
       } else {
         console.error("Error al confirmar la cuenta");
       }
