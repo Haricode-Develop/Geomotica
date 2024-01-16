@@ -17,7 +17,7 @@ const MapComponent = () => {
     const [filteredPoints, setFilteredPoints] = useState([]); // Estado para almacenar los puntos filtrados
     const [mapCenter, setMapCenter] = useState([0, 0]);
     const [filterAutoPilot, setFilterAutoPilot] = useState(false);
-
+    const [filterAutoTracket, setFilterAutoTracket] = useState(false);
 
     // Filtros de velocidad
     const [lowSpeed, setLowSpeed] = useState(-1);
@@ -63,18 +63,13 @@ const MapComponent = () => {
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
     useEffect(() => {
-        console.log("INICIA AL DATA WORKER =====");
         workerRef.current = new Worker('dataWorker.js');
 
         workerRef.current.onmessage = (e) => {
-            console.log("Mensaje recibido desde el worker");
             if (e.data.action === 'geoJsonDataProcessed') {
-                console.log("Entre a los datos del geoJson");
                 if (e.data.data && e.data.data.length > 0) {
-                    console.log("Si obtiene datos del geoJson");
                     setPoints(e.data.data);
                     setFilteredPoints(e.data.data); // Inicializamos los puntos filtrados
-                    console.log("ESTOS SON LOS PUNTOS Y PUNTOS FILTRADOS", points, filteredPoints);
                     const polygon = L.polygon(e.data.data.map(point => {
                         const [longitude, latitude] = point.geometry.coordinates;
                         return [longitude, latitude];
@@ -90,7 +85,6 @@ const MapComponent = () => {
         socket.on('updateGeoJSONLayer', (geojsonData) => {
 
             if (geojsonData) {
-                console.log("GEOJSONDATA", geojsonData);
                 workerRef.current.postMessage({ action: 'processGeoJsonData', geojsonData });
             }
         });
@@ -106,6 +100,12 @@ const MapComponent = () => {
         setZoom(7);
         setMapKey(Date.now());
     };
+    const toggleFilterAutoTracket = () => {
+        setFilterAutoTracket(current => !current);
+        setZoom(7);
+        setMapKey(Date.now());
+    };
+
     const toggleFilterSpeed = () => {
         if(lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1){
             setFilterSpeed(current => !current);
@@ -134,7 +134,7 @@ const MapComponent = () => {
 
     const toggleFilterRpm = () => {
         if (lowRpm !== -1 && medRpm !== -1 && highRpm !== -1) {
-            setFilterFuel(current => !current);
+            setFilterRpm(current => !current);
             setZoom(7);
             setMapKey(Date.now());
         }
@@ -227,6 +227,14 @@ const MapComponent = () => {
     }, [filterAutoPilot, points]);
 
 
+    useEffect(() => {
+        if (filterAutoTracket) {
+            setFilteredPoints(points);
+        } else {
+            setFilteredPoints(points);
+        }
+    }, [filterAutoTracket, points]);
+
     const PaperComponent = (props) => {
         return (
             <Draggable handle="#draggable-dialog-title" cancel={'[class*="MuiDialogContent-root"]'}>
@@ -244,14 +252,19 @@ const MapComponent = () => {
             gpsQuality: [lowGpsQuality, medGpsQuality],
             fuel: [lowFuel, medFuel],
             rpm: [lowRpm, medRpm],
-            cutterBase: [lowCutterBase, medCutterBase]
-        };
+            cutterBase: [lowCutterBase, medCutterBase],
 
-        if(filter === "autoPilot"){
+        };
+        if(filter === "autoTracket"){
+
+            return val === '0' ? "blue" : "red";
+        }
+        if(filter === "autoPilot" ){
             return val === 1 ? "red" : "blue";
         }
 
         if (ranges[filter]) {
+
             return getColorFromRange(val, ranges[filter]);
         }
 
@@ -301,6 +314,8 @@ const MapComponent = () => {
                         let fillColor;
                         if(filterAutoPilot){
                             fillColor = chooseColor(point.properties.piloto_automatico, "autoPilot");
+                        }else if(filterAutoTracket){
+                            fillColor = chooseColor(point.properties.auto_tracket, "autoTracket");
                         }else if(filterSpeed){
                             fillColor = chooseColor(point.properties.velocidad, "speed");
                         }else if(filterGpsQuality){
@@ -310,7 +325,7 @@ const MapComponent = () => {
                         }else if (filterRpm) {
                             fillColor = chooseColor(point.properties.rpm, "rpm");
                         }else if (filterCutterBase) {
-                            fillColor = chooseColor(point.properties.cortador_base, "cutterBase");
+                            fillColor = chooseColor(point.properties.presion_cortador, "cutterBase");
                         }else{
                             fillColor = "blue";
                         }
@@ -353,6 +368,12 @@ const MapComponent = () => {
                             control={<Switch checked={filterAutoPilot} onChange={toggleFilter} />}
                             label="Piloto Automático"
                         />
+
+                        <FormControlLabel
+                            control={<Switch checked={filterAutoTracket} onChange={toggleFilterAutoTracket} />}
+                            label="AutoTracket"
+                        />
+
 
                         <FormControlLabel
                             control={<Switch checked={filterSpeed} onChange={toggleFilterSpeed} />}
