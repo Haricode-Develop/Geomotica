@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, CircleMarker, LayersControl } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, LayersControl, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import io from 'socket.io-client';
@@ -7,12 +7,17 @@ import { FaFilter } from 'react-icons/fa';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField } from '@mui/material';
 import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
+import * as turf from '@turf/turf';
+
 import Slider from '@mui/material/Slider';
 import Draggable from 'react-draggable';
 
 const { BaseLayer } = LayersControl;
 
 const MapComponent = () => {
+    const [polygonGeoJSON, setPolygonGeoJSON] = useState(null); // Estado para almacenar el GeoJSON del polígono
+    const [hullPolygon, setHullPolygon] = useState(null); // Estado para almacenar el polígono convex hull
+
     const [points, setPoints] = useState([]);
     const [filteredPoints, setFilteredPoints] = useState([]); // Estado para almacenar los puntos filtrados
     const [mapCenter, setMapCenter] = useState([0, 0]);
@@ -62,21 +67,25 @@ const MapComponent = () => {
     const workerRef = useRef(null);
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
+
+    const [polygon, setPolygon] = useState([]);
     useEffect(() => {
         workerRef.current = new Worker('dataWorker.js');
 
         workerRef.current.onmessage = (e) => {
             if (e.data.action === 'geoJsonDataProcessed') {
-                if (e.data.data && e.data.data.length > 0) {
-                    setPoints(e.data.data);
-                    setFilteredPoints(e.data.data); // Inicializamos los puntos filtrados
-                    const polygon = L.polygon(e.data.data.map(point => {
-                        const [longitude, latitude] = point.geometry.coordinates;
-                        return [longitude, latitude];
-                    }));
-
-                    const center = polygon.getBounds().getCenter();
-                    setMapCenter([center.lat, center.lng]);
+                const { points: newPoints, polygon: newPolygon } = e.data.data;
+                setPoints(newPoints);  // Actualiza el estado de los puntos
+                setPolygon(newPolygon); // Actualiza el estado del polígono
+                console.log("ESTOY AFUERA DEL IF DEL POLIGONO:");
+                if (newPolygon.length > 0) {
+                    console.log("ENTRE AL IF DEL POLIGONO:");
+                    const polygonLatLngs = newPolygon.map(([lng, lat]) => [lat,lng]);
+                    console.log("ESTAS SON LAS COORDENADAS DEL POLIGONO: ", polygonLatLngs);
+                    const polygonBounds = L.latLngBounds(polygonLatLngs);
+                    console.log("ESTOS SON LOS LIMITES DEL POLIGONO: ", polygonBounds);
+                    setMapCenter(polygonBounds.getCenter());
+                    setZoom(7);
                 }
             }
         };
@@ -235,6 +244,19 @@ const MapComponent = () => {
         }
     }, [filterAutoTracket, points]);
 
+
+    useEffect(() => {
+        if (filteredPoints.length > 0) {
+            const pointsForHull = turf.points(filteredPoints.map(point => point.geometry.coordinates));
+            const hull = turf.convex(pointsForHull);
+            if (hull) {
+                setHullPolygon(hull.geometry.coordinates[0].map(coord => [coord[1], coord[0]]));
+            }
+        }
+    }, [filteredPoints]);
+
+
+
     const PaperComponent = (props) => {
         return (
             <Draggable handle="#draggable-dialog-title" cancel={'[class*="MuiDialogContent-root"]'}>
@@ -343,7 +365,14 @@ const MapComponent = () => {
                             />
                         );
                     })}
+
+                    {hullPolygon && (
+                        <Polygon positions={hullPolygon} color="purple" />
+                    )}
                 </LayersControl>
+                {polygon.length > 0 && (
+                    <Polygon positions={polygon} color="purple" />
+                )}
             </MapContainer>
             <Dialog
                 open={isFilterDialogOpen}
