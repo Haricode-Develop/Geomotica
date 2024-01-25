@@ -4,57 +4,73 @@ import "./Login.css";
 import logo from "../../assets/logo.png";
 import axios from "axios";
 import { API_BASE_URL } from "../../utils/config";
-import { useAuth } from "../../context/AuthContext";
-import { useAuthLogin } from "../../context/AuthProvider";
-import 'bootstrap/dist/css/bootstrap.min.css';
-
+import { useAuth } from "../../context/AuthContext.js";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, setUserData } = useAuth() || {};
-  
-  const authLogin = useAuthLogin();
-
-  if (authLogin.isAuthenticated2) {
-    return navigate("/dashboard");
-  }
+  const { login, setUserData } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log("Llega aca");
       const response = await axios.post(`${API_BASE_URL}auth/login`, {
         email: email,
         password: password,
       });
-
       if (response.data) {
-        login();
         setUserData(response.data.user);
+        const user = response.data.user;
+        sessionStorage.setItem("Token", response.data.token);
+        sessionStorage.setItem("userData", JSON.stringify(user));
+        login(response.data.user);
         navigate("/dashboard");
       } else {
         setError(
           response.data.message ||
-          "Error en el inicio de sesión. Por favor, intenta de nuevo."
+            "Error en el inicio de sesión. Por favor, intenta de nuevo."
         );
       }
     } catch (err) {
       setError(
         err.response?.data?.message ||
-        "Error en el inicio de sesión. Por favor, intenta de nuevo."
+          "Error en el inicio de sesión. Por favor, intenta de nuevo. 2"
       );
+      console.log(err);
     }
   };
+  // const handleSubmit = async () => {
+  //   try {
+  //     const response = await axios.post(`${API_BASE_URL}auth/login`, {
+  //       email: email,
+  //       password: password,
+  //     });
+
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       const token = data.token;
+  //       console.log("Token: ", token);
+  //       // Almacenar el token de manera segura (localStorage, sessionStorage, etc.)
+  //       localStorage.setItem("token", token);
+
+  //       // Realizar acciones adicionales, como redirigir a otra página
+  //     } else {
+  //       // Manejar errores de autenticación
+  //     }
+  //   } catch (error) {
+  //     console.error("Error en el proceso de inicio de sesión:", error);
+  //   }
+  // };
 
   const handleRegisterClick = () => {
     navigate("/registrar");
   };
   const handleForgotPasswordClick = () => {
     navigate("/passwordRecuperation");
-  }
+  };
 
   return (
     <div className="login-background">
@@ -70,18 +86,22 @@ function Login() {
           {error && <p className="error-message">{error}</p>}
           <form onSubmit={handleSubmit}>
             <div className="mb-3 text-center">
-            <label htmlFor="emailInput" className="form-label">Introduce tu Correo Electronico:</label>
+              <label for="emailInput" class="form-label">
+                Introduce tu Correo Electronico:
+              </label>
               <input
                 type="email"
                 id="emailInput"
                 placeholder="persona@correo.com"
-                className="input form-control" 
+                className="input form-control"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="mb-3 text-center">
-            <label htmlFor="passwordInput" className="form-label">Introduce tu Contraseña:</label>
+              <label for="passwordInput" class="form-label">
+                Introduce tu Contraseña:
+              </label>
               <input
                 type="password"
                 id="passwordInput"

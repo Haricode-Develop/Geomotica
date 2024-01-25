@@ -1,14 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import {RouterProvider } from 'react-router';
+import { RouterProvider } from 'react-router-dom';
 import MainRoutes from './MainRoutes';
-import { AuthProviderLogin } from './context/AuthProvider';
+import { AuthProvider } from './context/AuthContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-    <AuthProviderLogin>
-        <RouterProvider router = {MainRoutes}/>
-    </AuthProviderLogin>
+  <AuthProvider> 
+    <RouterProvider router={MainRoutes} />
+  </AuthProvider>
 );
-
