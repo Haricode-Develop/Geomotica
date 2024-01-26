@@ -6,6 +6,7 @@ import axios from "axios";
 import { API_BASE_URL } from "../../utils/config";
 import { useAuth } from "../../context/AuthContext.js";
 import "bootstrap/dist/css/bootstrap.min.css";
+import bcrypt from "bcryptjs";
 
 function Login() {
   const navigate = useNavigate();
@@ -42,28 +43,13 @@ function Login() {
       console.log(err);
     }
   };
-  // const handleSubmit = async () => {
-  //   try {
-  //     const response = await axios.post(`${API_BASE_URL}auth/login`, {
-  //       email: email,
-  //       password: password,
-  //     });
-
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       const token = data.token;
-  //       console.log("Token: ", token);
-  //       // Almacenar el token de manera segura (localStorage, sessionStorage, etc.)
-  //       localStorage.setItem("token", token);
-
-  //       // Realizar acciones adicionales, como redirigir a otra página
-  //     } else {
-  //       // Manejar errores de autenticación
-  //     }
-  //   } catch (error) {
-  //     console.error("Error en el proceso de inicio de sesión:", error);
-  //   }
-  // };
+  
+  const handleTestBycript = async () =>{
+    const hashedPassword = await bcrypt.hash("temporalPassword", 10);
+    const hashedPassword2 = await bcrypt.hash("temporalPassword", 10);
+    const response = await bcrypt.compare("temporalPassword", hashedPassword);
+    console.log(response);
+  }
 
   const handleRegisterClick = () => {
     navigate("/registrar");
@@ -138,6 +124,15 @@ function Login() {
             onClick={handleForgotPasswordClick}
           >
             ¿Has olvidado tu contraseña?
+          </a>
+          
+          <a
+            href="#"
+            className="forgot-password"
+            style={{ textDecoration: "none" }}
+            onClick={handleTestBycript}
+          >
+            Probar bycrypt
           </a>
         </div>
       </div>
