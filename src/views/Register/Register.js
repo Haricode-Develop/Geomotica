@@ -31,7 +31,7 @@ function Registro() {
         }
 
         try {
-            const response = await axios.post(`${API_BASE_URL}/auth/register`, {
+            const response = await axios.post(`${API_BASE_URL}auth/register`, {
                 nombre: nombre,
                 apellido: apellido,
                 email: email,
