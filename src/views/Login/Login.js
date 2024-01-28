@@ -46,7 +46,7 @@ function Login() {
   
   const handleTestBycript = async () =>{
     const hashedPassword = await bcrypt.hash("temporalPassword", 10);
-    const hashedPassword2 = await bcrypt.hash("temporalPassword", 10);
+    //const hashedPassword2 = await bcrypt.hash("temporalPassword", 10);
     const response = await bcrypt.compare("temporalPassword", hashedPassword);
     console.log(response);
   }
