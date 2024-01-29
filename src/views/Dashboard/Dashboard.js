@@ -111,7 +111,6 @@ function Dashboard() {
     const [promedioVelocidadHerbicidas, setPromedioVelocidadHerbicidas] = useState(null);
 
     const [selectedAnalysisType, setSelectedAnalysisType] = useState('');
-    const menuItems = ['Dashboard', 'Administrador', 'Configuración', 'Ayuda'];
     const [datosCargadosAps, setDatosCargadosAps] = useState(false);
     const [datosCargadosCosechaMecanica, setDatosCargadosCosechaMecanica] = useState(false);
 
@@ -150,7 +149,6 @@ function Dashboard() {
     }
 
     const ultimoAnalisis = async() => {
-        console.log("ESTOS SON LOS LOGS: " , selectedAnalysisTypeRef.current, selectedAnalysisTypeRef.current);
         if(selectedAnalysisTypeRef.current !== null || selectedAnalysisTypeRef.current !== ''){
 
             return await axios.get(`${API_BASE_URL}dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`);
@@ -182,7 +180,6 @@ function Dashboard() {
             setShowProgressBar(progressNumber < 100);
 
             if (progressNumber === 80) {
-                console.log("ENTRE AL 80: ");
                 newSocket.emit('progressUpdate', { progress: 100, message: "Finalizado"});
                 setShowProgressBar(false);
             }
@@ -209,11 +206,9 @@ function Dashboard() {
     }, [setDatosMapeo, setSelectedFile]);
 
     useEffect(() => {
-        console.log("VOY A ENTRAR AL SOCKET DE INSERCION: ");
+
         if (socket) {
-            console.log("YA ENTRE AL SOCKET DE INSERCION:");
             socket.on('sendMap', setHtmlContent);
-            console.log("ESTE ES EL SOCKET DE INSERCION: ");
             socket.on('datosInsertados', async () => {
 
 
@@ -222,7 +217,6 @@ function Dashboard() {
                         await cargaDatosAps();
                         break;
                     case 'COSECHA_MECANICA':
-                        console.log("ENTRE AL CASE DE MECANICA: ");
                         await cargaDatosCosechaMecanica();
                         break;
                     case 'FERTILIZACION':
@@ -253,7 +247,6 @@ function Dashboard() {
                 socket.off('datosInsertados');
             };
         }else{
-            console.log("NO ENTRE AL SOCKET: ");
         }
     }, [socket]);
 
@@ -329,6 +322,7 @@ function Dashboard() {
         formData.append('csv', archivo);
         formData.append('idTipoAnalisis', idAnalisis.data.idAnalisis);
         archivo = null;
+        try {
         const response = await axios.post(`${API_BASE_URL}dashboard/procesarCsv/`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
@@ -340,7 +334,8 @@ function Dashboard() {
         formData = null;
         const data = response.data;
 
-        // Genera un nuevo Blob y File para setSelectedFile
+
+            // Genera un nuevo Blob y File para setSelectedFile
 
         const csvBlob = new Blob([Papa.unparse(data)], { type: 'text/csv' });
 
@@ -348,6 +343,22 @@ function Dashboard() {
 
         setSelectedFile(csvFile);
         setDatosMapeo(data.data);
+        }catch (error) {
+            console.error('Se produjo un error al intentar subir el archivo:', error);
+            if (error.response) {
+                console.error('Respuesta del servidor:', error.response);
+                console.error('Headers:', error.response.headers);
+                console.error('Status:', error.response.status);
+                alert(`Error en fila ${error.response.data.fila}: ${error.response.data.error}`);
+            } else if (error.request) {
+                console.error('Error de solicitud:', error.request);
+                alert('Se produjo un error al enviar el archivo. No se recibió respuesta del servidor.');
+            } else {
+                console.error('Error de configuración:', error.message);
+                alert('Se produjo un error al procesar el archivo.');
+            }
+            console.error('Configuración de la solicitud:', error.config);
+        }
     }
     useEffect(() => {
         if (idAnalisisHerbicidas) {
@@ -453,7 +464,6 @@ function Dashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                console.log("INICIA EL PROCESO DE COSECHA");
                 await Promise.all([
                     obtenerNombreResponsableCm(),
                     obtenerFechaInicioCosechaCm(),
@@ -463,16 +473,10 @@ function Dashboard() {
                     obtenerNombreOperadorCm(),
                     obtenerNombreMaquinaCm(),
                     obtenerActividadCm(),
-                    obtenerAreaNetaCm(),
-                    obtenerAreaBrutaCm(),
-                    obtenerDiferenciaDeAreaCm(),
                     obtenerHoraInicioCm(),
                     obtenerHoraFinalCm(),
                     obtenerTiempoTotalActividadCm(),
-                    obtenerEficienciaCm(),
                     obtenerPromedioVelocidadCm(),
-                    obtenerPorcentajeAreaPilotoCm(),
-                    obtenerPorcentajeAreaAutoTrackerCm()
                 ]);
                 setDatosCargadosCosechaMecanica(true);
             } catch (error) {
@@ -481,18 +485,14 @@ function Dashboard() {
         };
         // Llamamos a fetchData solo si idAnalisisCosechaMecanica está disponible
         if (idAnalisisCosechaMecanica) {
-            console.log("Llama al método de fetch de Cosecha Mecanica  ");
             fetchData();
         }
     }, [idAnalisisCosechaMecanica]);
 
     const cargaDatosCosechaMecanica = async () =>{
-        console.log("ESTOS SON LOS LOGS DE COSECHA: " , selectedAnalysisTypeRef.current, userData.ID_USUARIO);
         if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
-            console.log("ENTRE AL IF: ");
             try {
                 const response = await ultimoAnalisis();
-                console.log("RESPUESTA:", response);
 
                 if (response && response.data && response.data.ID_ANALISIS) {
                     setIdAnalisisCosechaMecanica(response.data.ID_ANALISIS);
@@ -793,32 +793,7 @@ function Dashboard() {
         }
     };
 
-    const obtenerAreaNetaCm = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}dashboard/areaNetaCm/${idAnalisisCosechaMecanica}`);
-            setAreaNetaCm(response.data[0]);
-        } catch (error) {
-            console.error("Error en obtenerAreaNetaCm:", error);
-        }
-    };
 
-    const obtenerAreaBrutaCm = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}dashboard/areaBrutaCm/${idAnalisisCosechaMecanica}`);
-            setAreaBrutaCm(response.data[0]);
-        } catch (error) {
-            console.error("Error en obtenerAreaBrutaCm:", error);
-        }
-    };
-
-    const obtenerDiferenciaDeAreaCm = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}dashboard/diferenciaDeAreaCm/${idAnalisisCosechaMecanica}`);
-            setDiferenciaDeAreaCm(response.data[0]);
-        } catch (error) {
-            console.error("Error en obtenerDiferenciaDeAreaCm:", error);
-        }
-    };
 
     const obtenerHoraInicioCm = async () => {
         try {
@@ -847,14 +822,7 @@ function Dashboard() {
         }
     };
 
-    const obtenerEficienciaCm = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}dashboard/eficienciaCm/${idAnalisisCosechaMecanica}`);
-            setEficienciaCm(response.data[0]);
-        } catch (error) {
-            console.error("Error en obtenerEficienciaCm:", error);
-        }
-    };
+
 
     const obtenerPromedioVelocidadCm = async () => {
         try {
@@ -862,24 +830,6 @@ function Dashboard() {
             setPromedioVelocidadCm(response.data[0]);
         } catch (error) {
             console.error("Error en obtenerPromedioVelocidadCm:", error);
-        }
-    };
-
-    const obtenerPorcentajeAreaPilotoCm = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}dashboard/porcentajeAreaPilotoCm/${idAnalisisCosechaMecanica}`);
-            setPorcentajeAreaPilotoCm(response.data[0]);
-        } catch (error) {
-            console.error("Error en obtenerPorcentajeAreaPilotoCm:", error);
-        }
-    };
-
-    const obtenerPorcentajeAreaAutoTrackerCm = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}dashboard/porcentajeAreaAutoTrackerCm/${idAnalisisCosechaMecanica}`);
-            setPorcentajeAreaAutoTrackerCm(response.data[0]);
-        } catch (error) {
-            console.error("Error en obtenerPorcentajeAreaAutoTrackerCm:", error);
         }
     };
 
@@ -1220,7 +1170,6 @@ function Dashboard() {
         formData.append('polygon', selectedZipFile);
        const processBatch = async (offset) =>{
            try{
-               console.log("ESTA ES LA RESPUESTA DE BASH: ");
                const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}`, formData, {
                    headers: {
                        'Content-Type': 'multipart/form-data',
@@ -1243,10 +1192,26 @@ function Dashboard() {
                }
            }
        }
-       console.log("Se llama al método de bash");
         processBatch(0);
     };
 
+    const handleAreaCalculation = (polygonArea, outsidePolygonArea, areaDifference, pilotAutoPercentage, autoTracketPercentage) => {
+
+        setAreaNetaCm(outsidePolygonArea.toFixed(2));
+        setAreaBrutaCm(polygonArea.toFixed(2));
+        setDiferenciaDeAreaCm(areaDifference.toFixed(2));
+
+    };
+
+    const handlePercentageCalculation = (autoTracket, autoPilot, totalEfficiency) => {
+        console.log("PORCENTAJE EN DASHBOARD DE PILOTO AUTOMATICO");
+        console.log(autoPilot);
+        console.log("PORCENTAJE EN DASHBOARD DE AUTO TRACKER");
+        console.log(autoTracket);
+        setPorcentajeAreaPilotoCm(`${autoPilot.toFixed(2)}%`);
+        setPorcentajeAreaAutoTrackerCm(`${autoTracket.toFixed(2)}%`);
+        setEficienciaCm(totalEfficiency);
+    }
     return (
         <div className="dashboard">
             <ProgressBar progress={progress} message={progressMessage} show={showProgressBar} />
@@ -1254,7 +1219,6 @@ function Dashboard() {
                 profileImage={profilePicture}
                 name={userData.NOMBRE}
                 apellido={userData.APELLIDO}
-                menuItems={menuItems}
                 isOpen={sidebarOpen}//
                 setIsOpen={setSidebarOpen}
             />
@@ -1262,7 +1226,7 @@ function Dashboard() {
                 <div>
                     <h1 className="dashboard-title">Resumen de Análisis</h1>
                     <section className="map-section">
-                        {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} />}
+                        {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} onAreaCalculated={handleAreaCalculation} percentageAutoPilot={handlePercentageCalculation}/>}
 
                     </section>
                 </div>

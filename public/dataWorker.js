@@ -1,6 +1,5 @@
-// Este script se ejecuta en un contexto de Web Worker
-
 self.onmessage = function(e) {
+    console.log('Mensaje recibido en el Worker:', e.data);
     const { action, geojsonData } = e.data;
 
     switch (action) {
@@ -15,13 +14,49 @@ self.onmessage = function(e) {
     }
 };
 
+function extractCoordinates(feature) {
+    let coordinates = feature.geometry.coordinates;
+
+    if (coordinates.length && coordinates[0].length && typeof coordinates[0][0][0] !== 'number') {
+        coordinates = coordinates[0];
+    }
+
+    return coordinates.map(ring =>
+        ring.map(coord => {
+            if (coord.length >= 2) {
+                return [coord[1], coord[0]];
+            } else {
+                return null;
+            }
+        }).filter(coord => coord != null)
+    );
+}
+
 function processGeoJsonData(geojsonData) {
-    // Filtra las features que no tienen una geometría definida
-    const validFeatures = geojsonData.features.filter(feature => feature.geometry && feature.geometry.coordinates);
+    const validFeatures = geojsonData.features.filter(feature => {
+        const hasCoordinates = feature.geometry && feature.geometry.coordinates;
+        if (!hasCoordinates) console.log('Feature sin coordenadas:', feature);
+        return hasCoordinates;
+    });
 
-    // Busca y extrae el polígono si está presente
-    const polygonFeature = geojsonData.features.find(feature => feature.geometry.type === 'Polygon');
-    const polygonCoordinates = polygonFeature ? polygonFeature.geometry.coordinates : [];
+    const polygonFeatures = geojsonData.features.filter(feature => feature.geometry.type === 'Polygon');
 
-    return { points: validFeatures, polygon: polygonCoordinates.flat() };
+    let polygonCoordinates = [];
+    let outsidePolygonCoordinates = [];
+
+    if (polygonFeatures.length > 0) {
+        // Asigna el primer polígono a polygonCoordinates
+        polygonCoordinates = extractCoordinates(polygonFeatures[0]);
+
+        // Si hay un segundo polígono, asignarlo a outsidePolygonCoordinates
+        if (polygonFeatures.length > 1) {
+            outsidePolygonCoordinates = extractCoordinates(polygonFeatures[1]);
+        }
+    }
+
+    return {
+        points: validFeatures,
+        polygon: polygonCoordinates,
+        outsidePolygon: outsidePolygonCoordinates
+    };
 }
