@@ -1204,13 +1204,10 @@ function Dashboard() {
     };
 
     const handlePercentageCalculation = (autoTracket, autoPilot, totalEfficiency) => {
-        console.log("PORCENTAJE EN DASHBOARD DE PILOTO AUTOMATICO");
-        console.log(autoPilot);
-        console.log("PORCENTAJE EN DASHBOARD DE AUTO TRACKER");
-        console.log(autoTracket);
+
         setPorcentajeAreaPilotoCm(`${autoPilot.toFixed(2)}%`);
         setPorcentajeAreaAutoTrackerCm(`${autoTracket.toFixed(2)}%`);
-        setEficienciaCm(totalEfficiency);
+        setEficienciaCm(`${totalEfficiency.toFixed(2)} Hora/Ha`);
     }
     return (
         <div className="dashboard">

@@ -75,6 +75,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
     const [outsidePolygon, setOutsidePolygon] = useState([]);
 
+    const [isAreaDataCalculated, setIsAreaDataCalculated] = useState(false);
 
     const [areaData, setAreaData] = useState({
         polygonArea: null,
@@ -84,7 +85,8 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
     const [percentage, setPercentage] = useState({
         autoTracket: null,
-        autoPilot: null
+        autoPilot: null,
+        totalEfficiency: null
     });
 
 
@@ -134,6 +136,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                 outsidePolygonArea,
                 areaDifference
             });
+            setIsAreaDataCalculated(true);
 
             if (onAreaCalculated) {
                 onAreaCalculated(polygonArea, outsidePolygonArea, areaDifference);
@@ -206,8 +209,29 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
         });
     };
 
+    const convertTimeToDecimalHours = (time) => {
+        const parts = time.split(' ');
+        let days = 0;
+        let timePart = time;
+
+        // Verificar si hay 'days' en la cadena de tiempo
+        if (parts.length === 3 && parts[1] === 'days') {
+            days = parseInt(parts[0], 10); // Convertir días a número
+            timePart = parts[2]; // Parte de tiempo sin días
+        }
+
+        // Separar horas, minutos y segundos
+        const timeParts = timePart.split(':');
+        const hours = parseInt(timeParts[0], 10);
+        const minutes = timeParts[1] ? parseInt(timeParts[1], 10) / 60 : 0;
+        const seconds = timeParts[2] ? parseInt(timeParts[2], 10) / 3600 : 0;
+
+        // Sumar los días convertidos a horas, más las horas, minutos y segundos
+        return days * 24 + hours + minutes + seconds;
+    };
 
     useEffect(() => {
+        if (!isAreaDataCalculated) return;
         const pointsData = points;
         const totalPoints = pointsData.length;
 
@@ -220,21 +244,29 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
             point.properties.AUTO_TRACKET &&
             point.properties.AUTO_TRACKET.trim().toLowerCase() === 'engaged'
         ).length;
+        const puntoEncontrado = pointsData.find(point => point.properties.TIEMPO_TOTAL && point.properties.TIEMPO_TOTAL !== "");
+        let tiempoTotal = "00:00:00";
+        if (puntoEncontrado) {
+            tiempoTotal = puntoEncontrado.properties.TIEMPO_TOTAL;
+        }
+
+        let totalEfficiency = convertTimeToDecimalHours(tiempoTotal) / areaData.outsidePolygonArea;
 
         const calculatedPilotAutoPercentage = totalPoints > 0 ? (pilotAutoPoints / totalPoints) * 100 : 0;
         const calculatedAutoTracketPercentage = totalPoints > 0 ? (autoTracketPoints / totalPoints) * 100 : 0;
 
         setPercentage({
             calculatedAutoTracketPercentage,
-            calculatedPilotAutoPercentage
+            calculatedPilotAutoPercentage,
+            totalEfficiency
 
         });
 
         if (percentageAutoPilot) {
-            percentageAutoPilot(calculatedAutoTracketPercentage, calculatedPilotAutoPercentage);
+            percentageAutoPilot(calculatedAutoTracketPercentage, calculatedPilotAutoPercentage, totalEfficiency);
         }
 
-    }, [points]);
+    }, [points, isAreaDataCalculated]);
 
 
     const toggleFilter = () => {
