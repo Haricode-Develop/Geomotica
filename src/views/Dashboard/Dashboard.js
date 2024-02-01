@@ -48,8 +48,9 @@ function Dashboard() {
     sessionStorage.getItem("Token") === null ||
     sessionStorage.getItem("Token") === "" ||
     sessionStorage.getItem("Token") === undefined ||
-    sessionStorage.getItem("userData") === null
-
+    sessionStorage.getItem("userData") === null ||
+    sessionStorage.getItem("userData") === "" ||
+    sessionStorage.getItem("userData") === undefined
   ) {
     window.location.href = "/login";
   }
