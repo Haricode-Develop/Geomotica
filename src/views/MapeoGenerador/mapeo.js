@@ -8,7 +8,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, F
 import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
 import * as turf from '@turf/turf';
-
+import BarIndicator from "../../components/BarIndicator/BarIndicator";
 import Slider from '@mui/material/Slider';
 import Draggable from 'react-draggable';
 
@@ -455,7 +455,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
         if(filter === "autoTracket"){
             if(val !== '0' && val !== '1'){
 
-                return val.toLowerCase().trim() === 'engaged' ? "blue" : "red";
+                return val.toLowerCase().trim() === 'engaged' ? "green" : "red";
             }else{
                 return val === '0' ? "blue" : "red";
 
@@ -463,7 +463,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
         }
         if(filter === "autoPilot" ){
             if(val !== '0' && val !== '1'){
-                return val.toLowerCase().trim() === 'automatic' ? "red" : "blue";
+                return val.toLowerCase().trim() === 'automatic' ? "red" : "green";
 
             }else{
                 return val === '1' ? "red" : "blue";
@@ -481,9 +481,9 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
     function getColorFromRange(val, [low, med]) {
         if (val <= low) {
-            return "blue";
-        } else if (val <= med) {
             return "green";
+        } else if (val <= med) {
+            return "yellow";
         } else {
             return "red";
         }
@@ -495,6 +495,27 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
     return (
         <>
+            {filterSpeed && (
+                <BarIndicator filterType="speed" low={lowSpeed} medium={medSpeed} high={highSpeed} />
+            )}
+            {filterGpsQuality && (
+                <BarIndicator filterType="gpsQuality" low={lowGpsQuality} medium={medGpsQuality} high={highGpsQuality} />
+            )}
+            {filterFuel && (
+                <BarIndicator filterType="fuel" low={lowFuel} medium={medFuel} high={highFuel} />
+            )}
+            {filterRpm && (
+                <BarIndicator filterType="rpm" low={lowRpm} medium={medRpm} high={highRpm} />
+            )}
+            {filterCutterBase && (
+                <BarIndicator filterType="cutterBase" low={lowCutterBase} medium={medCutterBase} high={highCutterBase} />
+            )}
+            {filterAutoPilot && (
+                <BarIndicator filterType="autoPilot" low={0} medium={0.5} high={1} />
+            )}
+            {filterAutoTracket && (
+                <BarIndicator filterType="autoTracket" low={0} medium={0.5} high={1} />
+            )}
 
             <div className="floating-filter-button">
                 <Button variant="contained" color="primary" onClick={openFilterDialog}>
