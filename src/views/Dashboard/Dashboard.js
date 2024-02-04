@@ -76,8 +76,13 @@ function Dashboard() {
     const [eficienciaCm, setEficienciaCm] = useState(null);
     const [promedioVelocidadCm, setPromedioVelocidadCm] = useState(null);
     const [porcentajeAreaPilotoCm, setPorcentajeAreaPilotoCm] = useState(null);
+    const [consumoCombustibleCm, setConsumoCombustibleCm] = useState(null);
+    const [calidadGpsCm, setCalidadGpsCm] = useState(null);
+    const [rpmCm, setRpmCm] = useState(null);
+    const [tchCm, setTchCm] = useState(null);
+    const [tah, setTahCm] = useState(null);
     const [porcentajeAreaAutoTrackerCm, setPorcentajeAreaAutoTrackerCm] = useState(null);
-
+    const [porcentajeModoCortadorBaseCm, setPorcentajeModoCortadorBaseCm] = useState(null);
     //FERTILIZACIÓN
     const [responsableFertilizacion, setResponsableFertilizacion] = useState(null);
     const [fechaInicioFertilizacion, setFechaInicioFertilizacion] = useState(null);
@@ -515,7 +520,12 @@ function Dashboard() {
                     obtenerHoraInicioCm(),
                     obtenerHoraFinalCm(),
                     obtenerTiempoTotalActividadCm(),
+                    obtenerCalidadGpsCm(),
                     obtenerPromedioVelocidadCm(),
+                    obtenerConsumoCombustibleCm(),
+                    obtenerTahCm(),
+                    obtenerRpmCm(),
+                    obtenerTchCm()
                 ]);
                 setDatosCargadosCosechaMecanica(true);
             } catch (error) {
@@ -805,6 +815,25 @@ function Dashboard() {
         }
     };
 
+    const obtenerConsumoCombustibleCm = async() =>{
+        try {
+            const response = await axios.get(`${API_BASE_URL}dashboard/consumoCombustibleCm/${idAnalisisCosechaMecanica}`);
+            console.log("ESTA ES LA RESPUESTA: ", response);
+            setConsumoCombustibleCm(response.data);
+
+        } catch(error){
+             console.error("Error en obtenerConsumo COmbusitebleCm:", error);
+        }
+    }
+
+    const obtenerCalidadGpsCm = async() =>{
+        try{
+            const response = await axios.get(`${API_BASE_URL}dashboard/calidadGpsCm/${idAnalisisCosechaMecanica}`);
+            setCalidadGpsCm(response.data);
+        }catch(error){
+            console.error("Error en obtenerConsumo COmbusitebleCm:", error);
+        }
+    }
     const obtenerNombreOperadorCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}dashboard/nombreOperadorCm/${idAnalisisCosechaMecanica}`);
@@ -832,7 +861,33 @@ function Dashboard() {
         }
     };
 
+    const obtenerRpmCm = async () =>{
+        try{
+            const response = await axios.get(`${API_BASE_URL}dashboard/rpmCm/${idAnalisisCosechaMecanica}`);
+            setRpmCm(response.data);
+        } catch(error){
+            console.error("Error en obtenerRpmCm:", error);
 
+        }
+    }
+
+    const obtenerTchCm = async() => {
+        try{
+            const response = await axios.get(`${API_BASE_URL}dashboard/tchCm/${idAnalisisCosechaMecanica}`);
+            setTchCm(response.data);
+        }  catch(error){
+            console.error("Error en obtenerRpmCm:", error);
+        }
+    }
+
+    const obtenerTahCm = async() => {
+        try{
+            const response = await axios.get(`${API_BASE_URL}dashboard/tahCm/${idAnalisisCosechaMecanica}`);
+            setTahCm(response.data);
+        }  catch(error){
+            console.error("Error en obtenerRpmCm:", error);
+        }
+    }
 
     const obtenerHoraInicioCm = async () => {
         try {
@@ -866,7 +921,7 @@ function Dashboard() {
     const obtenerPromedioVelocidadCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}dashboard/promedioVelocidadCm/${idAnalisisCosechaMecanica}`);
-            setPromedioVelocidadCm(`${response.data[0]} Km/H`);
+            setPromedioVelocidadCm(`${response.data} Km/H`);
 
         } catch (error) {
             console.error("Error en obtenerPromedioVelocidadCm:", error);
@@ -1243,11 +1298,13 @@ function Dashboard() {
 
     };
 
-    const handlePercentageCalculation = (autoTracket, autoPilot, totalEfficiency) => {
+    const handlePercentageCalculation = (autoTracket, autoPilot, modoCorteBase,  totalEfficiency) => {
 
         setPorcentajeAreaPilotoCm(`${autoPilot.toFixed(2)}%`);
         setPorcentajeAreaAutoTrackerCm(`${autoTracket.toFixed(2)}%`);
-        setEficienciaCm(`${totalEfficiency.toFixed(2)} Ha/Hora`);
+        setPorcentajeModoCortadorBaseCm(`${modoCorteBase.toFixed(2)}%`);
+        setEficienciaCm(`${totalEfficiency.toFixed(5)} Ha/Hora`);
+
     }
     return (
         <div className="dashboard">
@@ -1364,11 +1421,27 @@ function Dashboard() {
                                         <DataCard title="Tiempo total Actividad">
                                             {displayValue(tiempoTotalActividadCm)}
                                         </DataCard>
+                                        <DataCard title="Consumos de combustible">
+                                            {displayValue(consumoCombustibleCm)}
+                                        </DataCard>
+
+                                        <DataCard title="Promedio Calidad de señal Gps">
+                                            {displayValue(calidadGpsCm)}
+                                        </DataCard>
                                         <DataCard title="Eficiencia">
                                             {displayValue(eficienciaCm)}
                                         </DataCard>
                                         <DataCard title="Promedio Velocidad">
                                             {displayValue(promedioVelocidadCm)}
+                                        </DataCard>
+                                        <DataCard title="Promedio RPM">
+                                            {displayValue(rpmCm)}
+                                        </DataCard>
+                                        <DataCard title="Promedio TCH">
+                                            {displayValue(tchCm)}
+                                        </DataCard>
+                                        <DataCard title="Promedio TAH">
+                                            {displayValue(tah)}
                                         </DataCard>
                                         <DataCard title="Porcentaje Área Piloto">
                                             {displayValue(porcentajeAreaPilotoCm)}
@@ -1376,6 +1449,11 @@ function Dashboard() {
                                         <DataCard title="Porcentaje Área AutoTracker">
                                             {displayValue(porcentajeAreaAutoTrackerCm)}
                                         </DataCard>
+                                        <DataCard title="Porcentaje Modo Cortador Base">
+                                            {displayValue(porcentajeModoCortadorBaseCm)}
+                                        </DataCard>
+
+
                                     </>
                                 )
                             }

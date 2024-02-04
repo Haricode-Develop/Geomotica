@@ -14,6 +14,12 @@ const BarIndicator = ({ filterType }) => {
         case "fuel":
             title = "Combustible";
             break;
+        case "autoPilot":
+            title = "Piloto Automatico";
+            break;
+        case "autoTracket":
+            title = "Auto Tracket"
+            break;
         default:
             title = "Indicador";
     }

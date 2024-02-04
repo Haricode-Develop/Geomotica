@@ -244,27 +244,39 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
             point.properties.AUTO_TRACKET &&
             point.properties.AUTO_TRACKET.trim().toLowerCase() === 'engaged'
         ).length;
+
+        const modoCorteBase = pointsData.filter(point =>
+            point.properties.MODO_CORTE_BASE &&
+            point.properties.MODO_CORTE_BASE.trim().toLowerCase() === 'automatic'
+        ).length;
+
         const puntoEncontrado = pointsData.find(point => point.properties.TIEMPO_TOTAL && point.properties.TIEMPO_TOTAL !== "");
+
         let tiempoTotal = "00:00:00";
+
         if (puntoEncontrado) {
             tiempoTotal = puntoEncontrado.properties.TIEMPO_TOTAL;
         }
 
         let totalEfficiency = areaData.outsidePolygonArea / convertTimeToDecimalHours(tiempoTotal) ;
 
-        const calculatedPilotAutoPercentage = totalPoints > 0 ? (pilotAutoPoints / totalPoints) * 100 : 0;
-        const calculatedAutoTracketPercentage = totalPoints > 0 ? (autoTracketPoints / totalPoints) * 100 : 0;
-
+        const calculatedPilotAutoPercentaje = totalPoints > 0 ? (pilotAutoPoints / totalPoints) * 100 : 0;
+        const calculatedAutoTracketPercentaje = totalPoints > 0 ? (autoTracketPoints / totalPoints) * 100 : 0;
+        const calculatedModoCortadorBasePercentaje = totalPoints > 0 ? (modoCorteBase / totalPoints) * 100 : 0;
+        console.log("ESTE ES EL CALCULO DE PORCENTAJE DE PILOTO: " + calculatedPilotAutoPercentaje);
+        console.log("ESTE ES EL CALCULO DE PORCENTAJE DE CORTADOR BASE: " + calculatedModoCortadorBasePercentaje);
         setPercentage({
-            calculatedAutoTracketPercentage,
-            calculatedPilotAutoPercentage,
+            calculatedAutoTracketPercentaje,
+            calculatedPilotAutoPercentaje,
+            calculatedModoCortadorBasePercentaje,
             totalEfficiency
 
         });
 
         if (percentageAutoPilot) {
-            percentageAutoPilot(calculatedAutoTracketPercentage, calculatedPilotAutoPercentage, totalEfficiency);
+            percentageAutoPilot(calculatedAutoTracketPercentaje, calculatedPilotAutoPercentaje, calculatedModoCortadorBasePercentaje,totalEfficiency);
         }
+
 
     }, [points, isAreaDataCalculated]);
 
@@ -455,7 +467,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
         if(filter === "autoTracket"){
             if(val !== '0' && val !== '1'){
 
-                return val.toLowerCase().trim() === 'engaged' ? "green" : "red";
+                return val.toLowerCase().trim() === 'engaged' ? "blue" : "green";
             }else{
                 return val === '0' ? "blue" : "red";
 
@@ -463,7 +475,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
         }
         if(filter === "autoPilot" ){
             if(val !== '0' && val !== '1'){
-                return val.toLowerCase().trim() === 'automatic' ? "red" : "green";
+                return val.toLowerCase().trim() === 'automatic' ? "blue" : "green";
 
             }else{
                 return val === '1' ? "red" : "blue";
@@ -511,10 +523,10 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                 <BarIndicator filterType="cutterBase" low={lowCutterBase} medium={medCutterBase} high={highCutterBase} />
             )}
             {filterAutoPilot && (
-                <BarIndicator filterType="autoPilot" low={0} medium={0.5} high={1} />
+                <BarIndicator filterType="autoPilot" low={0} medium={0} high={1} />
             )}
             {filterAutoTracket && (
-                <BarIndicator filterType="autoTracket" low={0} medium={0.5} high={1} />
+                <BarIndicator filterType="autoTracket" low={0} medium={0} high={1} />
             )}
 
             <div className="floating-filter-button">
