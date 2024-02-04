@@ -250,7 +250,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
             tiempoTotal = puntoEncontrado.properties.TIEMPO_TOTAL;
         }
 
-        let totalEfficiency = convertTimeToDecimalHours(tiempoTotal) / areaData.outsidePolygonArea;
+        let totalEfficiency = areaData.outsidePolygonArea / convertTimeToDecimalHours(tiempoTotal) ;
 
         const calculatedPilotAutoPercentage = totalPoints > 0 ? (pilotAutoPoints / totalPoints) * 100 : 0;
         const calculatedAutoTracketPercentage = totalPoints > 0 ? (autoTracketPoints / totalPoints) * 100 : 0;

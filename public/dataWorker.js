@@ -1,11 +1,34 @@
-self.onmessage = function(e) {
+
+async function loadGeoJsonFromUrl(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        console.error("Error al cargar GeoJSON desde URL:", error);
+        return null;
+    }
+}
+
+
+
+
+self.onmessage = async function (e) {
     console.log('Mensaje recibido en el Worker:', e.data);
-    const { action, geojsonData } = e.data;
+    const {action, geojsonData} = e.data;
 
     switch (action) {
         case 'processGeoJsonData':
-            const processedData = processGeoJsonData(geojsonData);
-            self.postMessage({ action: 'geoJsonDataProcessed', data: processedData });
+            if (geojsonData) {
+                console.log("GEO JSON EN EL WORKER: ", geojsonData);
+                const loadedGeoJson = await loadGeoJsonFromUrl(geojsonData);
+                if (loadedGeoJson) {
+                    const processedData = processGeoJsonData(loadedGeoJson);
+                    self.postMessage({action: 'geoJsonDataProcessed', data: processedData});
+                }
+            }
             break;
 
         default:

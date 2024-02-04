@@ -308,27 +308,39 @@ function Dashboard() {
     }
     const generatePDF = useCallback(async () => {
         if (dashboardRef.current) {
+            dashboardRef.current.style.opacity = '0.99';
+            await new Promise(resolve => setTimeout(resolve, 1));
+            dashboardRef.current.style.opacity = '';
 
-            const canvas = await html2canvas(dashboardRef.current, {
-                scale: window.devicePixelRatio,
-                useCORS: true,
-                scrollY: -window.scrollY,
-                scrollX: 0,
-                windowHeight: dashboardRef.current.scrollHeight,
-                windowWidth: dashboardRef.current.scrollWidth
-            });
+            // Retrasar la captura para permitir la carga de fuentes e imágenes
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({
-                orientation: 'landscape',
-                unit: 'px',
-                format: [canvas.width, canvas.height]
-            });
+            try {
+                const canvas = await html2canvas(dashboardRef.current, {
+                    scale: window.devicePixelRatio,
+                    useCORS: true,
+                    scrollY: -window.scrollY,
+                    scrollX: 0,
+                    windowHeight: dashboardRef.current.scrollHeight,
+                    windowWidth: dashboardRef.current.scrollWidth
+                });
 
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save('dashboard.pdf');
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'px',
+                    format: [canvas.width, canvas.height]
+                });
+
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save('dashboard.pdf');
+            } catch (error) {
+                console.error("Error al generar el PDF: ", error);
+            }
         }
     }, []);
+
+
     async function manejarSubidaArchivo(event) {
 
         if (!event.target.files || event.target.files.length === 0) {
@@ -854,7 +866,8 @@ function Dashboard() {
     const obtenerPromedioVelocidadCm = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}dashboard/promedioVelocidadCm/${idAnalisisCosechaMecanica}`);
-            setPromedioVelocidadCm(response.data[0]);
+            setPromedioVelocidadCm(`${response.data[0]} Km/H`);
+
         } catch (error) {
             console.error("Error en obtenerPromedioVelocidadCm:", error);
         }
@@ -1224,9 +1237,9 @@ function Dashboard() {
 
     const handleAreaCalculation = (polygonArea, outsidePolygonArea, areaDifference, pilotAutoPercentage, autoTracketPercentage) => {
 
-        setAreaNetaCm(outsidePolygonArea.toFixed(2));
-        setAreaBrutaCm(polygonArea.toFixed(2));
-        setDiferenciaDeAreaCm(areaDifference.toFixed(2));
+        setAreaNetaCm(`${outsidePolygonArea.toFixed(2)} H`);
+        setAreaBrutaCm(`${polygonArea.toFixed(2)} H`);
+        setDiferenciaDeAreaCm(`${areaDifference.toFixed(2)} H`);
 
     };
 
@@ -1234,7 +1247,7 @@ function Dashboard() {
 
         setPorcentajeAreaPilotoCm(`${autoPilot.toFixed(2)}%`);
         setPorcentajeAreaAutoTrackerCm(`${autoTracket.toFixed(2)}%`);
-        setEficienciaCm(`${totalEfficiency.toFixed(2)} Hora/Ha`);
+        setEficienciaCm(`${totalEfficiency.toFixed(2)} Ha/Hora`);
     }
     return (
         <div className="dashboard">
@@ -1246,7 +1259,7 @@ function Dashboard() {
                 isOpen={sidebarOpen}//
                 setIsOpen={setSidebarOpen}
             />
-            <main  className={`main-content ${!sidebarOpen ? 'expand' : ''}`} ref={dashboardRef}>
+            <main  className={`main-content ${!sidebarOpen ? 'expand' : ''}`} >
                 <div className={`dashboard-main`}>
 
                     <div>
@@ -1256,261 +1269,262 @@ function Dashboard() {
 
                         </section>
                     </div>
+                    <div className="seccion-analisis" ref={dashboardRef}>
+                        <section className="data-section" >
+                            {
+                                datosCargadosAps && selectedAnalysisType === 'APS' && (
+                                    <>
+                                        <DataCard title="Responsable">
+                                            {displayValue(ResponsableAps)}
+                                        </DataCard>
+                                        <DataCard title="Fecha Inicio Cosecha">
+                                            {displayValue(fechaInicioCosechaAps)}
+                                        </DataCard>
+                                        <DataCard title="Fecha Fin Cosecha">
+                                            {displayValue(fechaFinCosechaAps)}
+                                        </DataCard>
+                                        <DataCard title="Nombre operador">
+                                            {displayValue(nombreOperadorAps)}
+                                        </DataCard>
+                                        <DataCard title="Equipo">
+                                            {displayValue(equipoAps)}
+                                        </DataCard>
+                                        <DataCard title="Actividad">
+                                            {displayValue(actividadAps)}
+                                        </DataCard>
+                                        <DataCard title="Area Neta">
+                                            {displayValue(areaNetaAps)}
+                                        </DataCard>
+                                        <DataCard title="Area Bruta">
+                                            {displayValue(areaBrutaAps)}
+                                        </DataCard>
+                                        <DataCard title="Diferencia Entre Areas">
+                                            {displayValue(diferenciaEntreAreasAps)}
+                                        </DataCard>
+                                        <DataCard title="Hora Inicio APS">
+                                            {displayValue(horaInicioAps)}
+                                        </DataCard>
+                                        <DataCard title="Hora Final APS">
+                                            {displayValue(horaFinalAps)}
+                                        </DataCard>
+                                        <DataCard title="Tiempo Total Actividades">
+                                            {displayValue(tiempoTotalActividadesAps)}
+                                        </DataCard>
+                                        <DataCard title="Eficiancia">
+                                            {displayValue(eficienciaAps)}
+                                        </DataCard>
+                                        <DataCard title="Promedio Velocidad">
+                                            {displayValue(promedioVelocidadAps)}
+                                        </DataCard>
+                                    </>
+                                )
+                            }
+                            {
+                                datosCargadosCosechaMecanica  && selectedAnalysisType === 'COSECHA_MECANICA' && (
+                                    <>
+                                        <DataCard title="Nombre Responsable">
+                                            {displayValue(nombreResponsableCm)}
+                                        </DataCard>
+                                        <DataCard title="Fecha Inicio Cosecha">
+                                            {displayValue(fechaInicioCosechaCm)}
+                                        </DataCard>
+                                        <DataCard title="Fecha Fin Cosecha">
+                                            {displayValue(fechaFinCosechaCm)}
+                                        </DataCard>
+                                        <DataCard title="Nombre Finca">
+                                            {displayValue(nombreFincaCm)}
+                                        </DataCard>
+                                        <DataCard title="Codigo Parcela">
+                                            {displayValue(codigoParcelaResponsableCm)}
+                                        </DataCard>
+                                        <DataCard title="Nombre Operador">
+                                            {displayValue(nombreOperadorCm)}
+                                        </DataCard>
+                                        <DataCard title="No. Maquina">
+                                            {displayValue(nombreMaquinaCm)}
+                                        </DataCard>
+                                        <DataCard title="Actividad">
+                                            {displayValue(actividadCm)}
+                                        </DataCard>
+                                        <DataCard title="Área Neta">
+                                            {displayValue(areaNetaCm)}
+                                        </DataCard>
+                                        <DataCard title="Área Bruta">
+                                            {displayValue(areaBrutaCm)}
+                                        </DataCard>
+                                        <DataCard title="Diferencia de Área">
+                                            {displayValue(diferenciaDeAreaCm)}
+                                        </DataCard>
+                                        <DataCard title="Hora Inicio">
+                                            {displayValue(horaInicioCm)}
+                                        </DataCard>
+                                        <DataCard title="Hora Fin">
+                                            {displayValue(horaFinalCm)}
+                                        </DataCard>
+                                        <DataCard title="Tiempo total Actividad">
+                                            {displayValue(tiempoTotalActividadCm)}
+                                        </DataCard>
+                                        <DataCard title="Eficiencia">
+                                            {displayValue(eficienciaCm)}
+                                        </DataCard>
+                                        <DataCard title="Promedio Velocidad">
+                                            {displayValue(promedioVelocidadCm)}
+                                        </DataCard>
+                                        <DataCard title="Porcentaje Área Piloto">
+                                            {displayValue(porcentajeAreaPilotoCm)}
+                                        </DataCard>
+                                        <DataCard title="Porcentaje Área AutoTracker">
+                                            {displayValue(porcentajeAreaAutoTrackerCm)}
+                                        </DataCard>
+                                    </>
+                                )
+                            }
+                            {
+                                datosCargadosFertilizacion && selectedAnalysisType === 'FERTILIZACION' && (
+                                    <>
+                                        <DataCard title="Responsable">
+                                            {displayValue(responsableFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Fecha Inicio Fertilización">
+                                            {displayValue(fechaInicioFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Fecha Final Fertilización">
+                                            {displayValue(fechaFinalFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Nombre Finca">
+                                            {displayValue(nombreFincaFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Operador">
+                                            {displayValue(operadorFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Equipo">
+                                            {displayValue(equipoFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Actividad">
+                                            {displayValue(actividadFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Área Neta">
+                                            {displayValue(areaNetaFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Área Bruta">
+                                            {displayValue(areaBrutaFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Diferencia Área">
+                                            {displayValue(diferenciaAreaFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Hora Inicio">
+                                            {displayValue(horaInicioFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Hora Fin">
+                                            {displayValue(horaFinalFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Tiempo Total">
+                                            {displayValue(tiempoTotalFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Eficiencia">
+                                            {displayValue(eficienciaFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Promedio Dosis Real">
+                                            {displayValue(promedioDosisRealFertilizacion)}
+                                        </DataCard>
+                                        <DataCard title="Dosis Teorica">
+                                            {displayValue(dosisTeoricaFertilizacion)}
+                                        </DataCard>
+                                    </>
+                                )
+                            }
+                            {
+                                datosCargadosHerbicidas && selectedAnalysisType === 'HERBICIDAS' && (
+                                    <>
+                                        <DataCard title="Responsable">
+                                            {displayValue(responsableHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Herbicidas">
+                                            {displayValue(fechaHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Nombre Finca">
+                                            {displayValue(nombreFincaHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Parcela">
+                                            {displayValue(parcelaHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Operador">
+                                            {displayValue(operadorHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Equipo">
+                                            {displayValue(equipoHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Actividad">
+                                            {displayValue(actividadHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Area Neta">
+                                            {displayValue(areaNetaHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Area Bruta">
+                                            {displayValue(areaBrutaHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Diferencia De Area">
+                                            {displayValue(diferenciaDeAreaHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Hora Inicio">
+                                            {displayValue(horaInicioHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Hora Final">
+                                            {displayValue(horaFinalHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Tiempo Total">
+                                            {displayValue(tiempoTotalHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Eficiencia">
+                                            {displayValue(eficienciaHerbicidas)}
+                                        </DataCard>
+                                        <DataCard title="Promedio Velocidad">
+                                            {displayValue(promedioVelocidadHerbicidas)}
+                                        </DataCard>
+                                    </>
+                                )
+                            }
+                        </section>
 
-
-                    <section className="data-section">
-                        {
-                            datosCargadosAps && selectedAnalysisType === 'APS' && (
-                                <>
-                                    <DataCard title="Responsable">
-                                        {displayValue(ResponsableAps)}
-                                    </DataCard>
-                                    <DataCard title="Fecha Inicio Cosecha">
-                                        {displayValue(fechaInicioCosechaAps)}
-                                    </DataCard>
-                                    <DataCard title="Fecha Fin Cosecha">
-                                        {displayValue(fechaFinCosechaAps)}
-                                    </DataCard>
-                                    <DataCard title="Nombre operador">
-                                        {displayValue(nombreOperadorAps)}
-                                    </DataCard>
-                                    <DataCard title="Equipo">
-                                        {displayValue(equipoAps)}
-                                    </DataCard>
-                                    <DataCard title="Actividad">
-                                        {displayValue(actividadAps)}
-                                    </DataCard>
-                                    <DataCard title="Area Neta">
-                                        {displayValue(areaNetaAps)}
-                                    </DataCard>
-                                    <DataCard title="Area Bruta">
-                                        {displayValue(areaBrutaAps)}
-                                    </DataCard>
-                                    <DataCard title="Diferencia Entre Areas">
-                                        {displayValue(diferenciaEntreAreasAps)}
-                                    </DataCard>
-                                    <DataCard title="Hora Inicio APS">
-                                        {displayValue(horaInicioAps)}
-                                    </DataCard>
-                                    <DataCard title="Hora Final APS">
-                                        {displayValue(horaFinalAps)}
-                                    </DataCard>
-                                    <DataCard title="Tiempo Total Actividades">
-                                        {displayValue(tiempoTotalActividadesAps)}
-                                    </DataCard>
-                                    <DataCard title="Eficiancia">
-                                        {displayValue(eficienciaAps)}
-                                    </DataCard>
-                                    <DataCard title="Promedio Velocidad">
-                                        {displayValue(promedioVelocidadAps)}
-                                    </DataCard>
-                                </>
-                            )
-                        }
-                        {
-                            datosCargadosCosechaMecanica  && selectedAnalysisType === 'COSECHA_MECANICA' && (
-                                <>
-                                    <DataCard title="Nombre Responsable">
-                                        {displayValue(nombreResponsableCm)}
-                                    </DataCard>
-                                    <DataCard title="Fecha Inicio Cosecha">
-                                        {displayValue(fechaInicioCosechaCm)}
-                                    </DataCard>
-                                    <DataCard title="Fecha Fin Cosecha">
-                                        {displayValue(fechaFinCosechaCm)}
-                                    </DataCard>
-                                    <DataCard title="Nombre Finca">
-                                        {displayValue(nombreFincaCm)}
-                                    </DataCard>
-                                    <DataCard title="Codigo Parsela">
-                                        {displayValue(codigoParcelaResponsableCm)}
-                                    </DataCard>
-                                    <DataCard title="Nombre Operador">
-                                        {displayValue(nombreOperadorCm)}
-                                    </DataCard>
-                                    <DataCard title="No. Maquina">
-                                        {displayValue(nombreMaquinaCm)}
-                                    </DataCard>
-                                    <DataCard title="Actividad">
-                                        {displayValue(actividadCm)}
-                                    </DataCard>
-                                    <DataCard title="Area Neta">
-                                        {displayValue(areaNetaCm)}
-                                    </DataCard>
-                                    <DataCard title="Area Bruta">
-                                        {displayValue(areaBrutaCm)}
-                                    </DataCard>
-                                    <DataCard title="Diferencia de Area">
-                                        {displayValue(diferenciaDeAreaCm)}
-                                    </DataCard>
-                                    <DataCard title="Hora Inicio">
-                                        {displayValue(horaInicioCm)}
-                                    </DataCard>
-                                    <DataCard title="Hora Fin">
-                                        {displayValue(horaFinalCm)}
-                                    </DataCard>
-                                    <DataCard title="Tiempo total Actividad">
-                                        {displayValue(tiempoTotalActividadCm)}
-                                    </DataCard>
-                                    <DataCard title="Eficiencia">
-                                        {displayValue(eficienciaCm)}
-                                    </DataCard>
-                                    <DataCard title="Promedio Velocidad">
-                                        {displayValue(promedioVelocidadCm)}
-                                    </DataCard>
-                                    <DataCard title="Porcentaje Area Piloto">
-                                        {displayValue(porcentajeAreaPilotoCm)}
-                                    </DataCard>
-                                    <DataCard title="Porcentaje Area AutoTracker">
-                                        {displayValue(porcentajeAreaAutoTrackerCm)}
-                                    </DataCard>
-                                </>
-                            )
-                        }
-                        {
-                            datosCargadosFertilizacion && selectedAnalysisType === 'FERTILIZACION' && (
-                                <>
-                                    <DataCard title="Responsable">
-                                        {displayValue(responsableFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Fecha Inicio Fertilización">
-                                        {displayValue(fechaInicioFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Fecha Final Fertilización">
-                                        {displayValue(fechaFinalFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Nombre Finca">
-                                        {displayValue(nombreFincaFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Operador">
-                                        {displayValue(operadorFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Equipo">
-                                        {displayValue(equipoFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Actividad">
-                                        {displayValue(actividadFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Area Neta">
-                                        {displayValue(areaNetaFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Area Bruta">
-                                        {displayValue(areaBrutaFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Diferencia Area">
-                                        {displayValue(diferenciaAreaFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Hora Inicio">
-                                        {displayValue(horaInicioFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Hora Fin">
-                                        {displayValue(horaFinalFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Tiempo Total">
-                                        {displayValue(tiempoTotalFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Eficiencia">
-                                        {displayValue(eficienciaFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Promedio Dosis Real">
-                                        {displayValue(promedioDosisRealFertilizacion)}
-                                    </DataCard>
-                                    <DataCard title="Dosis Teorica">
-                                        {displayValue(dosisTeoricaFertilizacion)}
-                                    </DataCard>
-                                </>
-                            )
-                        }
-                        {
-                            datosCargadosHerbicidas && selectedAnalysisType === 'HERBICIDAS' && (
-                                <>
-                                    <DataCard title="Responsable">
-                                        {displayValue(responsableHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Herbicidas">
-                                        {displayValue(fechaHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Nombre Finca">
-                                        {displayValue(nombreFincaHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Parcela">
-                                        {displayValue(parcelaHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Operador">
-                                        {displayValue(operadorHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Equipo">
-                                        {displayValue(equipoHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Actividad">
-                                        {displayValue(actividadHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Area Neta">
-                                        {displayValue(areaNetaHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Area Bruta">
-                                        {displayValue(areaBrutaHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Diferencia De Area">
-                                        {displayValue(diferenciaDeAreaHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Hora Inicio">
-                                        {displayValue(horaInicioHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Hora Final">
-                                        {displayValue(horaFinalHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Tiempo Total">
-                                        {displayValue(tiempoTotalHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Eficiencia">
-                                        {displayValue(eficienciaHerbicidas)}
-                                    </DataCard>
-                                    <DataCard title="Promedio Velocidad">
-                                        {displayValue(promedioVelocidadHerbicidas)}
-                                    </DataCard>
-                                </>
-                            )
-                        }
-                    </section>
-
-                    <div className="analysis-controls">
-                        <label htmlFor="csv-file" className="custom-file-upload">
-                            <input
-                                id="csv-file"
-                                type="file"
-                                accept=".csv"
-                                onChange={manejarSubidaArchivo}
-                            />
-                            Selecciona tu CSV
-                        </label>
-                        <label htmlFor="zip-file" className="custom-file-upload">
-                            <input
-                                id="zip-file"
-                                type="file"
-                                onChange={e => {
-                                    setSelectedZipFile(e.target.files[0]);
-                                }}
-                                accept=".zip"
-                            />
-                            Selecciona tu ZIP
-                        </label>
-                        <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template">
-                            Descargar plantilla
-                        </a>
-                        <select value={selectedAnalysisType} onChange={e => setSelectedAnalysisType(e.target.value)} className="type-selector">
-                            <option value="">Seleccionar tipo de análisis</option>
-                            {Object.keys(analysisTemplates).map(type => (
-                                <option value={type} key={type}>{type.replace(/_/g, ' ')}</option>
-                            ))}
-                        </select>
-                        <button onClick={execBash} className="action-button">
-                            Realizar análisis
+                        <div className="analysis-controls">
+                            <label htmlFor="csv-file" className="custom-file-upload">
+                                <input
+                                    id="csv-file"
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={manejarSubidaArchivo}
+                                />
+                                Selecciona tu CSV
+                            </label>
+                            <label htmlFor="zip-file" className="custom-file-upload">
+                                <input
+                                    id="zip-file"
+                                    type="file"
+                                    onChange={e => {
+                                        setSelectedZipFile(e.target.files[0]);
+                                    }}
+                                    accept=".zip"
+                                />
+                                Selecciona tu ZIP
+                            </label>
+                            <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template">
+                                Descargar plantilla
+                            </a>
+                            <select value={selectedAnalysisType} onChange={e => setSelectedAnalysisType(e.target.value)} className="type-selector">
+                                <option value="">Seleccionar tipo de análisis</option>
+                                {Object.keys(analysisTemplates).map(type => (
+                                    <option value={type} key={type}>{type.replace(/_/g, ' ')}</option>
+                                ))}
+                            </select>
+                            <button onClick={execBash} className="action-button">
+                                Realizar análisis
+                            </button>
+                        </div>
+                        <button onClick={generatePDF} className="download-pdf-button">
+                            Descargar PDF
                         </button>
                     </div>
-                    <button onClick={generatePDF} className="download-pdf-button">
-                        Descargar PDF
-                    </button>
+
                 </div>
             </main>
         </div>
