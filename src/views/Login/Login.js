@@ -35,6 +35,7 @@ function Login() {
         const user = response.data.user;
         sessionStorage.setItem("Token", response.data.token);
         sessionStorage.setItem("userData", JSON.stringify(user));
+        sessionStorage.setItem("rol", user.ID_Rol);
         login(response.data.user);
         navigate("/dashboard");
       } else {
