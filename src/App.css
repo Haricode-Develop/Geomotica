@@ -36,3 +36,13 @@
     transform: rotate(360deg);
   }
 }
+
+
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+    column-count: 1; /* Para forzar todo el contenido en una sola columna */
+    page-break-inside: avoid; /* Para evitar cortes de página dentro de elementos */
+  }
+}

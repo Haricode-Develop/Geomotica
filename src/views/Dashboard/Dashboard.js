@@ -311,38 +311,8 @@ function Dashboard() {
                 break;
         }
     }
-    const generatePDF = useCallback(async () => {
-        if (dashboardRef.current) {
-            dashboardRef.current.style.opacity = '0.99';
-            await new Promise(resolve => setTimeout(resolve, 1));
-            dashboardRef.current.style.opacity = '';
-
-            // Retrasar la captura para permitir la carga de fuentes e imágenes
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            try {
-                const canvas = await html2canvas(dashboardRef.current, {
-                    scale: window.devicePixelRatio,
-                    useCORS: true,
-                    scrollY: -window.scrollY,
-                    scrollX: 0,
-                    windowHeight: dashboardRef.current.scrollHeight,
-                    windowWidth: dashboardRef.current.scrollWidth
-                });
-
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'px',
-                    format: [canvas.width, canvas.height]
-                });
-
-                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-                pdf.save('dashboard.pdf');
-            } catch (error) {
-                console.error("Error al generar el PDF: ", error);
-            }
-        }
+    const generatePDF = useCallback(() => {
+        window.print();
     }, []);
 
 
@@ -1317,7 +1287,7 @@ function Dashboard() {
                 setIsOpen={setSidebarOpen}
             />
             <main  className={`main-content ${!sidebarOpen ? 'expand' : ''}`} >
-                <div className={`dashboard-main`}>
+                <div className={`dashboard-main`} ref={dashboardRef}>
 
                     <div>
                         <h1 className="dashboard-title">Resumen de Análisis</h1>
@@ -1326,7 +1296,7 @@ function Dashboard() {
 
                         </section>
                     </div>
-                    <div className="seccion-analisis" ref={dashboardRef}>
+                    <div className="seccion-analisis">
                         <section className="data-section" >
                             {
                                 datosCargadosAps && selectedAnalysisType === 'APS' && (
