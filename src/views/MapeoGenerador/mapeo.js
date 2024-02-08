@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, CircleMarker, LayersControl, Polygon, useMap } from 'react-leaflet';
+
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import io from 'socket.io-client';
@@ -9,6 +10,7 @@ import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
 import * as turf from '@turf/turf';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
+
 import Slider from '@mui/material/Slider';
 import Draggable from 'react-draggable';
 
@@ -145,6 +147,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
         }
     }, [polygon, outsidePolygon]);
 
+
     useEffect(() => {
         workerRef.current = new Worker('dataWorker.js');
 
@@ -181,6 +184,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                             console.error('Error al calcular los límites del polígono:', error);
                         }
                     }
+
                 }
             }
         };
@@ -437,10 +441,10 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                 if (hull) {
                     setHullPolygon(hull.geometry.coordinates[0].map(coord => [coord[1], coord[0]]));
                 }
+
             }
         }
     }, [filteredPoints]);
-
 
 
 
@@ -562,6 +566,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                             fillColor = chooseColor(point.properties.PILOTO_AUTOMATICO, "autoPilot");
                         }else if(filterAutoTracket){
                             fillColor = chooseColor(point.properties.AUTO_TRACKET, "autoTracket");
+
                         }else if(filterSpeed){
                             fillColor = chooseColor(point.properties.VELOCIDAD_Km_H, "speed");
                         }else if(filterGpsQuality){
@@ -572,6 +577,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                             fillColor = chooseColor(point.properties.RPM, "rpm");
                         }else if (filterCutterBase) {
                             fillColor = chooseColor(point.properties.PRESION_DE_CORTADOR_BASE, "cutterBase");
+
                         }else{
                             fillColor = "blue";
                         }
@@ -612,6 +618,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
 
                 </LayersControl>
+
 
             </MapContainer>
             <Dialog
