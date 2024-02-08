@@ -5,11 +5,14 @@ import RegisterPage from './views/Register/Register';
 import Dashboard from "./views/Dashboard/Dashboard";
 import HistorialView from "./views/HistorialView/HistorialView";
 import { AuthContext } from "./context/AuthContext";
+
 import { PasswordRecuperation } from "./views/PasswordRecuperation/PasswordRecuperation";
 import { PasswordConfirmation } from "./views/Confirmations/passwordConfirmation.js";
 import { PasswordSender } from "./views/Confirmations/passwordSender.js";
 import { RegisterConfirmation } from "./views/Confirmations/registerConfirmation.js";
 import { RegisterSender } from "./views/Confirmations/registerSender.js";
+import ProtectedRoute from "./context/ProtectedRoute.js";
+import AdminPanel from "./views/AdminPanel/AdminPanel.js";
 
 const MainRoutes = () => {
     const { isAuthenticated } = useContext(AuthContext);

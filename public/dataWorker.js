@@ -82,4 +82,5 @@ function processGeoJsonData(geojsonData) {
         polygon: polygonCoordinates,
         outsidePolygon: outsidePolygonCoordinates
     };
+
 }
