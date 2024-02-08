@@ -9,6 +9,14 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import bcrypt from "bcryptjs";
 
 function Login() {
+  //verificacion de credenciales para no saltarse al login o al registrar
+  if (
+    sessionStorage.getItem("Token") != null ||
+    sessionStorage.getItem("userData") != null
+  ) {
+    window.location.href = "/dashboard";
+  }
+
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,6 +35,7 @@ function Login() {
         const user = response.data.user;
         sessionStorage.setItem("Token", response.data.token);
         sessionStorage.setItem("userData", JSON.stringify(user));
+        sessionStorage.setItem("rol", user.ID_Rol);
         login(response.data.user);
         navigate("/dashboard");
       } else {
@@ -43,13 +52,6 @@ function Login() {
       console.log(err);
     }
   };
-  
-  const handleTestBycript = async () =>{
-    const hashedPassword = await bcrypt.hash("temporalPassword", 10);
-    //const hashedPassword2 = await bcrypt.hash("temporalPassword", 10);
-    const response = await bcrypt.compare("temporalPassword", hashedPassword);
-    console.log(response);
-  }
 
   const handleRegisterClick = () => {
     navigate("/registrar");
@@ -124,15 +126,6 @@ function Login() {
             onClick={handleForgotPasswordClick}
           >
             ¿Has olvidado tu contraseña?
-          </a>
-          
-          <a
-            href="#"
-            className="forgot-password"
-            style={{ textDecoration: "none" }}
-            onClick={handleTestBycript}
-          >
-            Probar bycrypt
           </a>
         </div>
       </div>

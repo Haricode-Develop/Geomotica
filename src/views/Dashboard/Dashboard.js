@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from "react";
-import io from "socket.io-client";
-import Papa from "papaparse";
-import "./DashboardStyle.css";
+import React, {useEffect, useState, useRef } from 'react';
+import io from 'socket.io-client';
+import Papa from 'papaparse';
+import './DashboardStyle.css';
 import ProgressBar from "../../components/ProgressBar/ProgressBar";
 import Sidebar from "../../components/LayoutSide";
 import profilePicture from "./img/user.png";
@@ -11,7 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import MapComponent from "../MapeoGenerador/mapeo";
 import DataCard from "../../components/CardData/cardData";
-import L from "leaflet";
+import L from 'leaflet';
 // Componente del Mapa
 
 function Dashboard() {
@@ -48,8 +48,9 @@ function Dashboard() {
     sessionStorage.getItem("Token") === null ||
     sessionStorage.getItem("Token") === "" ||
     sessionStorage.getItem("Token") === undefined ||
-    sessionStorage.getItem("userData") === null
-
+    sessionStorage.getItem("userData") === null ||
+    sessionStorage.getItem("userData") === "" ||
+    sessionStorage.getItem("userData") === undefined
   ) {
     window.location.href = "/login";
   }
@@ -75,51 +76,42 @@ function Dashboard() {
   const [promedioVelocidadAps, setPromedioVelocidadAps] = useState(null);
   //COSECHA MECANICA
 
-  const [nombreResponsableCm, setNombreResponsableCm] = useState(null);
-  const [fechaInicioCosechaCm, setFechaInicioCosechaCm] = useState(null);
-  const [fechaFinCosechaCm, setFechaFinCosechaCm] = useState(null);
-  const [nombreFincaCm, setNombreFincaCm] = useState(null);
-  const [codigoParcelaResponsableCm, setCodigoParcelaResponsableCm] =
-    useState(null);
-  const [nombreOperadorCm, setNombreOperadorCm] = useState(null);
-  const [nombreMaquinaCm, setNombreMaquinaCm] = useState(null);
-  const [actividadCm, setActividadCm] = useState(null);
-  const [areaNetaCm, setAreaNetaCm] = useState(null);
-  const [areaBrutaCm, setAreaBrutaCm] = useState(null);
-  const [diferenciaDeAreaCm, setDiferenciaDeAreaCm] = useState(null);
-  const [horaInicioCm, setHoraInicioCm] = useState(null);
-  const [horaFinalCm, setHoraFinalCm] = useState(null);
-  const [tiempoTotalActividadCm, setTiempoTotalActividadCm] = useState(null);
-  const [eficienciaCm, setEficienciaCm] = useState(null);
-  const [promedioVelocidadCm, setPromedioVelocidadCm] = useState(null);
-  const [porcentajeAreaPilotoCm, setPorcentajeAreaPilotoCm] = useState(null);
-  const [porcentajeAreaAutoTrackerCm, setPorcentajeAreaAutoTrackerCm] =
-    useState(null);
+    const [nombreResponsableCm, setNombreResponsableCm] = useState(null);
+    const [fechaInicioCosechaCm, setFechaInicioCosechaCm] = useState(null);
+    const [fechaFinCosechaCm, setFechaFinCosechaCm] = useState(null);
+    const [nombreFincaCm, setNombreFincaCm] = useState(null);
+    const [codigoParcelaResponsableCm, setCodigoParcelaResponsableCm] = useState(null);
+    const [nombreOperadorCm, setNombreOperadorCm] = useState(null);
+    const [nombreMaquinaCm, setNombreMaquinaCm] = useState(null);
+    const [actividadCm, setActividadCm] = useState(null);
+    const [areaNetaCm, setAreaNetaCm] = useState(null);
+    const [areaBrutaCm, setAreaBrutaCm] = useState(null);
+    const [diferenciaDeAreaCm, setDiferenciaDeAreaCm] = useState(null);
+    const [horaInicioCm, setHoraInicioCm] = useState(null);
+    const [horaFinalCm, setHoraFinalCm] = useState(null);
+    const [tiempoTotalActividadCm, setTiempoTotalActividadCm] = useState(null);
+    const [eficienciaCm, setEficienciaCm] = useState(null);
+    const [promedioVelocidadCm, setPromedioVelocidadCm] = useState(null);
+    const [porcentajeAreaPilotoCm, setPorcentajeAreaPilotoCm] = useState(null);
+    const [porcentajeAreaAutoTrackerCm, setPorcentajeAreaAutoTrackerCm] = useState(null);
 
-  //FERTILIZACIÓN
-  const [responsableFertilizacion, setResponsableFertilizacion] =
-    useState(null);
-  const [fechaInicioFertilizacion, setFechaInicioFertilizacion] =
-    useState(null);
-  const [fechaFinalFertilizacion, setFechaFinalFertilizacion] = useState(null);
-  const [nombreFincaFertilizacion, setNombreFincaFertilizacion] =
-    useState(null);
-  const [operadorFertilizacion, setOperadorFertilizacion] = useState(null);
-  const [equipoFertilizacion, setEquipoFertilizacion] = useState(null);
-  const [actividadFertilizacion, setActividadFertilizacion] = useState(null);
-  const [areaNetaFertilizacion, setAreaNetaFertilizacion] = useState(null);
-  const [areaBrutaFertilizacion, setAreaBrutaFertilizacion] = useState(null);
-  const [diferenciaAreaFertilizacion, setDiferenciaAreaFertilizacion] =
-    useState(null);
-  const [horaInicioFertilizacion, setHoraInicioFertilizacion] = useState(null);
-  const [horaFinalFertilizacion, setHoraFinalFertilizacion] = useState(null);
-  const [tiempoTotalFertilizacion, setTiempoTotalFertilizacion] =
-    useState(null);
-  const [eficienciaFertilizacion, setEficienciaFertilizacion] = useState(null);
-  const [promedioDosisRealFertilizacion, setPromedioDosisRealFertilizacion] =
-    useState(null);
-  const [dosisTeoricaFertilizacion, setDosisTeoricaFertilizacion] =
-    useState(null);
+    //FERTILIZACIÓN
+    const [responsableFertilizacion, setResponsableFertilizacion] = useState(null);
+    const [fechaInicioFertilizacion, setFechaInicioFertilizacion] = useState(null);
+    const [fechaFinalFertilizacion, setFechaFinalFertilizacion] = useState(null);
+    const [nombreFincaFertilizacion, setNombreFincaFertilizacion] = useState(null);
+    const [operadorFertilizacion, setOperadorFertilizacion] = useState(null);
+    const [equipoFertilizacion, setEquipoFertilizacion] = useState(null);
+    const [actividadFertilizacion, setActividadFertilizacion] = useState(null);
+    const [areaNetaFertilizacion, setAreaNetaFertilizacion] = useState(null);
+    const [areaBrutaFertilizacion, setAreaBrutaFertilizacion] = useState(null);
+    const [diferenciaAreaFertilizacion, setDiferenciaAreaFertilizacion] = useState(null);
+    const [horaInicioFertilizacion, setHoraInicioFertilizacion] = useState(null);
+    const [horaFinalFertilizacion, setHoraFinalFertilizacion] = useState(null);
+    const [tiempoTotalFertilizacion, setTiempoTotalFertilizacion] = useState(null);
+    const [eficienciaFertilizacion, setEficienciaFertilizacion] = useState(null);
+    const [promedioDosisRealFertilizacion, setPromedioDosisRealFertilizacion] = useState(null);
+    const [dosisTeoricaFertilizacion, setDosisTeoricaFertilizacion] = useState(null);
 
   //Herbicidas
   const [responsableHerbicidas, setResponsableHerbicidas] = useState(null);
@@ -140,83 +132,63 @@ function Dashboard() {
   const [promedioVelocidadHerbicidas, setPromedioVelocidadHerbicidas] =
     useState(null);
 
-  const [selectedAnalysisType, setSelectedAnalysisType] = useState("");
-  const menuItems = [
-    "Dashboard",
-    "Administrador",
-    "Configuración",
-    "Ayuda",
-    "Salir",
-  ];
-  const [datosCargadosAps, setDatosCargadosAps] = useState(false);
-  const [datosCargadosCosechaMecanica, setDatosCargadosCosechaMecanica] =
-    useState(false);
+    const [selectedAnalysisType, setSelectedAnalysisType] = useState('');
+    const menuItems = ['Dashboard', 'Administrador', 'Configuración', 'Ayuda'];
+    const [datosCargadosAps, setDatosCargadosAps] = useState(false);
+    const [datosCargadosCosechaMecanica, setDatosCargadosCosechaMecanica] = useState(false);
 
-  const [datosCargadosFertilizacion, setDatosCargadosFertilizacion] =
-    useState(false);
-  const [datosCargadosHerbicidas, setDatosCargadosHerbicidas] = useState(false);
-  const mapRef = useRef(null);
-  const [mapLayers, setMapLayers] = useState([]);
+    const [datosCargadosFertilizacion, setDatosCargadosFertilizacion] = useState(false);
+    const [datosCargadosHerbicidas, setDatosCargadosHerbicidas] = useState(false);
+    const mapRef = useRef(null);
+    const [mapLayers, setMapLayers] = useState([]);
 
-  const analysisTemplates = {
-    APS: "/templates/APS.csv",
-    COSECHA_MECANICA: "/templates/COSECHA_MECANICA.csv",
-    FERTILIZACION: "/templates/FERTILIZACION.csv",
-    HERBICIDAS: "/templates/HERBICIDAS.csv",
-  };
-  const CancelToken = axios.CancelToken;
-  let cancel;
-  const handlePolygonChange = (e) => {
-    setSelectedPolygonFile(e.target.files[0]);
-  };
-  const insertarUltimoAnalisis = async () => {
-    if (
-      selectedAnalysisTypeRef.current !== null ||
-      selectedAnalysisTypeRef.current !== ""
-    ) {
-      return await axios.post(
-        `${API_BASE_URL}dashboard/insert_analisis/${
-          userData.ID_USUARIO
-        }/${nombreAnalisis(idAnalisisBash)}`
-      );
-    } else {
-      toast.warn("No se pudo insertar el análisis", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
+    const analysisTemplates = {
+        APS: "/templates/APS.csv",
+        COSECHA_MECANICA: "/templates/COSECHA_MECANICA.csv",
+        FERTILIZACION: "/templates/FERTILIZACION.csv",
+        HERBICIDAS: "/templates/HERBICIDAS.csv"
+    };
+    const CancelToken = axios.CancelToken;
+    let cancel;
+    const handlePolygonChange = (e) => {
+        setSelectedPolygonFile(e.target.files[0]);
+    };
+    const insertarUltimoAnalisis = async() =>{
+
+        if(selectedAnalysisTypeRef.current !== null || selectedAnalysisTypeRef.current !== ''){
+            return await axios.post(`${API_BASE_URL}dashboard/insert_analisis/${userData.ID_USUARIO}/${nombreAnalisis(idAnalisisBash)}`)
+        }else{
+            toast.warn('No se pudo insertar el análisis', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+            });
+        }
+
     }
-  };
 
-  const ultimoAnalisis = async () => {
-    console.log(
-      "ESTOS SON LOS LOGS: ",
-      selectedAnalysisTypeRef.current,
-      selectedAnalysisTypeRef.current
-    );
-    if (
-      selectedAnalysisTypeRef.current !== null ||
-      selectedAnalysisTypeRef.current !== ""
-    ) {
-      return await axios.get(
-        `${API_BASE_URL}dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`
-      );
-    } else {
-      toast.warn("Debes seleccionar un tipo de análisis.", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-    }
-  };
+    const ultimoAnalisis = async() => {
+        console.log("ESTOS SON LOS LOGS: " , selectedAnalysisTypeRef.current, selectedAnalysisTypeRef.current);
+        if(selectedAnalysisTypeRef.current !== null || selectedAnalysisTypeRef.current !== ''){
+
+            return await axios.get(`${API_BASE_URL}dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`);
+        }else{
+            toast.warn('Debes seleccionar un tipo de análisis.', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+            });
+        }
+
+    };
 
   useEffect(() => {
     const newSocket = io(API_BASE_URL);
@@ -231,15 +203,12 @@ function Dashboard() {
       setShowProgressBar(true);
       setShowProgressBar(progressNumber < 100);
 
-      if (progressNumber === 80) {
-        console.log("ENTRE AL 80: ");
-        newSocket.emit("progressUpdate", {
-          progress: 100,
-          message: "Finalizado",
+            if (progressNumber === 80) {
+                console.log("ENTRE AL 80: ");
+                newSocket.emit('progressUpdate', { progress: 100, message: "Finalizado"});
+                setShowProgressBar(false);
+            }
         });
-        setShowProgressBar(false);
-      }
-    });
 
     return () => {
       newSocket.off("progressUpdate");
@@ -260,51 +229,54 @@ function Dashboard() {
     };
   }, [setDatosMapeo, setSelectedFile]);
 
-  useEffect(() => {
-    console.log("VOY A ENTRAR AL SOCKET DE INSERCION: ");
-    if (socket) {
-      console.log("YA ENTRE AL SOCKET DE INSERCION:");
-      socket.on("sendMap", setHtmlContent);
-      console.log("ESTE ES EL SOCKET DE INSERCION: ");
-      socket.on("datosInsertados", async () => {
-        switch (selectedAnalysisTypeRef.current) {
-          case "APS":
-            await cargaDatosAps();
-            break;
-          case "COSECHA_MECANICA":
-            console.log("ENTRE AL CASE DE MECANICA: ");
-            await cargaDatosCosechaMecanica();
-            break;
-          case "FERTILIZACION":
-            await cargaDatosFertilizacion();
-            break;
-          case "HERBICIDAS":
-            await cargaDatosHerbicidas();
-            break;
-          default:
-            toast.warn("Debes seleccionar un tipo de análisis.", {
-              position: "top-right",
-              autoClose: 5000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-            });
-            break;
-        }
+    useEffect(() => {
+        console.log("VOY A ENTRAR AL SOCKET DE INSERCION: ");
+        if (socket) {
+            console.log("YA ENTRE AL SOCKET DE INSERCION:");
+            socket.on('sendMap', setHtmlContent);
+            console.log("ESTE ES EL SOCKET DE INSERCION: ");
+            socket.on('datosInsertados', async () => {
+
+
+                switch (selectedAnalysisTypeRef.current) {
+                    case 'APS':
+                        await cargaDatosAps();
+                        break;
+                    case 'COSECHA_MECANICA':
+                        console.log("ENTRE AL CASE DE MECANICA: ");
+                        await cargaDatosCosechaMecanica();
+                        break;
+                    case 'FERTILIZACION':
+                        await cargaDatosFertilizacion();
+                        break;
+                    case 'HERBICIDAS':
+                        await cargaDatosHerbicidas();
+                        break;
+                    default:
+                        toast.warn('Debes seleccionar un tipo de análisis.', {
+                            position: "top-right",
+                            autoClose: 5000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                        });
+                        break;
+                }
+
 
         socket.disconnect();
       });
 
-      return () => {
-        socket.off("sendMap");
-        socket.off("datosInsertados");
-      };
-    } else {
-      console.log("NO ENTRE AL SOCKET: ");
-    }
-  }, [socket]);
+            return () => {
+                socket.off('sendMap');
+                socket.off('datosInsertados');
+            };
+        }else{
+            console.log("NO ENTRE AL SOCKET: ");
+        }
+    }, [socket]);
 
   useEffect(() => {
     selectedAnalysisTypeRef.current = selectedAnalysisType;
@@ -330,36 +302,31 @@ function Dashboard() {
     }
   }, [selectedAnalysisType, userData.ID_USUARIO]);
 
-  const simulateEvent = () => {
-    if (socket) {
-      socket.emit("datosInsertados", { data: "mi data" });
-    } else {
-      // Manejo cuando el socket no está conectado
+    const simulateEvent = () => {
+        if (socket) {
+            socket.emit('datosInsertados', { data: "mi data" });
+        } else {
+            // Manejo cuando el socket no está conectado
+        }
+    };
+    function nombreAnalisis(idAnalisis){
+        switch (idAnalisis) {
+            case 1:
+                return "APS";
+                break;
+            case 2:
+                return "COSECHA_MECANICA";
+                break;
+            case 3:
+                return "HERBICIDAS";
+                break;
+            case 4:
+                return "FERTILIZACION";
+                break;
+            default:
+                break;
+        }
     }
-  };
-  function nombreAnalisis(idAnalisis) {
-    switch (idAnalisis) {
-      case 1:
-        return "APS";
-        break;
-      case 2:
-        return "COSECHA_MECANICA";
-        break;
-      case 3:
-        return "HERBICIDAS";
-        break;
-      case 4:
-        return "FERTILIZACION";
-        break;
-      default:
-        break;
-    }
-  }
-  async function handleLogout() {
-    sessionStorage.removeItem("Token");
-    sessionStorage.removeItem("userData");
-    window.location.href = "/login";
-  }
 
   async function manejarSubidaArchivo(event) {
     if (!event.target.files || event.target.files.length === 0) {
@@ -373,63 +340,58 @@ function Dashboard() {
 
     setIdMax(idAnalisis.data.idAnalisis);
 
-    // Aquí la la petición del end point para procesar el Csv:
-    //
-    let formData = new FormData();
-    formData.append("csv", archivo);
-    formData.append("idTipoAnalisis", idAnalisis.data.idAnalisis);
-    archivo = null;
-    const response = await axios.post(
-      `${API_BASE_URL}dashboard/procesarCsv/`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        cancelToken: new CancelToken(function executor(c) {
-          cancel = c;
-        }),
-      }
-    );
-    formData = null;
-    const data = response.data;
+        // Aquí la la petición del end point para procesar el Csv:
+        //
+        let formData = new FormData();
+        formData.append('csv', archivo);
+        formData.append('idTipoAnalisis', idAnalisis.data.idAnalisis);
+        archivo = null;
+        const response = await axios.post(`${API_BASE_URL}dashboard/procesarCsv/`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            cancelToken: new CancelToken(function executor(c) {
+                cancel = c;
+            }),
+        });
+        formData = null;
+        const data = response.data;
 
-    // Genera un nuevo Blob y File para setSelectedFile
+        // Genera un nuevo Blob y File para setSelectedFile
 
     const csvBlob = new Blob([Papa.unparse(data)], { type: "text/csv" });
 
     const csvFile = new File([csvBlob], "procesado.csv");
 
-    setSelectedFile(csvFile);
-    setDatosMapeo(data.data);
-  }
-  useEffect(() => {
-    if (idAnalisisHerbicidas) {
-      Promise.all([
-        obtenerResponsableHerbicidas(),
-        obtenerFechaHerbicidas(),
-        obtenerNombreFincaHerbicidas(),
-        obtenerParcelaHerbicidas(),
-        obtenerOperadorHerbicidas(),
-        obtenerEquipoHerbicidas(),
-        obtenerActividadHerbicidas(),
-        obtenerAreaNetaHerbicidas(),
-        obtenerAreaBrutaHerbicidas(),
-        obtenerDiferenciaDeAreaHerbicidas(),
-        obtenerHoraInicioHerbicidas(),
-        obtenerHoraFinalHerbicidas(),
-        obtenerTiempoTotalHerbicidas(),
-        obtenerEficienciaHerbicidas(),
-        obtenerPromedioVelocidadHerbicidas(),
-      ])
-        .then(() => {
-          setDatosCargadosHerbicidas(true);
-        })
-        .catch((error) => {
-          console.error("Error al cargar datos de APS:", error);
-        });
+        setSelectedFile(csvFile);
+        setDatosMapeo(data.data);
     }
-  }, [idAnalisisHerbicidas]);
+    useEffect(() => {
+        if (idAnalisisHerbicidas) {
+             Promise.all([
+                obtenerResponsableHerbicidas(),
+                obtenerFechaHerbicidas(),
+                obtenerNombreFincaHerbicidas(),
+                obtenerParcelaHerbicidas(),
+                obtenerOperadorHerbicidas(),
+                obtenerEquipoHerbicidas(),
+                obtenerActividadHerbicidas(),
+                obtenerAreaNetaHerbicidas(),
+                obtenerAreaBrutaHerbicidas(),
+                obtenerDiferenciaDeAreaHerbicidas(),
+                obtenerHoraInicioHerbicidas(),
+                obtenerHoraFinalHerbicidas(),
+                obtenerTiempoTotalHerbicidas(),
+                obtenerEficienciaHerbicidas(),
+                obtenerPromedioVelocidadHerbicidas()
+            ]).then(() => {
+                setDatosCargadosHerbicidas(true);
+            }).catch(error => {
+                console.error("Error al cargar datos de APS:", error);
+            });
+
+        }
+    }, [idAnalisisHerbicidas]);
 
   const cargaDatosHerbicidas = async () => {
     if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
@@ -496,53 +458,49 @@ function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        console.log("INICIA EL PROCESO DE COSECHA");
-        await Promise.all([
-          obtenerNombreResponsableCm(),
-          obtenerFechaInicioCosechaCm(),
-          obtenerFechaFinCosechaCm(),
-          obtenerNombreFincaCm(),
-          obtenerCodigoParcelaResponsableCm(),
-          obtenerNombreOperadorCm(),
-          obtenerNombreMaquinaCm(),
-          obtenerActividadCm(),
-          obtenerAreaNetaCm(),
-          obtenerAreaBrutaCm(),
-          obtenerDiferenciaDeAreaCm(),
-          obtenerHoraInicioCm(),
-          obtenerHoraFinalCm(),
-          obtenerTiempoTotalActividadCm(),
-          obtenerEficienciaCm(),
-          obtenerPromedioVelocidadCm(),
-          obtenerPorcentajeAreaPilotoCm(),
-          obtenerPorcentajeAreaAutoTrackerCm(),
-        ]);
-        setDatosCargadosCosechaMecanica(true);
-      } catch (error) {
-        console.error("Error al cargar datos de Cosecha:", error);
-      }
-    };
-    // Llamamos a fetchData solo si idAnalisisCosechaMecanica está disponible
-    if (idAnalisisCosechaMecanica) {
-      console.log("Llama al método de fetch de Cosecha Mecanica  ");
-      fetchData();
-    }
-  }, [idAnalisisCosechaMecanica]);
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                console.log("INICIA EL PROCESO DE COSECHA");
+                await Promise.all([
+                    obtenerNombreResponsableCm(),
+                    obtenerFechaInicioCosechaCm(),
+                    obtenerFechaFinCosechaCm(),
+                    obtenerNombreFincaCm(),
+                    obtenerCodigoParcelaResponsableCm(),
+                    obtenerNombreOperadorCm(),
+                    obtenerNombreMaquinaCm(),
+                    obtenerActividadCm(),
+                    obtenerAreaNetaCm(),
+                    obtenerAreaBrutaCm(),
+                    obtenerDiferenciaDeAreaCm(),
+                    obtenerHoraInicioCm(),
+                    obtenerHoraFinalCm(),
+                    obtenerTiempoTotalActividadCm(),
+                    obtenerEficienciaCm(),
+                    obtenerPromedioVelocidadCm(),
+                    obtenerPorcentajeAreaPilotoCm(),
+                    obtenerPorcentajeAreaAutoTrackerCm()
+                ]);
+                setDatosCargadosCosechaMecanica(true);
+            } catch (error) {
+                console.error("Error al cargar datos de Cosecha:", error);
+            }
+        };
+        // Llamamos a fetchData solo si idAnalisisCosechaMecanica está disponible
+        if (idAnalisisCosechaMecanica) {
+            console.log("Llama al método de fetch de Cosecha Mecanica  ");
+            fetchData();
+        }
+    }, [idAnalisisCosechaMecanica]);
 
-  const cargaDatosCosechaMecanica = async () => {
-    console.log(
-      "ESTOS SON LOS LOGS DE COSECHA: ",
-      selectedAnalysisTypeRef.current,
-      userData.ID_USUARIO
-    );
-    if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
-      console.log("ENTRE AL IF: ");
-      try {
-        const response = await ultimoAnalisis();
-        console.log("RESPUESTA:", response);
+    const cargaDatosCosechaMecanica = async () =>{
+        console.log("ESTOS SON LOS LOGS DE COSECHA: " , selectedAnalysisTypeRef.current, userData.ID_USUARIO);
+        if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
+            console.log("ENTRE AL IF: ");
+            try {
+                const response = await ultimoAnalisis();
+                console.log("RESPUESTA:", response);
 
         if (response && response.data && response.data.ID_ANALISIS) {
           setIdAnalisisCosechaMecanica(response.data.ID_ANALISIS);
@@ -841,16 +799,14 @@ function Dashboard() {
     }
   };
 
-  const obtenerNombreOperadorCm = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}dashboard/nombreOperadorCm/${idAnalisisCosechaMecanica}`
-      );
-      setNombreOperadorCm(response.data[0]);
-    } catch (error) {
-      console.error("Error en obtenerNombreOperadorCm:", error);
-    }
-  };
+    const obtenerNombreOperadorCm = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}dashboard/nombreOperadorCm/${idAnalisisCosechaMecanica}`);
+            setNombreOperadorCm(response.data[0]);
+        } catch (error) {
+            console.error("Error en obtenerNombreOperadorCm:", error);
+        }
+    };
 
   const obtenerNombreMaquinaCm = async () => {
     try {
@@ -874,38 +830,32 @@ function Dashboard() {
     }
   };
 
-  const obtenerAreaNetaCm = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}dashboard/areaNetaCm/${idAnalisisCosechaMecanica}`
-      );
-      setAreaNetaCm(response.data[0]);
-    } catch (error) {
-      console.error("Error en obtenerAreaNetaCm:", error);
-    }
-  };
+    const obtenerAreaNetaCm = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}dashboard/areaNetaCm/${idAnalisisCosechaMecanica}`);
+            setAreaNetaCm(response.data[0]);
+        } catch (error) {
+            console.error("Error en obtenerAreaNetaCm:", error);
+        }
+    };
 
-  const obtenerAreaBrutaCm = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}dashboard/areaBrutaCm/${idAnalisisCosechaMecanica}`
-      );
-      setAreaBrutaCm(response.data[0]);
-    } catch (error) {
-      console.error("Error en obtenerAreaBrutaCm:", error);
-    }
-  };
+    const obtenerAreaBrutaCm = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}dashboard/areaBrutaCm/${idAnalisisCosechaMecanica}`);
+            setAreaBrutaCm(response.data[0]);
+        } catch (error) {
+            console.error("Error en obtenerAreaBrutaCm:", error);
+        }
+    };
 
-  const obtenerDiferenciaDeAreaCm = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}dashboard/diferenciaDeAreaCm/${idAnalisisCosechaMecanica}`
-      );
-      setDiferenciaDeAreaCm(response.data[0]);
-    } catch (error) {
-      console.error("Error en obtenerDiferenciaDeAreaCm:", error);
-    }
-  };
+    const obtenerDiferenciaDeAreaCm = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}dashboard/diferenciaDeAreaCm/${idAnalisisCosechaMecanica}`);
+            setDiferenciaDeAreaCm(response.data[0]);
+        } catch (error) {
+            console.error("Error en obtenerDiferenciaDeAreaCm:", error);
+        }
+    };
 
   const obtenerHoraInicioCm = async () => {
     try {
@@ -940,49 +890,42 @@ function Dashboard() {
     }
   };
 
-  const obtenerEficienciaCm = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}dashboard/eficienciaCm/${idAnalisisCosechaMecanica}`
-      );
-      setEficienciaCm(response.data[0]);
-    } catch (error) {
-      console.error("Error en obtenerEficienciaCm:", error);
-    }
-  };
+    const obtenerEficienciaCm = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}dashboard/eficienciaCm/${idAnalisisCosechaMecanica}`);
+            setEficienciaCm(response.data[0]);
+        } catch (error) {
+            console.error("Error en obtenerEficienciaCm:", error);
+        }
+    };
 
-  const obtenerPromedioVelocidadCm = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}dashboard/promedioVelocidadCm/${idAnalisisCosechaMecanica}`
-      );
-      setPromedioVelocidadCm(response.data[0]);
-    } catch (error) {
-      console.error("Error en obtenerPromedioVelocidadCm:", error);
-    }
-  };
+    const obtenerPromedioVelocidadCm = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}dashboard/promedioVelocidadCm/${idAnalisisCosechaMecanica}`);
+            setPromedioVelocidadCm(response.data[0]);
+        } catch (error) {
+            console.error("Error en obtenerPromedioVelocidadCm:", error);
+        }
+    };
 
-  const obtenerPorcentajeAreaPilotoCm = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}dashboard/porcentajeAreaPilotoCm/${idAnalisisCosechaMecanica}`
-      );
-      setPorcentajeAreaPilotoCm(response.data[0]);
-    } catch (error) {
-      console.error("Error en obtenerPorcentajeAreaPilotoCm:", error);
-    }
-  };
+    const obtenerPorcentajeAreaPilotoCm = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}dashboard/porcentajeAreaPilotoCm/${idAnalisisCosechaMecanica}`);
+            setPorcentajeAreaPilotoCm(response.data[0]);
+        } catch (error) {
+            console.error("Error en obtenerPorcentajeAreaPilotoCm:", error);
+        }
+    };
 
-  const obtenerPorcentajeAreaAutoTrackerCm = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}dashboard/porcentajeAreaAutoTrackerCm/${idAnalisisCosechaMecanica}`
-      );
-      setPorcentajeAreaAutoTrackerCm(response.data[0]);
-    } catch (error) {
-      console.error("Error en obtenerPorcentajeAreaAutoTrackerCm:", error);
-    }
-  };
+    const obtenerPorcentajeAreaAutoTrackerCm = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}dashboard/porcentajeAreaAutoTrackerCm/${idAnalisisCosechaMecanica}`);
+            setPorcentajeAreaAutoTrackerCm(response.data[0]);
+        } catch (error) {
+            console.error("Error en obtenerPorcentajeAreaAutoTrackerCm:", error);
+        }
+    };
+
 
   /*======================================================
    *  PETICIONES DE FERTILIZACIÓN
@@ -1354,358 +1297,332 @@ function Dashboard() {
   const execBash = async () => {
     let validar = "ok";
 
-    if (!selectedFile || !selectedZipFile) {
-      toast.warn("Por favor, selecciona ambos archivos.", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-      return;
-    } else if (!idAnalisisBash) {
-      toast.error("Debe seleccionar un análisis antes de continuar", {
-        position: toast.POSITION.TOP_RIGHT,
-        autoClose: 5000,
-        hideProgressBar: true,
-      });
-    }
-    const formData = new FormData();
-    formData.append("csv", selectedFile);
-    formData.append("polygon", selectedZipFile);
-    const processBatch = async (offset) => {
-      try {
-        console.log("ESTA ES LA RESPUESTA DE BASH: ");
-        const response = await axios.post(
-          `${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-        console.log(response);
-      } catch (error) {
-        // Registro detallado del error
-        console.error("Error al procesar el lote:");
-        console.error("Mensaje de error:", error.message);
-        console.error("Tipo de error:", error.name);
-        if (error.response) {
-          // Detalles específicos cuando el error es de una respuesta HTTP
-          console.error(
-            "Datos de la respuesta del error:",
-            error.response.data
-          );
-          console.error(
-            "Estado de la respuesta del error:",
-            error.response.status
-          );
-          console.error(
-            "Encabezados de la respuesta del error:",
-            error.response.headers
-          );
-        } else {
-          // En caso de que el error no sea una respuesta HTTP
-          console.error("Stack del error:", error.stack);
+        if (!selectedFile || !selectedZipFile) {
+            toast.warn('Por favor, selecciona ambos archivos.', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+            });
+            return;
+
+        }else if(!idAnalisisBash){
+            toast.error('Debe seleccionar un análisis antes de continuar', {
+                position: toast.POSITION.TOP_RIGHT,
+                autoClose: 5000,
+                hideProgressBar: true,
+            });
         }
-      }
+        const formData = new FormData();
+        formData.append('csv', selectedFile);
+        formData.append('polygon', selectedZipFile);
+       const processBatch = async (offset) =>{
+           try{
+               console.log("ESTA ES LA RESPUESTA DE BASH: ");
+               const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}`, formData, {
+                   headers: {
+                       'Content-Type': 'multipart/form-data',
+                   },
+               });
+            console.log(response);
+           }catch (error) {
+               // Registro detallado del error
+               console.error("Error al procesar el lote:");
+               console.error("Mensaje de error:", error.message);
+               console.error("Tipo de error:", error.name);
+               if (error.response) {
+                   // Detalles específicos cuando el error es de una respuesta HTTP
+                   console.error("Datos de la respuesta del error:", error.response.data);
+                   console.error("Estado de la respuesta del error:", error.response.status);
+                   console.error("Encabezados de la respuesta del error:", error.response.headers);
+               } else {
+                   // En caso de que el error no sea una respuesta HTTP
+                   console.error("Stack del error:", error.stack);
+               }
+           }
+       }
+       console.log("Se llama al método de bash");
+        processBatch(0);
     };
-    console.log("Se llama al método de bash");
-    processBatch(0);
-  };
 
-  return (
-    <div className="dashboard">
-      <ProgressBar
-        progress={progress}
-        message={progressMessage}
-        show={showProgressBar}
-      />
-      <Sidebar
-        profileImage={profilePicture}
-        name={userData.NOMBRE}
-        apellido={userData.APELLIDO}
-        menuItems={menuItems}
-        isOpen={sidebarOpen} //
-        setIsOpen={setSidebarOpen}
-      />
-      <main className={`main-content ${!sidebarOpen ? "expand" : ""}`}>
-        <div>
-          <h1 className="dashboard-title">Resumen de Análisis</h1>
-          <section className="map-section">
-            {selectedZipFile && selectedFile && (
-              <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} />
-            )}
-          </section>
-        </div>
-
-        <section className="data-section">
-          {datosCargadosAps && selectedAnalysisType === "APS" && (
-            <>
-              <DataCard title="Responsable">
-                {displayValue(ResponsableAps)}
-              </DataCard>
-              <DataCard title="Fecha Inicio Cosecha">
-                {displayValue(fechaInicioCosechaAps)}
-              </DataCard>
-              <DataCard title="Fecha Fin Cosecha">
-                {displayValue(fechaFinCosechaAps)}
-              </DataCard>
-              <DataCard title="Nombre operador">
-                {displayValue(nombreOperadorAps)}
-              </DataCard>
-              <DataCard title="Equipo">{displayValue(equipoAps)}</DataCard>
-              <DataCard title="Actividad">
-                {displayValue(actividadAps)}
-              </DataCard>
-              <DataCard title="Area Neta">{displayValue(areaNetaAps)}</DataCard>
-              <DataCard title="Area Bruta">
-                {displayValue(areaBrutaAps)}
-              </DataCard>
-              <DataCard title="Diferencia Entre Areas">
-                {displayValue(diferenciaEntreAreasAps)}
-              </DataCard>
-              <DataCard title="Hora Inicio APS">
-                {displayValue(horaInicioAps)}
-              </DataCard>
-              <DataCard title="Hora Final APS">
-                {displayValue(horaFinalAps)}
-              </DataCard>
-              <DataCard title="Tiempo Total Actividades">
-                {displayValue(tiempoTotalActividadesAps)}
-              </DataCard>
-              <DataCard title="Eficiancia">
-                {displayValue(eficienciaAps)}
-              </DataCard>
-              <DataCard title="Promedio Velocidad">
-                {displayValue(promedioVelocidadAps)}
-              </DataCard>
-            </>
-          )}
-          {datosCargadosCosechaMecanica &&
-            selectedAnalysisType === "COSECHA_MECANICA" && (
-              <>
-                <DataCard title="Nombre Responsable">
-                  {displayValue(nombreResponsableCm)}
-                </DataCard>
-                <DataCard title="Fecha Inicio Cosecha">
-                  {displayValue(fechaInicioCosechaCm)}
-                </DataCard>
-                <DataCard title="Fecha Fin Cosecha">
-                  {displayValue(fechaFinCosechaCm)}
-                </DataCard>
-                <DataCard title="Nombre Finca">
-                  {displayValue(nombreFincaCm)}
-                </DataCard>
-                <DataCard title="Codigo Parsela">
-                  {displayValue(codigoParcelaResponsableCm)}
-                </DataCard>
-                <DataCard title="Nombre Operador">
-                  {displayValue(nombreOperadorCm)}
-                </DataCard>
-                <DataCard title="No. Maquina">
-                  {displayValue(nombreMaquinaCm)}
-                </DataCard>
-                <DataCard title="Actividad">
-                  {displayValue(actividadCm)}
-                </DataCard>
-                <DataCard title="Area Neta">
-                  {displayValue(areaNetaCm)}
-                </DataCard>
-                <DataCard title="Area Bruta">
-                  {displayValue(areaBrutaCm)}
-                </DataCard>
-                <DataCard title="Diferencia de Area">
-                  {displayValue(diferenciaDeAreaCm)}
-                </DataCard>
-                <DataCard title="Hora Inicio">
-                  {displayValue(horaInicioCm)}
-                </DataCard>
-                <DataCard title="Hora Fin">
-                  {displayValue(horaFinalCm)}
-                </DataCard>
-                <DataCard title="Tiempo total Actividad">
-                  {displayValue(tiempoTotalActividadCm)}
-                </DataCard>
-                <DataCard title="Eficiencia">
-                  {displayValue(eficienciaCm)}
-                </DataCard>
-                <DataCard title="Promedio Velocidad">
-                  {displayValue(promedioVelocidadCm)}
-                </DataCard>
-                <DataCard title="Porcentaje Area Piloto">
-                  {displayValue(porcentajeAreaPilotoCm)}
-                </DataCard>
-                <DataCard title="Porcentaje Area AutoTracker">
-                  {displayValue(porcentajeAreaAutoTrackerCm)}
-                </DataCard>
-              </>
-            )}
-          {datosCargadosFertilizacion &&
-            selectedAnalysisType === "FERTILIZACION" && (
-              <>
-                <DataCard title="Responsable">
-                  {displayValue(responsableFertilizacion)}
-                </DataCard>
-                <DataCard title="Fecha Inicio Fertilización">
-                  {displayValue(fechaInicioFertilizacion)}
-                </DataCard>
-                <DataCard title="Fecha Final Fertilización">
-                  {displayValue(fechaFinalFertilizacion)}
-                </DataCard>
-                <DataCard title="Nombre Finca">
-                  {displayValue(nombreFincaFertilizacion)}
-                </DataCard>
-                <DataCard title="Operador">
-                  {displayValue(operadorFertilizacion)}
-                </DataCard>
-                <DataCard title="Equipo">
-                  {displayValue(equipoFertilizacion)}
-                </DataCard>
-                <DataCard title="Actividad">
-                  {displayValue(actividadFertilizacion)}
-                </DataCard>
-                <DataCard title="Area Neta">
-                  {displayValue(areaNetaFertilizacion)}
-                </DataCard>
-                <DataCard title="Area Bruta">
-                  {displayValue(areaBrutaFertilizacion)}
-                </DataCard>
-                <DataCard title="Diferencia Area">
-                  {displayValue(diferenciaAreaFertilizacion)}
-                </DataCard>
-                <DataCard title="Hora Inicio">
-                  {displayValue(horaInicioFertilizacion)}
-                </DataCard>
-                <DataCard title="Hora Fin">
-                  {displayValue(horaFinalFertilizacion)}
-                </DataCard>
-                <DataCard title="Tiempo Total">
-                  {displayValue(tiempoTotalFertilizacion)}
-                </DataCard>
-                <DataCard title="Eficiencia">
-                  {displayValue(eficienciaFertilizacion)}
-                </DataCard>
-                <DataCard title="Promedio Dosis Real">
-                  {displayValue(promedioDosisRealFertilizacion)}
-                </DataCard>
-                <DataCard title="Dosis Teorica">
-                  {displayValue(dosisTeoricaFertilizacion)}
-                </DataCard>
-              </>
-            )}
-          {datosCargadosHerbicidas && selectedAnalysisType === "HERBICIDAS" && (
-            <>
-              <DataCard title="Responsable">
-                {displayValue(responsableHerbicidas)}
-              </DataCard>
-              <DataCard title="Herbicidas">
-                {displayValue(fechaHerbicidas)}
-              </DataCard>
-              <DataCard title="Nombre Finca">
-                {displayValue(nombreFincaHerbicidas)}
-              </DataCard>
-              <DataCard title="Parcela">
-                {displayValue(parcelaHerbicidas)}
-              </DataCard>
-              <DataCard title="Operador">
-                {displayValue(operadorHerbicidas)}
-              </DataCard>
-              <DataCard title="Equipo">
-                {displayValue(equipoHerbicidas)}
-              </DataCard>
-              <DataCard title="Actividad">
-                {displayValue(actividadHerbicidas)}
-              </DataCard>
-              <DataCard title="Area Neta">
-                {displayValue(areaNetaHerbicidas)}
-              </DataCard>
-              <DataCard title="Area Bruta">
-                {displayValue(areaBrutaHerbicidas)}
-              </DataCard>
-              <DataCard title="Diferencia De Area">
-                {displayValue(diferenciaDeAreaHerbicidas)}
-              </DataCard>
-              <DataCard title="Hora Inicio">
-                {displayValue(horaInicioHerbicidas)}
-              </DataCard>
-              <DataCard title="Hora Final">
-                {displayValue(horaFinalHerbicidas)}
-              </DataCard>
-              <DataCard title="Tiempo Total">
-                {displayValue(tiempoTotalHerbicidas)}
-              </DataCard>
-              <DataCard title="Eficiencia">
-                {displayValue(eficienciaHerbicidas)}
-              </DataCard>
-              <DataCard title="Promedio Velocidad">
-                {displayValue(promedioVelocidadHerbicidas)}
-              </DataCard>
-            </>
-          )}
-        </section>
-
-        <div className="analysis-controls">
-        <label htmlFor="csv-file" className="custom-file-upload">
-            <button
-              onClick={handleLogout}
-            >
-            Salir
-            </button>
-          </label>
-          <label htmlFor="csv-file" className="custom-file-upload">
-            <input
-              id="csv-file"
-              type="file"
-              accept=".csv"
-              onChange={manejarSubidaArchivo}
+    return (
+        <div className="dashboard">
+            <ProgressBar progress={progress} message={progressMessage} show={showProgressBar} />
+            <Sidebar
+                profileImage={profilePicture}
+                name={userData.NOMBRE}
+                apellido={userData.APELLIDO}
+                menuItems={menuItems}
+                isOpen={sidebarOpen}//
+                setIsOpen={setSidebarOpen}
             />
-            Selecciona tu CSV
-          </label>
-          <label htmlFor="zip-file" className="custom-file-upload">
-            <input
-              id="zip-file"
-              type="file"
-              onChange={(e) => {
-                setSelectedZipFile(e.target.files[0]);
-              }}
-              accept=".zip"
-            />
-            Selecciona tu ZIP
-          </label>
-          <a
-            href={
-              selectedAnalysisType
-                ? analysisTemplates[selectedAnalysisType]
-                : "#"
-            }
-            download
-            className="download-template"
-          >
-            Descargar plantilla
-          </a>
-          <select
-            value={selectedAnalysisType}
-            onChange={(e) => setSelectedAnalysisType(e.target.value)}
-            className="type-selector"
-          >
-            <option value="">Seleccionar tipo de análisis</option>
-            {Object.keys(analysisTemplates).map((type) => (
-              <option value={type} key={type}>
-                {type.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
-          <button onClick={execBash} className="action-button">
-            Realizar análisis
-          </button>
+            <main  className={`main-content ${!sidebarOpen ? 'expand' : ''}`}>
+                <div>
+                    <h1 className="dashboard-title">Resumen de Análisis</h1>
+                    <section className="map-section">
+                        {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} />}
+
+                    </section>
+                </div>
+
+
+                <section className="data-section">
+                    {
+                        datosCargadosAps && selectedAnalysisType === 'APS' && (
+                            <>
+                                <DataCard title="Responsable">
+                                    {displayValue(ResponsableAps)}
+                                </DataCard>
+                                <DataCard title="Fecha Inicio Cosecha">
+                                    {displayValue(fechaInicioCosechaAps)}
+                                </DataCard>
+                                <DataCard title="Fecha Fin Cosecha">
+                                    {displayValue(fechaFinCosechaAps)}
+                                </DataCard>
+                                <DataCard title="Nombre operador">
+                                    {displayValue(nombreOperadorAps)}
+                                </DataCard>
+                                <DataCard title="Equipo">
+                                    {displayValue(equipoAps)}
+                                </DataCard>
+                                <DataCard title="Actividad">
+                                    {displayValue(actividadAps)}
+                                </DataCard>
+                                <DataCard title="Area Neta">
+                                    {displayValue(areaNetaAps)}
+                                </DataCard>
+                                <DataCard title="Area Bruta">
+                                    {displayValue(areaBrutaAps)}
+                                </DataCard>
+                                <DataCard title="Diferencia Entre Areas">
+                                    {displayValue(diferenciaEntreAreasAps)}
+                                </DataCard>
+                                <DataCard title="Hora Inicio APS">
+                                    {displayValue(horaInicioAps)}
+                                </DataCard>
+                                <DataCard title="Hora Final APS">
+                                    {displayValue(horaFinalAps)}
+                                </DataCard>
+                                <DataCard title="Tiempo Total Actividades">
+                                    {displayValue(tiempoTotalActividadesAps)}
+                                </DataCard>
+                                <DataCard title="Eficiancia">
+                                    {displayValue(eficienciaAps)}
+                                </DataCard>
+                                <DataCard title="Promedio Velocidad">
+                                    {displayValue(promedioVelocidadAps)}
+                                </DataCard>
+                            </>
+                        )
+                    }
+                    {
+                        datosCargadosCosechaMecanica  && selectedAnalysisType === 'COSECHA_MECANICA' && (
+                            <>
+                                <DataCard title="Nombre Responsable">
+                                    {displayValue(nombreResponsableCm)}
+                                </DataCard>
+                                <DataCard title="Fecha Inicio Cosecha">
+                                    {displayValue(fechaInicioCosechaCm)}
+                                </DataCard>
+                                <DataCard title="Fecha Fin Cosecha">
+                                    {displayValue(fechaFinCosechaCm)}
+                                </DataCard>
+                                <DataCard title="Nombre Finca">
+                                    {displayValue(nombreFincaCm)}
+                                </DataCard>
+                                <DataCard title="Codigo Parsela">
+                                    {displayValue(codigoParcelaResponsableCm)}
+                                </DataCard>
+                                <DataCard title="Nombre Operador">
+                                    {displayValue(nombreOperadorCm)}
+                                </DataCard>
+                                <DataCard title="No. Maquina">
+                                    {displayValue(nombreMaquinaCm)}
+                                </DataCard>
+                                <DataCard title="Actividad">
+                                    {displayValue(actividadCm)}
+                                </DataCard>
+                                <DataCard title="Area Neta">
+                                    {displayValue(areaNetaCm)}
+                                </DataCard>
+                                <DataCard title="Area Bruta">
+                                    {displayValue(areaBrutaCm)}
+                                </DataCard>
+                                <DataCard title="Diferencia de Area">
+                                    {displayValue(diferenciaDeAreaCm)}
+                                </DataCard>
+                                <DataCard title="Hora Inicio">
+                                    {displayValue(horaInicioCm)}
+                                </DataCard>
+                                <DataCard title="Hora Fin">
+                                    {displayValue(horaFinalCm)}
+                                </DataCard>
+                                <DataCard title="Tiempo total Actividad">
+                                    {displayValue(tiempoTotalActividadCm)}
+                                </DataCard>
+                                <DataCard title="Eficiencia">
+                                    {displayValue(eficienciaCm)}
+                                </DataCard>
+                                <DataCard title="Promedio Velocidad">
+                                    {displayValue(promedioVelocidadCm)}
+                                </DataCard>
+                                <DataCard title="Porcentaje Area Piloto">
+                                    {displayValue(porcentajeAreaPilotoCm)}
+                                </DataCard>
+                                <DataCard title="Porcentaje Area AutoTracker">
+                                    {displayValue(porcentajeAreaAutoTrackerCm)}
+                                </DataCard>
+                            </>
+                        )
+                    }
+                    {
+                        datosCargadosFertilizacion && selectedAnalysisType === 'FERTILIZACION' && (
+                            <>
+                                <DataCard title="Responsable">
+                                    {displayValue(responsableFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Fecha Inicio Fertilización">
+                                    {displayValue(fechaInicioFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Fecha Final Fertilización">
+                                    {displayValue(fechaFinalFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Nombre Finca">
+                                    {displayValue(nombreFincaFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Operador">
+                                    {displayValue(operadorFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Equipo">
+                                    {displayValue(equipoFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Actividad">
+                                    {displayValue(actividadFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Area Neta">
+                                    {displayValue(areaNetaFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Area Bruta">
+                                    {displayValue(areaBrutaFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Diferencia Area">
+                                    {displayValue(diferenciaAreaFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Hora Inicio">
+                                    {displayValue(horaInicioFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Hora Fin">
+                                    {displayValue(horaFinalFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Tiempo Total">
+                                    {displayValue(tiempoTotalFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Eficiencia">
+                                    {displayValue(eficienciaFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Promedio Dosis Real">
+                                    {displayValue(promedioDosisRealFertilizacion)}
+                                </DataCard>
+                                <DataCard title="Dosis Teorica">
+                                    {displayValue(dosisTeoricaFertilizacion)}
+                                </DataCard>
+                            </>
+                        )
+                    }
+                    {
+                        datosCargadosHerbicidas && selectedAnalysisType === 'HERBICIDAS' && (
+                            <>
+                                <DataCard title="Responsable">
+                                    {displayValue(responsableHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Herbicidas">
+                                    {displayValue(fechaHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Nombre Finca">
+                                    {displayValue(nombreFincaHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Parcela">
+                                    {displayValue(parcelaHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Operador">
+                                    {displayValue(operadorHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Equipo">
+                                    {displayValue(equipoHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Actividad">
+                                    {displayValue(actividadHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Area Neta">
+                                    {displayValue(areaNetaHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Area Bruta">
+                                    {displayValue(areaBrutaHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Diferencia De Area">
+                                    {displayValue(diferenciaDeAreaHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Hora Inicio">
+                                    {displayValue(horaInicioHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Hora Final">
+                                    {displayValue(horaFinalHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Tiempo Total">
+                                    {displayValue(tiempoTotalHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Eficiencia">
+                                    {displayValue(eficienciaHerbicidas)}
+                                </DataCard>
+                                <DataCard title="Promedio Velocidad">
+                                    {displayValue(promedioVelocidadHerbicidas)}
+                                </DataCard>
+                            </>
+                        )
+                    }
+                </section>
+
+                <div className="analysis-controls">
+                    <label htmlFor="csv-file" className="custom-file-upload">
+                        <input
+                            id="csv-file"
+                            type="file"
+                            accept=".csv"
+                            onChange={manejarSubidaArchivo}
+                        />
+                        Selecciona tu CSV
+                    </label>
+                    <label htmlFor="zip-file" className="custom-file-upload">
+                        <input
+                            id="zip-file"
+                            type="file"
+                            onChange={e => {
+                                setSelectedZipFile(e.target.files[0]);
+                            }}
+                            accept=".zip"
+                        />
+                        Selecciona tu ZIP
+                    </label>
+                    <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template">
+                        Descargar plantilla
+                    </a>
+                    <select value={selectedAnalysisType} onChange={e => setSelectedAnalysisType(e.target.value)} className="type-selector">
+                        <option value="">Seleccionar tipo de análisis</option>
+                        {Object.keys(analysisTemplates).map(type => (
+                            <option value={type} key={type}>{type.replace(/_/g, ' ')}</option>
+                        ))}
+                    </select>
+                    <button onClick={execBash} className="action-button">
+                        Realizar análisis
+                    </button>
+                </div>
+            </main>
         </div>
-      </main>
-    </div>
-  );
+    );
+
 }
 
 export default Dashboard;

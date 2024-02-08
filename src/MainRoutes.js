@@ -10,6 +10,7 @@ import { PasswordSender } from "./views/Confirmations/passwordSender.js";
 import { RegisterConfirmation } from "./views/Confirmations/registerConfirmation.js";
 import { RegisterSender } from "./views/Confirmations/registerSender.js";
 import ProtectedRoute from "./context/ProtectedRoute.js";
+import AdminPanel from "./views/AdminPanel/AdminPanel.js";
 
 
 const MainRoutes = createBrowserRouter([
@@ -48,6 +49,10 @@ const MainRoutes = createBrowserRouter([
             {
                 path: '/dashboard',
                 element: <Dashboard />
+            },
+            {
+                path: '/adminPanel',
+                element: <AdminPanel />
             }
         ]
 

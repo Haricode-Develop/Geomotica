@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import './LayoutSideStyle.css'; // Importa tu archivo CSS personalizado
 
-const Sidebar = ({ profileImage, name, apellido, menuItems }) => {
+const Sidebar = ({ profileImage, name, apellido, role }) => {
     const [isOpen, setIsOpen] = useState(true);
 
     const toggleSidebar = () => {
         setIsOpen(!isOpen);
     };
+
+    // Definimos las opciones del menú aquí
+    const menuItems = ['Mapeo', 'Dashboard', 'Historial', 'Cerrar Sesión'];
 
     return (
         <div className={`sidebar ${!isOpen ? 'closed' : ''}`}>
@@ -19,9 +22,10 @@ const Sidebar = ({ profileImage, name, apellido, menuItems }) => {
             </div>
             {isOpen && (
                 <div className="profile-section">
-                    <img src={profileImage} alt="Profile" className="profile-image" />
+                    <img src={profileImage} alt="Perfil" className="profile-image" />
                     <div className="profile-name">{name}</div>
                     <div className="profile-lastName">{apellido}</div>
+                    <div className="profile-role">Rol: {role}</div> {/* Agregamos el rol aquí */}
                 </div>
             )}
             <div className={`menu-items ${!isOpen ? 'hide' : ''}`}>
