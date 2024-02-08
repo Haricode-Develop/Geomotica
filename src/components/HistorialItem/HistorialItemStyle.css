@@ -1,0 +1,18 @@
+.historial-item {
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.historial-item h3 {
+    margin-top: 0;
+}
+
+.fecha-hora {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 0.8rem;
+}
