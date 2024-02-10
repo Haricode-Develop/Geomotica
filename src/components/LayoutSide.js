@@ -1,12 +1,12 @@
-// Sidebar.js
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Asegúrate de importar correctamente el contexto
 import './LayoutSideStyle.css';
 
-const Sidebar = ({ profileImage, name, apellido, role }) => {
+const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(true);
     const navigate = useNavigate();
+    const { user, logout } = useAuth(); // Ahora se accede correctamente al contexto
 
     const toggleSidebar = () => {
         setIsOpen(!isOpen);
@@ -22,7 +22,10 @@ const Sidebar = ({ profileImage, name, apellido, role }) => {
             case 'Historial':
                 navigate('/historial');
                 break;
-            // Agrega más casos según sea necesario
+            case 'Cerrar Sesión':
+                logout();
+                navigate('/login');
+                break;
             default:
                 break;
         }
@@ -35,10 +38,10 @@ const Sidebar = ({ profileImage, name, apellido, role }) => {
             </div>
             {isOpen && (
                 <div className="profile-section">
-                    <img src={profileImage} alt="Perfil" className="profile-image" />
-                    <div className="profile-name">{name}</div>
-                    <div className="profile-lastName">{apellido}</div>
-                    <div className="profile-role">Rol: {role}</div>
+                    <img src={user?.profileImage || 'default_profile_image_path'} alt="Perfil" className="profile-image" />
+                    <div className="profile-name">{user?.name}</div>
+                    <div className="profile-lastName">{user?.apellido}</div>
+                    <div className="profile-role">Rol: {user?.role}</div>
                 </div>
             )}
             <div className={`menu-items ${!isOpen ? 'hide' : ''}`}>

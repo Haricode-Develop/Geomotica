@@ -99,67 +99,76 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
             if (filteredPoints.length === 0) return;
 
             const latLngs = filteredPoints.map(point => {
-                const coordinates = point.geometry.coordinates;
-                return L.latLng(coordinates[1], coordinates[0]);
+                const [longitude, latitude] = point.geometry.coordinates;
+                return L.latLng(latitude, longitude);
             });
 
-            const bounds = latLngs.length > 0 ? L.latLngBounds(latLngs) : null;
-            if (bounds) {
+            if (latLngs.length > 0) {
+                const bounds = L.latLngBounds(latLngs);
                 map.fitBounds(bounds, { padding: [50, 50] });
             }
-        }, [filteredPoints, map]);
+        }, [filteredPoints, map]); // Dependencias del efecto
 
-        return null;
+        return null; // Este componente no renderiza nada
     };
+
     useEffect(() => {
-        const calculateArea = (polygon) => {
-            // Crear un polígono en el formato que Turf espera
-            const turfPolygon = turf.polygon([polygon]);
-            // Calcular el área del polígono en metros cuadrados
+        const calculateArea = (polygonCoords) => {
+            if (!polygonCoords || polygonCoords.length < 4) {
+                console.error("Polygon must have at least 4 positions.");
+                return 0;
+            }
+            // Asegurarse de que el primer y último punto sean iguales
+            const firstPoint = polygonCoords[0];
+            const lastPoint = polygonCoords[polygonCoords.length - 1];
+            if (firstPoint[0] !== lastPoint[0] || firstPoint[1] !== lastPoint[1]) {
+                console.error("The first and last position of the Polygon must be equal.");
+                polygonCoords.push(firstPoint);
+            }
+
+            const turfPolygon = turf.polygon([polygonCoords]);
             const areaInSquareMeters = turf.area(turfPolygon);
-            // Convertir el área a hectáreas (1 hectárea = 10,000 metros cuadrados)
-            return areaInSquareMeters / 10000;
+            return areaInSquareMeters / 10000; // Convertir a hectáreas
         };
 
         if (polygon.length > 0 && outsidePolygon.length > 0) {
-            // Transformar las coordenadas para Turf
-            const turfPolygonCoords = transformPolygonCoords(polygon).flat();
-            const turfOutsidePolygonCoords = transformPolygonCoords(outsidePolygon).flat();
+            const turfPolygonCoords = transformPolygonCoords(polygon);
+            const turfOutsidePolygonCoords = transformPolygonCoords(outsidePolygon);
 
-            // Calcular las áreas en hectáreas
-            const polygonArea = calculateArea(turfPolygonCoords);
-            const outsidePolygonArea = calculateArea(turfOutsidePolygonCoords);
-
-            // Calcular la diferencia de área en hectáreas
+            const polygonArea = calculateArea(turfPolygonCoords.flat());
+            const outsidePolygonArea = calculateArea(turfOutsidePolygonCoords.flat());
             const areaDifference = Math.abs(polygonArea - outsidePolygonArea);
 
             setAreaData({
                 polygonArea,
                 outsidePolygonArea,
-                areaDifference
+                areaDifference,
             });
+            console.log("AREA DATA: ", areaData);
             setIsAreaDataCalculated(true);
 
-            if (onAreaCalculated) {
-                onAreaCalculated(polygonArea, outsidePolygonArea, areaDifference);
-            }
-
+            // Llamar a la función de callback si existe
+            onAreaCalculated?.(polygonArea, outsidePolygonArea, areaDifference);
         }
-    }, [polygon, outsidePolygon]);
+    }, [polygon, outsidePolygon, onAreaCalculated]);
+
 
 
     useEffect(() => {
-        workerRef.current = new Worker('dataWorker.js');
+        // Inicializar el worker
+        const worker = new Worker('dataWorker.js');
+        workerRef.current = worker;
 
-        workerRef.current.onmessage = (e) => {
+        worker.onmessage = (e) => {
             if (e.data.action === 'geoJsonDataProcessed') {
                 const { points: newPoints, polygon: newPolygon, outsidePolygon: newOutsidePolygon } = e.data.data;
 
                 setPoints(newPoints);
                 setPolygon(newPolygon);
                 setOutsidePolygon(newOutsidePolygon);
+
                 if (Array.isArray(newPolygon) && newPolygon.length > 0) {
-                    const polygonLatLngs = newPolygon.map(([lng, lat], index) => {
+                    const polygonLatLngs = newPolygon.map(([lng, lat]) => {
                         if (typeof lat === 'number' && typeof lng === 'number') {
                             return L.latLng(lat, lng);
                         } else {
@@ -168,13 +177,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                         }
                     }).filter(coord => coord !== null);
 
-                    // Solo procede si hay coordenadas válidas
                     if (polygonLatLngs.length > 0) {
                         try {
                             const polygonBounds = L.latLngBounds(polygonLatLngs);
                             const center = polygonBounds.getCenter();
 
-                            if (center && typeof center.lat === 'number' && typeof center.lng === 'number') {
+                            if (center) {
                                 setMapCenter([center.lat, center.lng]);
                                 setZoom(7);
                             } else {
@@ -184,21 +192,24 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                             console.error('Error al calcular los límites del polígono:', error);
                         }
                     }
-
                 }
             }
         };
 
+        // Inicializar el socket
         const socket = io(API_BASE_URL);
+
         socket.on('updateGeoJSONLayer', (geojsonData) => {
             if (geojsonData) {
-                workerRef.current.postMessage({ action: 'processGeoJsonData', geojsonData });
+                worker.postMessage({ action: 'processGeoJsonData', geojsonData });
             }
         });
 
+        // Función de limpieza para terminar el worker y remover listeners del socket
         return () => {
-            workerRef.current.terminate();
+            worker.terminate();
             socket.off('updateGeoJSONLayer');
+            socket.disconnect(); // Asegurarse de desconectar el socket también
         };
     }, []);
 

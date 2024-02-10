@@ -6,7 +6,7 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 import { API_BASE_URL } from "../../utils/config";
 
-function PasswordSender() {
+const PasswordSender = () => {
   const { recipient } = useParams();
   const [isSending, setIsSending] = useState(false);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
@@ -19,7 +19,7 @@ function PasswordSender() {
     setIsButtonPressed(true);
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/auth/confirmGeneration`,
+        `${API_BASE_URL}auth/confirmGeneration`,
         {
           email: recipient,
         },
@@ -87,4 +87,4 @@ function PasswordSender() {
   );
 }
 
-export { PasswordSender };
+export default PasswordSender;

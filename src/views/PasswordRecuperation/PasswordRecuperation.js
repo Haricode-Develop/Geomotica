@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 
-export const PasswordRecuperation = () => {
+const PasswordRecuperation = () => {
   const navigate = useNavigate();
   const [emailRecovery, setEmailRecovery] = useState("");
   const [errorRecovery, setErrorRecovery] = useState("");
@@ -15,7 +15,7 @@ export const PasswordRecuperation = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/passwordRecuperation`, {
+      const response = await axios.post(`${API_BASE_URL}auth/passwordRecuperation`, {
         email: emailRecovery,
       });
 
@@ -72,3 +72,5 @@ export const PasswordRecuperation = () => {
     </div>
   )
 }
+
+export default PasswordRecuperation;

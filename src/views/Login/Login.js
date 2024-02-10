@@ -1,57 +1,44 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import {AuthContext} from "../../context/AuthContext.js";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 import logo from "../../assets/logo.png";
 import axios from "axios";
 import { API_BASE_URL } from "../../utils/config";
-import { useAuth } from "../../context/AuthContext.js";
 import "bootstrap/dist/css/bootstrap.min.css";
 import bcrypt from "bcryptjs";
 
-function Login() {
-  //verificacion de credenciales para no saltarse al login o al registrar
-  if (
-    sessionStorage.getItem("Token") != null ||
-    sessionStorage.getItem("userData") != null
-  ) {
-    window.location.href = "/dashboard";
-  }
-
+const Login = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, login } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, setUserData } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const response = await axios.post(`${API_BASE_URL}auth/login`, {
-        email: email,
-        password: password,
+        email,
+        password,
       });
       if (response.data) {
-        setUserData(response.data.user);
-        const user = response.data.user;
-        sessionStorage.setItem("Token", response.data.token);
-        sessionStorage.setItem("userData", JSON.stringify(user));
-        sessionStorage.setItem("rol", user.ID_Rol);
-        login(response.data.user);
+        login(response.data); // Asegúrate de que esta función actualiza isAuthenticated correctamente
         navigate("/dashboard");
       } else {
-        setError(
-          response.data.message ||
-            "Error en el inicio de sesión. Por favor, intenta de nuevo."
-        );
+        setError("Error en el inicio de sesión. Por favor, intenta de nuevo.");
       }
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Error en el inicio de sesión. Por favor, intenta de nuevo. 2"
-      );
-      console.log(err);
+      setError(err.response?.data?.message || "Error desconocido en el inicio de sesión. Por favor, intenta de nuevo.");
     }
   };
+
 
   const handleRegisterClick = () => {
     navigate("/registrar");

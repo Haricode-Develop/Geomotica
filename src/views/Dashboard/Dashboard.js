@@ -93,25 +93,13 @@ import {
 function Dashboard() {
 
     //====================== INICIO DE SESIÓN
-    const userData = JSON.parse(sessionStorage.getItem("userData"));
-    for (var clave in userData) {
-        if (userData.hasOwnProperty(clave) && typeof userData[clave] === "string") {
-            console.log(typeof userData[clave])
-            userData[clave] = userData[clave].replace(/^"|"$/g, '');
-        }
-    }
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    console.log("USER DATA ANTES DE CONVERTIR: ", userData);
 
 
-    if (
-        sessionStorage.getItem("Token") === null ||
-        sessionStorage.getItem("Token") === "" ||
-        sessionStorage.getItem("Token") === undefined ||
-        sessionStorage.getItem("userData") === null ||
-        sessionStorage.getItem("userData") === "" ||
-        sessionStorage.getItem("userData") === undefined
-    ) {
-        window.location.href = "/login";
-    }
+    console.log("ESTE ES EL USER DATA: ", userData);
+
+
     //=========================================
 
     const [progress, setProgress] = useState(0);
@@ -240,66 +228,86 @@ function Dashboard() {
 
     // Indicadores Herbicidas
     useEffect(() => {
-        if (idAnalisisHerbicidas) {
-            Promise.all([
-                obtenerResponsableHerbicidas(idAnalisisHerbicidas, setResponsableHerbicidas),
-                obtenerFechaHerbicidas(idAnalisisHerbicidas, setFechaHerbicidas),
-                obtenerNombreFincaHerbicidas(idAnalisisHerbicidas, setNombreFincaHerbicidas),
-                obtenerParcelaHerbicidas(idAnalisisHerbicidas, setParcelaHerbicidas),
-                obtenerOperadorHerbicidas(idAnalisisHerbicidas, setOperadorHerbicidas),
-                obtenerEquipoHerbicidas(idAnalisisHerbicidas, setEquipoHerbicidas),
-                obtenerActividadHerbicidas(idAnalisisHerbicidas, setActividadHerbicidas),
-                obtenerAreaNetaHerbicidas(idAnalisisHerbicidas, setAreaNetaHerbicidas),
-                obtenerAreaBrutaHerbicidas(idAnalisisHerbicidas, setAreaBrutaHerbicidas),
-                obtenerDiferenciaDeAreaHerbicidas(idAnalisisHerbicidas, setDiferenciaDeAreaHerbicidas),
-                obtenerHoraInicioHerbicidas(idAnalisisHerbicidas, setHoraInicioHerbicidas),
-                obtenerHoraFinalHerbicidas(idAnalisisHerbicidas, setHoraFinalHerbicidas),
-                obtenerTiempoTotalHerbicidas(idAnalisisHerbicidas, setTiempoTotalHerbicidas),
-                obtenerEficienciaHerbicidas(idAnalisisHerbicidas, setEficienciaHerbicidas),
-                obtenerPromedioVelocidadHerbicidas(idAnalisisHerbicidas, setPromedioVelocidadHerbicidas())
-            ]).then(() => {
-                setDatosCargadosHerbicidas(true);
-            }).catch(error => {
-                console.error("Error al cargar datos de APS:", error);
-            });
+        let isMounted = true; // Variable para controlar si el componente está montado
 
-        }
+        const fetchData = async () => {
+            if (!idAnalisisHerbicidas) return;
+
+            try {
+                const responses = await Promise.all([
+                    obtenerResponsableHerbicidas(idAnalisisHerbicidas),
+                    obtenerFechaHerbicidas(idAnalisisHerbicidas),
+                    obtenerNombreFincaHerbicidas(idAnalisisHerbicidas),
+                    obtenerParcelaHerbicidas(idAnalisisHerbicidas),
+                    obtenerOperadorHerbicidas(idAnalisisHerbicidas),
+                    obtenerEquipoHerbicidas(idAnalisisHerbicidas),
+                    obtenerActividadHerbicidas(idAnalisisHerbicidas),
+                    obtenerAreaNetaHerbicidas(idAnalisisHerbicidas),
+                    obtenerAreaBrutaHerbicidas(idAnalisisHerbicidas),
+                    obtenerDiferenciaDeAreaHerbicidas(idAnalisisHerbicidas),
+                    obtenerHoraInicioHerbicidas(idAnalisisHerbicidas),
+                    obtenerHoraFinalHerbicidas(idAnalisisHerbicidas),
+                    obtenerTiempoTotalHerbicidas(idAnalisisHerbicidas),
+                    obtenerEficienciaHerbicidas(idAnalisisHerbicidas),
+                    obtenerPromedioVelocidadHerbicidas(idAnalisisHerbicidas)
+                ]);
+
+                if (isMounted) {
+                    setDatosCargadosHerbicidas(true);
+                }
+            } catch (error) {
+                console.error("Error al cargar datos de Herbicidas:", error);
+            }
+        };
+
+        fetchData();
+
+        return () => {
+            isMounted = false;
+        };
     }, [idAnalisisHerbicidas]);
 
-    // Indicadores Fertilización
-    useEffect(async () => {
-        if (idAnalisisFertilizacion) {
-            await Promise.all([
-                obtenerResponsableFertilizacion(idAnalisisFertilizacion, setResponsableFertilizacion),
-                obtenerFechaInicioFertilizacion(idAnalisisFertilizacion, setFechaInicioFertilizacion),
-                obtenerFechaFinalFertilizacion(idAnalisisFertilizacion,setFechaFinalFertilizacion),
-                obtenerNombreFincaFertilizacion(idAnalisisFertilizacion, setNombreFincaFertilizacion),
-                obtenerOperadorFertilizacion(idAnalisisFertilizacion, setOperadorFertilizacion),
-                obtenerEquipoFertilizacion(idAnalisisFertilizacion, setEquipoFertilizacion),
-                obtenerActividadFertilizacion(idAnalisisFertilizacion, setActividadFertilizacion),
-                obtenerAreaNetaFertilizacion(idAnalisisFertilizacion, setAreaNetaFertilizacion),
-                obtenerAreaBrutaFertilizacion(idAnalisisFertilizacion, setAreaBrutaFertilizacion),
-                obtenerDiferenciaAreaFertilizacion(idAnalisisFertilizacion, setDiferenciaAreaFertilizacion),
-                obtenerHoraInicioFertilizacion(idAnalisisFertilizacion, setHoraInicioFertilizacion),
-                obtenerHoraFinalFertilizacion(idAnalisisFertilizacion, setHoraFinalFertilizacion),
-                obtenerTiempoTotalFertilizacion(idAnalisisFertilizacion, setTiempoTotalFertilizacion),
-                obtenerEficienciaFertilizacion(idAnalisisFertilizacion, setEficienciaFertilizacion),
-                obtenerPromedioDosisRealFertilizacion(idAnalisisFertilizacion, setPromedioDosisRealFertilizacion),
-                obtenerDosisTeoricaFertilizacion(idAnalisisFertilizacion, setDosisTeoricaFertilizacion)
+    useEffect(() => {
+        // Define una función asíncrona dentro del efecto
+        const fetchData = async () => {
+            if (idAnalisisFertilizacion) {
+                try {
+                    await Promise.all([
+                        obtenerResponsableFertilizacion(idAnalisisFertilizacion),
+                        obtenerFechaInicioFertilizacion(idAnalisisFertilizacion),
+                        obtenerFechaFinalFertilizacion(idAnalisisFertilizacion),
+                        obtenerNombreFincaFertilizacion(idAnalisisFertilizacion),
+                        obtenerOperadorFertilizacion(idAnalisisFertilizacion),
+                        obtenerEquipoFertilizacion(idAnalisisFertilizacion),
+                        obtenerActividadFertilizacion(idAnalisisFertilizacion),
+                        obtenerAreaNetaFertilizacion(idAnalisisFertilizacion),
+                        obtenerAreaBrutaFertilizacion(idAnalisisFertilizacion),
+                        obtenerDiferenciaAreaFertilizacion(idAnalisisFertilizacion),
+                        obtenerHoraInicioFertilizacion(idAnalisisFertilizacion),
+                        obtenerHoraFinalFertilizacion(idAnalisisFertilizacion),
+                        obtenerTiempoTotalFertilizacion(idAnalisisFertilizacion),
+                        obtenerEficienciaFertilizacion(idAnalisisFertilizacion),
+                        obtenerPromedioDosisRealFertilizacion(idAnalisisFertilizacion),
+                        obtenerDosisTeoricaFertilizacion(idAnalisisFertilizacion)
+                    ]);
+                    // Actualiza el estado después de completar todas las promesas
+                    setDatosCargadosFertilizacion(true);
+                } catch (error) {
+                    console.error("Error al cargar datos de Fertilización:", error);
+                }
+            }
+        };
 
-            ]).then(() => {
-                setDatosCargadosFertilizacion(true);
-            }).catch(error => {
-                console.error("Error al cargar datos de APS:", error);
-            });
-
-        }
-    }, [idAnalisisFertilizacion]);
+        // Invoca la función asíncrona
+        fetchData();
+    }, [idAnalisisFertilizacion]); // Asegúrate de incluir todas las dependencias externas necesarias aquí
 
     // Indicadores Cosecha Mecánica
     useEffect(() => {
         const fetchData = async () => {
             try {
+                console.log("ENTRE A COSECHA MECÁICA PARA LOS INDICADORES==================");
+
                 await Promise.all([
                     obtenerNombreResponsableCm(idAnalisisCosechaMecanica, setNombreResponsableCm),
                     obtenerFechaInicioCosechaCm(idAnalisisCosechaMecanica, setFechaInicioCosechaCm),
@@ -332,31 +340,39 @@ function Dashboard() {
 
     // Indicadores APS
     useEffect(() => {
-        if (idAnalisisAps) {
-            Promise.all([
-                obtenerResponsableAps(idAnalisisAps, setResponsableAps),
-                obtenerFechaInicioCosechaAps(idAnalisisAps, setFechaInicioCosechaAps),
-                obtenerFechaFinCosechaAps(idAnalisisAps, setFechaFinCosechaAps),
-                obtenerNombreFincaAps(idAnalisisAps, setNombreFincaAps),
-                obtenerCodigoParcelasAps(idAnalisisAps, setCodigoParcelasAps),
-                obtenerNombreOperadorAps(idAnalisisAps, setNombreOperadorAps),
-                obtenerEquipoAps(idAnalisisAps, setEquipoAps),
-                obtenerActividadAps(idAnalisisAps, setActividadAps),
-                obtenerAreaNetaAps(idAnalisisAps, setAreaNetaAps),
-                obtenerAreaBrutaAps(idAnalisisAps, setAreaBrutaAps),
-                obtenerDiferenciaEntreAreasAps(idAnalisisAps, setDiferenciaEntreAreasAps),
-                obtenerHoraInicioAps(idAnalisisAps, setHoraInicioAps),
-                obtenerHoraFinalAps(idAnalisisAps, setHoraFinalAps),
-                obtenerTiempoTotalActividadesAps(idAnalisisAps, setTiempoTotalActividadesAps),
-                obtenerEficienciaAps(idAnalisisAps, setEficienciaAps),
-                obtenerPromedioVelocidadAps(idAnalisisAps, setPromedioVelocidadAps),
-            ]).then(() => {
-                setDatosCargadosAps(true);
-            }).catch(error => {
-                console.error("Error al cargar datos de APS:", error);
-            });
+        // Solo ejecutar si idAnalisisAps está definido
+        if (!idAnalisisAps) return;
 
-        }
+        const fetchData = async () => {
+            try {
+                // Espera a que todas las promesas se resuelvan
+                await Promise.all([
+                    obtenerResponsableAps(idAnalisisAps),
+                    obtenerFechaInicioCosechaAps(idAnalisisAps),
+                    obtenerFechaFinCosechaAps(idAnalisisAps),
+                    obtenerNombreFincaAps(idAnalisisAps),
+                    obtenerCodigoParcelasAps(idAnalisisAps),
+                    obtenerNombreOperadorAps(idAnalisisAps),
+                    obtenerEquipoAps(idAnalisisAps),
+                    obtenerActividadAps(idAnalisisAps),
+                    obtenerAreaNetaAps(idAnalisisAps),
+                    obtenerAreaBrutaAps(idAnalisisAps),
+                    obtenerDiferenciaEntreAreasAps(idAnalisisAps),
+                    obtenerHoraInicioAps(idAnalisisAps),
+                    obtenerHoraFinalAps(idAnalisisAps),
+                    obtenerTiempoTotalActividadesAps(idAnalisisAps),
+                    obtenerEficienciaAps(idAnalisisAps),
+                    obtenerPromedioVelocidadAps(idAnalisisAps)
+                ]);
+                // Actualiza el estado después de completar todas las promesas
+                setDatosCargadosAps(true);
+            } catch (error) {
+                // Manejo de errores en caso de que alguna de las promesas falle
+                console.error("Error al cargar datos de APS:", error);
+            }
+        };
+
+        fetchData();
     }, [idAnalisisAps]);
 
 
@@ -365,18 +381,22 @@ function Dashboard() {
         const newSocket = io(API_BASE_URL);
         setSocket(newSocket);
 
-        newSocket.on('progressUpdate', data => {
+        // Escuchar por actualizaciones de progreso
+        newSocket.on('progressUpdate', (data) => {
             const progressNumber = Number(data.progress);
             const message = data.message;
 
+            // Actualizar el estado basado en el progreso
             setProgress(progressNumber);
             setProgressMessage(message);
-            setShowProgressBar(true);
-            setShowProgressBar(progressNumber < 100);
 
+            // Controlar la visibilidad de la barra de progreso
+            setShowProgressBar(progressNumber < 100); // Esto reemplaza las dos llamadas anteriores
+
+            // Si el progreso alcanza el 80%, enviar un evento para finalizar
             if (progressNumber === 80) {
-                newSocket.emit('progressUpdate', { progress: 100, message: "Finalizado"});
-                setShowProgressBar(false);
+                newSocket.emit('progressUpdate', { progress: 100, message: "Finalizado" });
+                setShowProgressBar(false); // Esto podría ser redundante dependiendo de tu lógica
             }
         });
 
@@ -387,18 +407,23 @@ function Dashboard() {
     }, []);
 
 
+
     // Carga de datos para indicadores
     useEffect(() => {
-
+        // Verificar si el socket está definido antes de añadir listeners
+        console.log("DATOS INERTADOS ANTES DEL handleDatosInsertados*********************");
+        console.log("ESTE ES EL SOCKET: ");
+        console.log(socket);
         if (socket) {
-            socket.on('datosInsertados', async () => {
 
-
+            const handleDatosInsertados = async () => {
+                console.log("DATOS INERTADOS*********************");
                 switch (selectedAnalysisTypeRef.current) {
                     case 'APS':
                         await cargaDatosAps();
                         break;
                     case 'COSECHA_MECANICA':
+                        console.log("**************************CARGA DATOS COSECHA MECANIA********************************: ");
                         await cargaDatosCosechaMecanica();
                         break;
                     case 'FERTILIZACION':
@@ -419,16 +444,16 @@ function Dashboard() {
                         });
                         break;
                 }
+                // socket.disconnect();
+            };
 
-
-                socket.disconnect();
-            });
+            socket.on('datosInsertados', handleDatosInsertados);
 
             return () => {
-                socket.off('sendMap');
-                socket.off('datosInsertados');
+                if (socket) {
+                    socket.off('datosInsertados', handleDatosInsertados);
+                }
             };
-        }else{
         }
     }, [socket]);
 
@@ -438,7 +463,6 @@ function Dashboard() {
     //=========================================== Carga del ultimo análisis
 
     const cargaDatosHerbicidas = async() =>{
-
         if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
             try {
                 const response = await ultimoAnalisis();
@@ -599,7 +623,7 @@ function Dashboard() {
 
     useEffect(() => {
         return () => {
-            cancel && cancel();
+            if (cancel) cancel();
         };
     }, []);
 
@@ -614,24 +638,24 @@ function Dashboard() {
 
     useEffect(() => {
         selectedAnalysisTypeRef.current = selectedAnalysisType;
+        let id;
         switch (selectedAnalysisType) {
             case 'APS':
-                setIdAnalisisBash(1);
+                id = 1;
                 break;
             case 'COSECHA_MECANICA':
-                setIdAnalisisBash(2);
+                id = 2;
                 break;
             case 'HERBICIDAS':
-                setIdAnalisisBash(3);
+                id = 3;
                 break;
             case 'FERTILIZACION':
-                setIdAnalisisBash(4);
+                id = 4;
                 break;
             default:
-                break;
+                id = null; // Asumiendo que quieres resetear o manejar el caso por defecto
         }
-
-
+        setIdAnalisisBash(id);
     }, [selectedAnalysisType, userData.ID_USUARIO]);
 
     function nombreAnalisis(idAnalisis){
@@ -746,6 +770,14 @@ function Dashboard() {
         }
     }
 
+    useEffect(() => {
+        console.log("VER SI ENTRA: ");
+        console.log("DATOS CARGADOS COSECHA MECANICA: ", datosCargadosCosechaMecanica);
+        console.log("SELECTED ANALISIS: ", selectedAnalysisType);
+        if (datosCargadosCosechaMecanica && selectedAnalysisType === 'COSECHA_MECANICA') {
+            console.log("Entrando al bloque de COSECHA_MECANICA debido a cambio en las dependencias");
+        }
+    }, [datosCargadosCosechaMecanica, selectedAnalysisType]);
 
     const execBash = async () => {
         let validar = "ok";

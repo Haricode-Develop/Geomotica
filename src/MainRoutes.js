@@ -1,70 +1,41 @@
-import React from "react";
-import { Navigate, createBrowserRouter } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthContext } from './context/AuthContext';
 import LoginPage from './views/Login/Login';
 import RegisterPage from './views/Register/Register';
-import Dashboard from "./views/Dashboard/Dashboard";
-//import {AuthContext} from "./context/AuthContext";
-import { PasswordRecuperation } from "./views/PasswordRecuperation/PasswordRecuperation";
-import { PasswordConfirmation } from "./views/Confirmations/passwordConfirmation.js";
-import { PasswordSender } from "./views/Confirmations/passwordSender.js";
-import { RegisterConfirmation } from "./views/Confirmations/registerConfirmation.js";
-import { RegisterSender } from "./views/Confirmations/registerSender.js";
-import HistorialView from "./views/HistorialView/HistorialView";
-import ProtectedRoute from "./context/ProtectedRoute.js";
-import AdminPanel from "./views/AdminPanel/AdminPanel.js";
+import Dashboard from './views/Dashboard/Dashboard';
+import PasswordRecuperation from './views/PasswordRecuperation/PasswordRecuperation';
+import PasswordConfirmation from './views/Confirmations/passwordConfirmation';
+import PasswordSender from './views/Confirmations/passwordSender';
+import RegisterConfirmation from './views/Confirmations/registerConfirmation';
+import RegisterSender from './views/Confirmations/registerSender';
+import HistorialView from './views/HistorialView/HistorialView';
+import AdminPanel from './views/AdminPanel/AdminPanel';
+import NotFoundPage from "./views/NotFound/NotFound";
+const ProtectedRoute = ({ children }) => {
+    const { isAuthenticated } = useContext(AuthContext);
+    return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
 
+const MainRoutes = () => {
+    return (
+        <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/registrar" element={<RegisterPage />} />
+            <Route path="/passwordRecuperation" element={<PasswordRecuperation />} />
+            <Route path="/passwordRecuperationConfirmation" element={<PasswordConfirmation />} />
+            <Route path="/passwordSender/:recipient" element={<PasswordSender />} />
+            <Route path="/registerSender/:recipient" element={<RegisterSender />} />
+            <Route path="/registerConfirmation/:recipient" element={<RegisterConfirmation />} />
 
-const MainRoutes = createBrowserRouter([
-    {
-        path: '/',
-        element: <LoginPage />
-    },
-    {
-        path: '/registrar',
-        element: <RegisterPage />
-    },
-    {
-        path: '/passwordRecuperation',
-        element: <PasswordRecuperation />
-    },
-    {
-        path: '/passwordRecuperationConfirmation',
-        element: <PasswordConfirmation />
-    },
-    {
-        path: '/passwordSender/:recipient',
-        element: <PasswordSender />
-    },
-    {
-        path: '/registerSender/:recipient',
-        element: <RegisterSender />
-    },
-    {
-        path: '/registerConfirmation/:recipient',
-        element: <RegisterConfirmation />
-    },
-    {
-        path: '/',
-        element: <ProtectedRoute />,
-        children: [
-            {
-                path: '/dashboard',
-                element: <Dashboard />
-            },
-            {
-                path: '/adminPanel',
-                element: <AdminPanel />
-            },{
-            path: '/historial',
-                element: <HistorialView />
-            }
-        ]
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/adminPanel" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+            <Route path="/historial" element={<ProtectedRoute><HistorialView /></ProtectedRoute>} />
 
-    },
-    {
-        path: '*',
-        element: <Navigate to="/" />
-    }
-]);
+            <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+    );
+};
 
 export default MainRoutes;

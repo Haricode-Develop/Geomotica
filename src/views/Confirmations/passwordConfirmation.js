@@ -8,7 +8,7 @@ import "./Confirmations.css";
 //import { useAuth } from "../../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-function PasswordConfirmation() {
+const PasswordConfirmation = () => {
   return (
     <>
       <div className="password-recuperation--background">
@@ -26,4 +26,4 @@ function PasswordConfirmation() {
     </>
   );
 }
-export {PasswordConfirmation} ;
+export default PasswordConfirmation;
