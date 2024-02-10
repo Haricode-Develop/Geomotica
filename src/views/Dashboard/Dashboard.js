@@ -4,7 +4,7 @@ import Papa from 'papaparse';
 import './DashboardStyle.css';
 import ProgressBar from "../../components/ProgressBar/ProgressBar";
 import Sidebar from '../../components/LayoutSide';
-import profilePicture from './img/user.png';
+import profilePicture from '../../assets/img/user.png';
 import axios from "axios";
 import {API_BASE_URL} from "../../utils/config";
 import { useAuth } from '../../context/AuthContext';
@@ -94,10 +94,6 @@ function Dashboard() {
 
     //====================== INICIO DE SESIÓN
     const userData = JSON.parse(localStorage.getItem("userData"));
-    console.log("USER DATA ANTES DE CONVERTIR: ", userData);
-
-
-    console.log("ESTE ES EL USER DATA: ", userData);
 
 
     //=========================================
@@ -835,13 +831,7 @@ function Dashboard() {
     return (
         <div className="dashboard">
             <ProgressBar progress={progress} message={progressMessage} show={showProgressBar} />
-            <Sidebar
-                profileImage={profilePicture}
-                name={userData.NOMBRE}
-                apellido={userData.APELLIDO}
-                isOpen={sidebarOpen}//
-                setIsOpen={setSidebarOpen}
-            />
+
             <main  className={`main-content ${!sidebarOpen ? 'expand' : ''}`} >
                 <div className={`dashboard-main`}>
 

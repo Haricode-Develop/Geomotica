@@ -12,10 +12,12 @@ import RegisterSender from './views/Confirmations/registerSender';
 import HistorialView from './views/HistorialView/HistorialView';
 import AdminPanel from './views/AdminPanel/AdminPanel';
 import NotFoundPage from "./views/NotFound/NotFound";
+import LayoutWithSidebar from "./context/LayoutWithSidebar/LayoutWithSidebar";
 const ProtectedRoute = ({ children }) => {
     const { isAuthenticated } = useContext(AuthContext);
     return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
+
 
 const MainRoutes = () => {
     return (
@@ -28,10 +30,10 @@ const MainRoutes = () => {
             <Route path="/registerSender/:recipient" element={<RegisterSender />} />
             <Route path="/registerConfirmation/:recipient" element={<RegisterConfirmation />} />
 
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/adminPanel" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-            <Route path="/historial" element={<ProtectedRoute><HistorialView /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/adminPanel" element={<ProtectedRoute><LayoutWithSidebar><AdminPanel /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/historial" element={<ProtectedRoute><LayoutWithSidebar><HistorialView /></LayoutWithSidebar></ProtectedRoute>} />
 
             <Route path="*" element={<NotFoundPage />} />
         </Routes>
