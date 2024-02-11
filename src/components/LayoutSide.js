@@ -43,7 +43,7 @@ const Sidebar = () => {
                     <img src={userData?.FOTO_PERFIL || profilePicture} alt="Perfil" className="profile-image" />
                     <div className="profile-name">{userData?.NOMBRE}</div>
                     <div className="profile-lastName">{userData?.APELLIDO}</div>
-                    <div className="profile-role">Rol: {userData?.ID_Rol}</div> {/* Asumiendo que el ID_Rol indica el rol del usuario */}
+                    <div className="profile-role">Rol: {userData?.RolNombre}</div> {/* Asumiendo que el ID_Rol indica el rol del usuario */}
                 </div>
             )}
             <div className={`menu-items ${!isOpen ? 'hide' : ''}`}>

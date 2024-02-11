@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, CircleMarker, LayersControl, Polygon, useMap }
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import io from 'socket.io-client';
-import { FaFilter } from 'react-icons/fa';
+import { FaMap } from 'react-icons/fa';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField } from '@mui/material';
 import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
@@ -546,7 +546,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
             <div className="floating-filter-button">
                 <Button variant="contained" color="primary" onClick={openFilterDialog}>
-                    <FaFilter />
+                    <FaMap />
                 </Button>
             </div>
 
