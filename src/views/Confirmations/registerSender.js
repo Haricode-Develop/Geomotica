@@ -6,14 +6,14 @@ import axios from "axios";
 import { API_BASE_URL } from "../../utils/config";
 import { useParams, useNavigate } from "react-router-dom";
 
-function RegisterSender() {
+const RegisterSender = () => {
   const { recipient } = useParams();
   const navigate = useNavigate();
 
   const emailSender = async () => {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/auth/confirmGeneration`,
+        `${API_BASE_URL}auth/confirmGeneration`,
         {
           email: recipient,
         },
@@ -70,4 +70,4 @@ function RegisterSender() {
   );
 }
 
-export { RegisterSender };
+export default RegisterSender;

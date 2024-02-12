@@ -1,33 +1,41 @@
-import React, { useContext } from "react";
+import React, { useContext } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthContext } from './context/AuthContext';
 import LoginPage from './views/Login/Login';
 import RegisterPage from './views/Register/Register';
-import Dashboard from "./views/Dashboard/Dashboard";
-import HistorialView from "./views/HistorialView/HistorialView";
-import { AuthContext } from "./context/AuthContext";
+import Dashboard from './views/Dashboard/Dashboard';
+import PasswordRecuperation from './views/PasswordRecuperation/PasswordRecuperation';
+import PasswordConfirmation from './views/Confirmations/passwordConfirmation';
+import PasswordSender from './views/Confirmations/passwordSender';
+import RegisterConfirmation from './views/Confirmations/registerConfirmation';
+import RegisterSender from './views/Confirmations/registerSender';
+import HistorialView from './views/HistorialView/HistorialView';
+import AdminPanel from './views/AdminPanel/AdminPanel';
+import NotFoundPage from "./views/NotFound/NotFound";
+import LayoutWithSidebar from "./context/LayoutWithSidebar/LayoutWithSidebar";
+const ProtectedRoute = ({ children }) => {
+    const { isAuthenticated } = useContext(AuthContext);
+    return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
 
-import { PasswordRecuperation } from "./views/PasswordRecuperation/PasswordRecuperation";
-import { PasswordConfirmation } from "./views/Confirmations/passwordConfirmation.js";
-import { PasswordSender } from "./views/Confirmations/passwordSender.js";
-import { RegisterConfirmation } from "./views/Confirmations/registerConfirmation.js";
-import { RegisterSender } from "./views/Confirmations/registerSender.js";
-import ProtectedRoute from "./context/ProtectedRoute.js";
-import AdminPanel from "./views/AdminPanel/AdminPanel.js";
 
 const MainRoutes = () => {
-    const { isAuthenticated } = useContext(AuthContext);
-    return(
+    return (
         <Routes>
-            <Route path="/" element={<LoginPage />} />
-            <Route path="registrar" element={<RegisterPage />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="historial" element={<HistorialView />} /> {/* Ruta del Historial agregada */}
-            <Route path="passwordRecuperation" element={<PasswordRecuperation />} />
-            <Route path="passwordRecuperationConfirmation" element={<PasswordConfirmation />} />
-            <Route path="passwordSender/:recipient" element={<PasswordSender/>} />
-            <Route path="registerSender/:recipient" element={<RegisterSender/>} />
-            <Route path="registerConfirmation/:recipient" element={<RegisterConfirmation/>} />
-            <Route path="*" element={isAuthenticated ? <Dashboard /> : <Navigate to="/" />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/registrar" element={<RegisterPage />} />
+            <Route path="/passwordRecuperation" element={<PasswordRecuperation />} />
+            <Route path="/passwordRecuperationConfirmation" element={<PasswordConfirmation />} />
+            <Route path="/passwordSender/:recipient" element={<PasswordSender />} />
+            <Route path="/registerSender/:recipient" element={<RegisterSender />} />
+            <Route path="/registerConfirmation/:recipient" element={<RegisterConfirmation />} />
+
+            <Route path="/" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/adminPanel" element={<ProtectedRoute><LayoutWithSidebar><AdminPanel /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/historial" element={<ProtectedRoute><LayoutWithSidebar><HistorialView /></LayoutWithSidebar></ProtectedRoute>} />
+
+            <Route path="*" element={<NotFoundPage />} />
         </Routes>
     );
 };

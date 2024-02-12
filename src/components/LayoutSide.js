@@ -1,16 +1,19 @@
+// Sidebar.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Importamos useNavigate
-import './LayoutSideStyle.css'; // Importa tu archivo CSS personalizado
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Asegúrate de que la ruta de importación es correcta
+import './LayoutSideStyle.css';
+import profilePicture from '../assets/img/user.png';
 
-const Sidebar = ({ profileImage, name, apellido, role }) => {
+const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(true);
-    const navigate = useNavigate(); // Instancia de useNavigate
+    const navigate = useNavigate();
+    const { userData, logout } = useAuth(); // Usamos userData directamente
 
     const toggleSidebar = () => {
         setIsOpen(!isOpen);
     };
 
-    // Definimos las opciones del menú aquí
     const menuItems = ['Mapeo', 'Dashboard', 'Historial', 'Cerrar Sesión'];
 
     const handleMenuItemClick = (item) => {
@@ -19,9 +22,12 @@ const Sidebar = ({ profileImage, name, apellido, role }) => {
                 navigate('/dashboard');
                 break;
             case 'Historial':
-                navigate('/historial'); // Navega a la ruta del Historial
+                navigate('/historial');
                 break;
-            // Agrega casos para otros menús según sea necesario
+            case 'Cerrar Sesión':
+                logout();
+                navigate('/login');
+                break;
             default:
                 break;
         }
@@ -30,18 +36,14 @@ const Sidebar = ({ profileImage, name, apellido, role }) => {
     return (
         <div className={`sidebar ${!isOpen ? 'closed' : ''}`}>
             <div className="toggle-button" onClick={toggleSidebar}>
-                {isOpen ? (
-                    <span className="icon">&times;</span>
-                ) : (
-                    <span className="icon">&#9776;</span>
-                )}
+                {isOpen ? <span className="icon">&times;</span> : <span className="icon">&#9776;</span>}
             </div>
             {isOpen && (
                 <div className="profile-section">
-                    <img src={profileImage} alt="Perfil" className="profile-image" />
-                    <div className="profile-name">{name}</div>
-                    <div className="profile-lastName">{apellido}</div>
-                    <div className="profile-role">Rol: {role}</div>
+                    <img src={userData?.FOTO_PERFIL || profilePicture} alt="Perfil" className="profile-image" />
+                    <div className="profile-name">{userData?.NOMBRE}</div>
+                    <div className="profile-lastName">{userData?.APELLIDO}</div>
+                    <div className="profile-role">Rol: {userData?.RolNombre}</div> {/* Asumiendo que el ID_Rol indica el rol del usuario */}
                 </div>
             )}
             <div className={`menu-items ${!isOpen ? 'hide' : ''}`}>
@@ -56,4 +58,3 @@ const Sidebar = ({ profileImage, name, apellido, role }) => {
 };
 
 export default Sidebar;
-

@@ -6,7 +6,7 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 import { API_BASE_URL } from "../../utils/config";
 
-function RegisterConfirmation() {
+const RegisterConfirmation = () => {
   const { recipient } = useParams();
   const [isSending, setIsSending] = useState(false);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
@@ -19,7 +19,7 @@ function RegisterConfirmation() {
     setIsButtonPressed(true);
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/auth/accountConfirmation`,
+        `${API_BASE_URL}auth/accountConfirmation`,
         {
           email: recipient,
         },
@@ -77,4 +77,4 @@ function RegisterConfirmation() {
   );
 }
 
-export { RegisterConfirmation };
+export default RegisterConfirmation;
