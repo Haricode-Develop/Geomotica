@@ -1,16 +1,42 @@
 .login-background {
-    background:linear-gradient(rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.2)),url('../../assets/login/background.jpg');
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
-    background-size: cover;
     height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
+    overflow: hidden;
+}
+.video-background {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -2;
 }
 
+#backgroundVideo {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -2;
+}
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: -1;
+}
 .login-background::before {
     content: "";
     position: absolute;
@@ -68,7 +94,7 @@
 
 .logo {
     display: block;
-    width: 70%;  /* ajusta el tamaño del logo aquí */
+    width: 70%;
     margin: 0 auto;
     margin-bottom: 20px;
 }
@@ -82,20 +108,32 @@
 }
 
 .button {
-    display: block;
-    width: 100%;
-    padding: 10px;
+    display: inline-block;
+    width: auto;
+    padding: 10px 20px;
+    margin: 10px 5px;
     background-color: #333;
     color: #fff;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.button:hover {
+    background-color: #555;
 }
 
 .forgot-password {
+    display: block;
     text-align: center;
-    margin-top: 10px;
+    color: #007bff;
+    font-size: 1rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding: 0 20px;
 }
+
 .button-container {
     display: flex;
     justify-content: space-between;
@@ -110,20 +148,31 @@
 
 @media screen and (max-width: 768px){
     .login-container {
-        width: 100%;
-        height: auto;
+        width: 90%;
         flex-direction: column;
+        align-items: center;
     }
-    .login-form-container {
+
+    .login-form-container--left,
+    .login-form-container--right {
         width: 100%;
-        margin: 10px 0;
-        text-align: center;
+        border-radius: 10px 10px 0 0;
     }
-    .logo {
-        width: 50%;
+
+    .login-form-container--right {
+        padding: 20px;
     }
+
     .button-container {
         flex-direction: column;
+    }
+
+    .button {
+        width: 100%;
+    }
+
+    .forgot-password {
+        margin-top: 20px;
     }
 
 }

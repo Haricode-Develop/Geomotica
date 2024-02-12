@@ -144,7 +144,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                 outsidePolygonArea,
                 areaDifference,
             });
-            console.log("AREA DATA: ", areaData);
             setIsAreaDataCalculated(true);
 
             // Llamar a la función de callback si existe
@@ -278,8 +277,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
         const calculatedPilotAutoPercentaje = totalPoints > 0 ? (pilotAutoPoints / totalPoints) * 100 : 0;
         const calculatedAutoTracketPercentaje = totalPoints > 0 ? (autoTracketPoints / totalPoints) * 100 : 0;
         const calculatedModoCortadorBasePercentaje = totalPoints > 0 ? (modoCorteBase / totalPoints) * 100 : 0;
-        console.log("ESTE ES EL CALCULO DE PORCENTAJE DE PILOTO: " + calculatedPilotAutoPercentaje);
-        console.log("ESTE ES EL CALCULO DE PORCENTAJE DE CORTADOR BASE: " + calculatedModoCortadorBasePercentaje);
+
         setPercentage({
             calculatedAutoTracketPercentaje,
             calculatedPilotAutoPercentaje,
@@ -601,9 +599,9 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                                 radius={5}
                                 fillColor={fillColor}
                                 color={fillColor}
-                                weight={1}
+                                weight={0.2}
                                 opacity={1}
-                                fillOpacity={0.8}
+                                fillOpacity={1}
                             />
                         );
                         }

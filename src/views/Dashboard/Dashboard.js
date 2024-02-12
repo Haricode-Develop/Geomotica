@@ -8,10 +8,11 @@ import profilePicture from '../../assets/img/user.png';
 import axios from "axios";
 import {API_BASE_URL} from "../../utils/config";
 import { useAuth } from '../../context/AuthContext';
-import { ToastContainer, toast } from 'react-toastify';
+import {toast } from 'react-toastify';
 import MapComponent from "../MapeoGenerador/mapeo";
 import DataCard from "../../components/CardData/cardData";
 import html2canvas from 'html2canvas';
+import Tutorial from "../../components/Tutorial/Tutorial";
 import jsPDF from 'jspdf';
 
 import L from 'leaflet';
@@ -94,6 +95,8 @@ function Dashboard() {
 
     //====================== INICIO DE SESIÓN
     const userData = JSON.parse(localStorage.getItem("userData"));
+    const [runTutorial, setRunTutorial] = useState(false);
+    const [tutorialKey, setTutorialKey] = useState(0);
 
 
     //=========================================
@@ -101,7 +104,7 @@ function Dashboard() {
     const [progress, setProgress] = useState(0);
     const [selectedFile, setSelectedFile] = useState(null);
     const [idMax, setIdMax] = useState(null);
-
+    const [progressIteracion, setProgressIteracion] = useState(null);
     //======================= id del análisis por realizar
     const [idAnalisisAps, setIdAnalisisAps] = useState(null);
     const [idAnalisisCosechaMecanica, setIdAnalisisCosechaMecanica] = useState(null);
@@ -302,8 +305,6 @@ function Dashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                console.log("ENTRE A COSECHA MECÁICA PARA LOS INDICADORES==================");
-
                 await Promise.all([
                     obtenerNombreResponsableCm(idAnalisisCosechaMecanica, setNombreResponsableCm),
                     obtenerFechaInicioCosechaCm(idAnalisisCosechaMecanica, setFechaInicioCosechaCm),
@@ -385,9 +386,10 @@ function Dashboard() {
             // Actualizar el estado basado en el progreso
             setProgress(progressNumber);
             setProgressMessage(message);
-
-            // Controlar la visibilidad de la barra de progreso
+                // Controlar la visibilidad de la barra de progreso
             setShowProgressBar(progressNumber < 100); // Esto reemplaza las dos llamadas anteriores
+
+
 
             // Si el progreso alcanza el 80%, enviar un evento para finalizar
             if (progressNumber === 80) {
@@ -406,20 +408,15 @@ function Dashboard() {
 
     // Carga de datos para indicadores
     useEffect(() => {
-        // Verificar si el socket está definido antes de añadir listeners
-        console.log("DATOS INERTADOS ANTES DEL handleDatosInsertados*********************");
-        console.log("ESTE ES EL SOCKET: ");
-        console.log(socket);
+
         if (socket) {
 
             const handleDatosInsertados = async () => {
-                console.log("DATOS INERTADOS*********************");
                 switch (selectedAnalysisTypeRef.current) {
                     case 'APS':
                         await cargaDatosAps();
                         break;
                     case 'COSECHA_MECANICA':
-                        console.log("**************************CARGA DATOS COSECHA MECANIA********************************: ");
                         await cargaDatosCosechaMecanica();
                         break;
                     case 'FERTILIZACION':
@@ -618,6 +615,8 @@ function Dashboard() {
     let cancel;
 
     useEffect(() => {
+        setProgressIteracion(true);
+
         return () => {
             if (cancel) cancel();
         };
@@ -766,14 +765,6 @@ function Dashboard() {
         }
     }
 
-    useEffect(() => {
-        console.log("VER SI ENTRA: ");
-        console.log("DATOS CARGADOS COSECHA MECANICA: ", datosCargadosCosechaMecanica);
-        console.log("SELECTED ANALISIS: ", selectedAnalysisType);
-        if (datosCargadosCosechaMecanica && selectedAnalysisType === 'COSECHA_MECANICA') {
-            console.log("Entrando al bloque de COSECHA_MECANICA debido a cambio en las dependencias");
-        }
-    }, [datosCargadosCosechaMecanica, selectedAnalysisType]);
 
     const execBash = async () => {
         let validar = "ok";
@@ -789,47 +780,65 @@ function Dashboard() {
                 progress: undefined,
             });
             return;
-
-        }else if(!idAnalisisBash){
+        } else if (!idAnalisisBash) {
             toast.error('Debe seleccionar un análisis antes de continuar', {
                 position: toast.POSITION.TOP_RIGHT,
                 autoClose: 5000,
                 hideProgressBar: true,
             });
+            return;
         }
-        const formData = new FormData();
-        formData.append('csv', selectedFile);
-        formData.append('polygon', selectedZipFile);
-        const processBatch = async (offset) =>{
-            try{
-                const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                console.log(response);
-            }catch (error) {
-                // Registro detallado del error
-                console.error("Error al procesar el lote:");
-                console.error("Mensaje de error:", error.message);
-                console.error("Tipo de error:", error.name);
-                if (error.response) {
-                    // Detalles específicos cuando el error es de una respuesta HTTP
-                    console.error("Datos de la respuesta del error:", error.response.data);
-                    console.error("Estado de la respuesta del error:", error.response.status);
-                    console.error("Encabezados de la respuesta del error:", error.response.headers);
-                } else {
-                    // En caso de que el error no sea una respuesta HTTP
-                    console.error("Stack del error:", error.stack);
+
+        // Leer el archivo seleccionado para estimar el tamaño del lote
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const content = e.target.result;
+            const lines = content.split(/\r\n|\n/).length - 1;
+
+            const tamanoLote = 10000;
+            let offset = 0;
+            let esPrimeraIteracion = true;
+
+            while (offset < lines) {
+                const formData = new FormData();
+                formData.append('csv', selectedFile);
+                formData.append('polygon', selectedZipFile);
+                formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
+
+                try {
+                    const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}/${lines}`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                    offset += tamanoLote;
+                    esPrimeraIteracion = false;
+                    if (esPrimeraIteracion) {
+                        setShowProgressBar(false);
+                        esPrimeraIteracion = false;
+                    }
+                } catch (error) {
+                    console.error("Error al procesar el lote:", error);
+                    setShowProgressBar(false);
+                    break; // Rompe el bucle en caso de error
                 }
             }
-        }
-        processBatch(0);
+        };
+        reader.onerror = (error) => console.log(error);
+        reader.readAsText(selectedFile);
     };
 
-
+    const handleOpenTutorial = () => {
+        setRunTutorial(true);
+        setTutorialKey(prevKey => prevKey + 1);
+    };
     return (
         <div className="dashboard">
+            <Tutorial
+                key={tutorialKey}
+                isActive={runTutorial}
+                onClose={() => setRunTutorial(false)}
+            />
             <ProgressBar progress={progress} message={progressMessage} show={showProgressBar} />
 
             <main  className={`main-content ${!sidebarOpen ? 'expand' : ''}`} >
@@ -1081,7 +1090,7 @@ function Dashboard() {
                         </section>
 
                         <div className="analysis-controls">
-                            <label htmlFor="csv-file" className="custom-file-upload">
+                            <label htmlFor="csv-file" className="custom-file-upload subir-csv">
                                 <input
                                     id="csv-file"
                                     type="file"
@@ -1090,7 +1099,7 @@ function Dashboard() {
                                 />
                                 Selecciona tu CSV
                             </label>
-                            <label htmlFor="zip-file" className="custom-file-upload">
+                            <label htmlFor="zip-file" className="custom-file-upload subir-zip">
                                 <input
                                     id="zip-file"
                                     type="file"
@@ -1101,25 +1110,26 @@ function Dashboard() {
                                 />
                                 Selecciona tu ZIP
                             </label>
-                            <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template">
+                            <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template descargar-plantilla">
                                 Descargar plantilla
                             </a>
-                            <select value={selectedAnalysisType} onChange={e => setSelectedAnalysisType(e.target.value)} className="type-selector">
+                            <select value={selectedAnalysisType} onChange={e => setSelectedAnalysisType(e.target.value)} className="type-selector tipo-analisis">
                                 <option value="">Seleccionar tipo de análisis</option>
                                 {Object.keys(analysisTemplates).map(type => (
                                     <option value={type} key={type}>{type.replace(/_/g, ' ')}</option>
                                 ))}
                             </select>
-                            <button onClick={execBash} className="action-button">
+                            <button onClick={execBash} className="action-button realizar-analisis">
                                 Realizar análisis
                             </button>
                         </div>
-                        <button onClick={generatePDF} className="download-pdf-button">
-                            Descargar PDF
-                        </button>
+
                     </div>
 
                 </div>
+                <button className="help-button" onClick={handleOpenTutorial}>
+                    ?
+                </button>
             </main>
         </div>
     );

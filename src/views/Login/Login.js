@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useContext } from "react";
-import {AuthContext} from "../../context/AuthContext.js";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 import logo from "../../assets/logo.png";
 import axios from "axios";
 import { API_BASE_URL } from "../../utils/config";
-import "bootstrap/dist/css/bootstrap.min.css";
-import bcrypt from "bcryptjs";
+import { AuthContext } from "../../context/AuthContext.js";
+import {toast } from 'react-toastify';
 
+import backgroundVideo from "../../assets/login/background.mp4"
 const Login = () => {
   const navigate = useNavigate();
   const { isAuthenticated, login } = useContext(AuthContext);
@@ -35,7 +35,7 @@ const Login = () => {
         setError("Error en el inicio de sesión. Por favor, intenta de nuevo.");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Error desconocido en el inicio de sesión. Por favor, intenta de nuevo.");
+      toast.error(err.response?.data?.message || "Error al procesar la solicitud.");
     }
   };
 
@@ -47,22 +47,27 @@ const Login = () => {
     navigate("/passwordRecuperation");
   };
 
+
+
   return (
     <div className="login-background">
+      <video autoPlay muted loop id="backgroundVideo" className="video-background">
+        <source src={backgroundVideo} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+      <div className="video-overlay"></div>
       <header />
       <div className="login-container ">
         <div className="login-form-container--left container">
-          <h2>¡Bienvenido de Vuelta!</h2>
+          <h2>¡Bienvenido!</h2>
           <p>Ingresa para acceder a tu cuenta.</p>
-          <p>Recuerda no compartir tu contraseña con nadie</p>
         </div>
         <div className="login-form-container--right container">
           <img src={logo} alt="Logo de la empresa" className="logo" />
-          {error && <p className="error-message">{error}</p>}
           <form onSubmit={handleSubmit}>
             <div className="mb-3 text-center">
               <label for="emailInput" class="form-label">
-                Introduce tu Correo Electronico:
+               Correo Electrónico:
               </label>
               <input
                 type="email"
@@ -75,7 +80,7 @@ const Login = () => {
             </div>
             <div className="mb-3 text-center">
               <label for="passwordInput" class="form-label">
-                Introduce tu Contraseña:
+               Contraseña:
               </label>
               <input
                 type="password"

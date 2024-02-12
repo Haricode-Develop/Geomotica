@@ -16,13 +16,11 @@ async function loadGeoJsonFromUrl(url) {
 
 
 self.onmessage = async function (e) {
-    console.log('Mensaje recibido en el Worker:', e.data);
     const {action, geojsonData} = e.data;
 
     switch (action) {
         case 'processGeoJsonData':
             if (geojsonData) {
-                console.log("GEO JSON EN EL WORKER: ", geojsonData);
                 const loadedGeoJson = await loadGeoJsonFromUrl(geojsonData);
                 if (loadedGeoJson) {
                     const processedData = processGeoJsonData(loadedGeoJson);
@@ -58,7 +56,6 @@ function extractCoordinates(feature) {
 function processGeoJsonData(geojsonData) {
     const validFeatures = geojsonData.features.filter(feature => {
         const hasCoordinates = feature.geometry && feature.geometry.coordinates;
-        if (!hasCoordinates) console.log('Feature sin coordenadas:', feature);
         return hasCoordinates;
     });
 

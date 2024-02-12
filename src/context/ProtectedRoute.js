@@ -3,7 +3,6 @@ import { Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 export default function ProtectedRoute() {
   const auth = useAuth();
-  console.log(auth.isAuthenticated);
   const token = sessionStorage.getItem("Token");
   const userData = sessionStorage.getItem("userData");
   if (
