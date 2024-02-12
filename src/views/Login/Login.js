@@ -17,7 +17,7 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/dashboard");
+      navigate("/mapeo");
     }
   }, [isAuthenticated, navigate]);
 
@@ -29,8 +29,8 @@ const Login = () => {
         password,
       });
       if (response.data) {
-        login(response.data); // Asegúrate de que esta función actualiza isAuthenticated correctamente
-        navigate("/dashboard");
+        login(response.data);
+        navigate("/mapeo");
       } else {
         setError("Error en el inicio de sesión. Por favor, intenta de nuevo.");
       }

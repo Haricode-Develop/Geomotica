@@ -2,5 +2,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     padding: 20px;
+    height: 100vh;
+    width: 100%;
+    overflow: auto;
+}
+
+.historial-view.open {
+    padding-left: 250px;
+}
+
+.historial-view.closed {
+    padding-left: 250px;
 }
