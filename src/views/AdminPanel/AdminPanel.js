@@ -12,12 +12,9 @@ import Sidebar from "../../components/LayoutSide";
 function AdminPanel(props) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const permisos = sessionStorage.getItem("rol");
-  console.log(permisos);
   const userData = JSON.parse(sessionStorage.getItem("userData"));
-  console.log(userData);
   for (var clave in userData) {
     if (userData.hasOwnProperty(clave) && typeof userData[clave] === "string") {
-      console.log(typeof userData[clave]);
       userData[clave] = userData[clave].replace(/^"|"$/g, ""); // Eliminar comillas del inicio y del final
     }
   }

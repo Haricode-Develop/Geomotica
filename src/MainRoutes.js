@@ -13,6 +13,8 @@ import HistorialView from './views/HistorialView/HistorialView';
 import AdminPanel from './views/AdminPanel/AdminPanel';
 import NotFoundPage from "./views/NotFound/NotFound";
 import LayoutWithSidebar from "./context/LayoutWithSidebar/LayoutWithSidebar";
+import 'react-toastify/dist/ReactToastify.css';
+
 const ProtectedRoute = ({ children }) => {
     const { isAuthenticated } = useContext(AuthContext);
     return isAuthenticated ? children : <Navigate to="/login" replace />;

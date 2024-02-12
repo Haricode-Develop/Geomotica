@@ -219,7 +219,6 @@ export const obtenerCodigoParcelaResponsableCm = async (idAnalisisCosechaMecanic
 export const obtenerConsumoCombustibleCm = async(idAnalisisCosechaMecanica, setConsumoCombustibleCm) =>{
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/consumoCombustibleCm/${idAnalisisCosechaMecanica}`);
-        console.log("ESTA ES LA RESPUESTA: ", response);
         setConsumoCombustibleCm(response.data);
 
     } catch(error){
