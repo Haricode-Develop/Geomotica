@@ -1,0 +1,38 @@
+/* DashboardIndicadores.css */
+.dashboard-indicadores {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-left: 250px;
+}
+
+.charts {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.feed-analisis {
+    width: 300px;
+    background-color: #f0f0f0;
+    padding: 20px;
+    margin-left: 20px;
+    overflow-y: auto;
+    height: calc(100vh - 40px);
+}
+
+
+.feed-item {
+    background-color: #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.content {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    width: 100%;
+}

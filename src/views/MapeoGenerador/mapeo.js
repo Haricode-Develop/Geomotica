@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import io from 'socket.io-client';
 import { FaMap } from 'react-icons/fa';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip } from '@mui/material';
 import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
 import * as turf from '@turf/turf';
@@ -16,12 +16,13 @@ import Draggable from 'react-draggable';
 
 const { BaseLayer } = LayersControl;
 
-const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot }) => {
+const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot, progressFinish }) => {
     const [hullPolygon, setHullPolygon] = useState(null); // Estado para almacenar el polígono convex hull
 
     const [pilotAutoPercentage, setPilotAutoPercentage] = useState(0);
 
     const [autoTracketPercentage, setAutoTracketPercentage] = useState(0);
+    const [activeFilter, setActiveFilter] = useState(null);
 
     const [points, setPoints] = useState([]);
     const [filteredPoints, setFilteredPoints] = useState([]); // Estado para almacenar los puntos filtrados
@@ -30,9 +31,9 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
     const [filterAutoTracket, setFilterAutoTracket] = useState(false);
 
     // Filtros de velocidad
-    const [lowSpeed, setLowSpeed] = useState(-1);
-    const [medSpeed, setMedSpeed] = useState(-1);
-    const [highSpeed, setHighSpeed] = useState(-1);
+    const [lowSpeed, setLowSpeed] = useState(0);
+    const [medSpeed, setMedSpeed] = useState(0);
+    const [highSpeed, setHighSpeed] = useState(0);
 
     // Filtros de calidad de GPS
     const [lowGpsQuality, setLowGpsQuality] = useState(0);
@@ -56,7 +57,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
     const [highCutterBase, setHighCutterBase] = useState(0);
 
 
-    const [zoom, setZoom] = useState(2);
+    const [zoom, setZoom] = useState(3);
 
 
     const [filterSpeed, setFilterSpeed] = useState(false);
@@ -64,7 +65,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
     const [filterFuel, setFilterFuel] = useState(false);
     const [filterRpm, setFilterRpm] = useState(false);
     const [filterCutterBase, setFilterCutterBase] = useState(false);
-
+    const [filterModeCutterBase, setFilterModeCutterBase] = useState(false);
 
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
@@ -84,13 +85,25 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
         outsidePolygonArea: null,
         areaDifference: null
     });
+    const incrementFilterValue = (filterSetter, currentValue) => {
+        filterSetter(currentValue + 1);
+    };
+
+    // Función para decrementar los valores de los filtros
+    const decrementFilterValue = (filterSetter, currentValue) => {
+        filterSetter(currentValue - 1);
+    };
 
     const [percentage, setPercentage] = useState({
         autoTracket: null,
         autoPilot: null,
         totalEfficiency: null
     });
+    const changeActiveFilter = (newFilter) => {
+        setActiveFilter(newFilter);
+    };
 
+    const [isMapButtonDisabled, setIsMapButtonDisabled] = useState(!progressFinish);
 
     const MapEffect = () => {
         const map = useMap();
@@ -264,6 +277,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
             point.properties.MODO_CORTE_BASE.trim().toLowerCase() === 'automatic'
         ).length;
 
+
         const puntoEncontrado = pointsData.find(point => point.properties.TIEMPO_TOTAL && point.properties.TIEMPO_TOTAL !== "");
 
         let tiempoTotal = "00:00:00";
@@ -294,18 +308,60 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
     }, [points, isAreaDataCalculated]);
 
 
+    useEffect(() => {
+        setIsMapButtonDisabled(!progressFinish);
+    }, [progressFinish]);
+
+
     const toggleFilter = () => {
+        setFilterRpm(false);
+        setFilterFuel(false);
+        setFilterSpeed(false);
+        setFilterCutterBase(false);
+        setFilterGpsQuality(false);
+        setFilterModeCutterBase(false);
+        setFilterAutoTracket(false);
+
         setFilterAutoPilot(current => !current);
         setZoom(7);
         setMapKey(Date.now());
     };
     const toggleFilterAutoTracket = () => {
+        setFilterRpm(false);
+        setFilterFuel(false);
+        setFilterSpeed(false);
+        setFilterCutterBase(false);
+        setFilterGpsQuality(false);
+        setFilterModeCutterBase(false);
+        setFilterAutoPilot(false);
+
         setFilterAutoTracket(current => !current);
         setZoom(7);
         setMapKey(Date.now());
     };
 
+    const toggleFilterModeCutterBase = ()   => {
+
+        setFilterRpm(false);
+        setFilterFuel(false);
+        setFilterSpeed(false);
+        setFilterCutterBase(false);
+        setFilterGpsQuality(false);
+        setFilterAutoPilot(false);
+        setFilterAutoTracket(false);
+        setFilterModeCutterBase(current => !current);
+        setZoom(7);
+        setMapKey(Date.now());
+    };
     const toggleFilterSpeed = () => {
+        setFilterRpm(false);
+        setFilterFuel(false);
+        setFilterCutterBase(false);
+        setFilterGpsQuality(false);
+        setFilterAutoPilot(false);
+        setFilterModeCutterBase(false);
+        setFilterAutoTracket(false);
+
         if(lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1){
             setFilterSpeed(current => !current);
             setZoom(7);
@@ -314,6 +370,15 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
     };
 
     const toggleFilterGpsQuality = () => {
+
+        setFilterRpm(false);
+        setFilterFuel(false);
+        setFilterCutterBase(false);
+        setFilterAutoPilot(false);
+        setFilterModeCutterBase(false);
+        setFilterAutoTracket(false);
+        setFilterSpeed(false);
+
         if(lowGpsQuality !== -1 && medGpsQuality !== -1 && highGpsQuality !== -1){
             setFilterGpsQuality(current => !current);
             setZoom(7);
@@ -323,6 +388,15 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
     };
 
     const toggleFilterFuel = () => {
+
+        setFilterRpm(false);
+        setFilterCutterBase(false);
+        setFilterAutoPilot(false);
+        setFilterAutoTracket(false);
+        setFilterModeCutterBase(false);
+        setFilterSpeed(false);
+        setFilterGpsQuality(false);
+
         if (lowFuel !== -1 && medFuel !== -1 && highFuel !== -1) {
             setFilterFuel(current => !current);
             setZoom(7);
@@ -332,6 +406,15 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
     }
 
     const toggleFilterRpm = () => {
+
+        setFilterCutterBase(false);
+        setFilterAutoPilot(false);
+        setFilterAutoTracket(false);
+        setFilterSpeed(false);
+        setFilterModeCutterBase(false);
+        setFilterGpsQuality(false);
+        setFilterFuel(false);
+
         if (lowRpm !== -1 && medRpm !== -1 && highRpm !== -1) {
             setFilterRpm(current => !current);
             setZoom(7);
@@ -341,6 +424,15 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
 
     const toggleFilterCutterBase = () => {
+
+        setFilterAutoPilot(false);
+        setFilterAutoTracket(false);
+        setFilterSpeed(false);
+        setFilterModeCutterBase(false);
+        setFilterGpsQuality(false);
+        setFilterFuel(false);
+        setFilterRpm(false);
+
         if (lowCutterBase !== -1 && medCutterBase !== -1 && highCutterBase !== -1) {
             setFilterCutterBase(current => !current);
             setZoom(7);
@@ -435,6 +527,15 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
     }, [filterAutoTracket, points]);
 
 
+
+    useEffect(() => {
+        if (filterModeCutterBase) {
+            setFilteredPoints(points);
+        } else {
+            setFilteredPoints(points);
+        }
+    }, [filterModeCutterBase, points]);
+
     useEffect(() => {
         if (filteredPoints.length > 0) {
             const validPoints = filteredPoints.filter(point =>
@@ -486,15 +587,16 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
             }
         }
-        if(filter === "autoPilot" ){
+        if(filter === "autoPilot" || filter === "modeCutterBase"){
             if(val !== '0' && val !== '1'){
-                return val.toLowerCase().trim() === 'automatic' ? "blue" : "green";
+                return val.toLowerCase().trim() === 'automatic' ? "green" : "blue";
 
             }else{
                 return val === '1' ? "red" : "blue";
             }
 
         }
+
 
         if (ranges[filter]) {
 
@@ -541,11 +643,23 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
             {filterAutoTracket && (
                 <BarIndicator filterType="autoTracket" low={0} medium={0} high={1} />
             )}
+            {filterModeCutterBase && (
+                <BarIndicator filterType="modeCutterBase" low={0} medium={0} high={1} />
+            )}
 
             <div className="floating-filter-button">
-                <Button variant="contained" color="primary" onClick={openFilterDialog}>
-                    <FaMap />
-                </Button>
+                <Tooltip title={isMapButtonDisabled ? "Espera a que termine de cargar todo el mapa para poder generar otros." : ""}>
+                    <span>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={openFilterDialog}
+                            disabled={isMapButtonDisabled}
+                        >
+                            <FaMap />
+                        </Button>
+                    </span>
+                </Tooltip>
             </div>
 
             <MapContainer key={mapKey} center={mapCenter} zoom={zoom} style={{ height: '100vh', width: '100%' }}>
@@ -554,6 +668,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                     <BaseLayer checked name="Satellite View">
                         <TileLayer
                             url="https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+                            minZoom={3}
                             maxZoom={20}
                             subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
                         />
@@ -587,7 +702,10 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                         }else if (filterCutterBase) {
                             fillColor = chooseColor(point.properties.PRESION_DE_CORTADOR_BASE, "cutterBase");
 
-                        }else{
+                        }else if(filterModeCutterBase){
+                            fillColor = chooseColor(point.properties.MODO_CORTE_BASE, "modeCutterBase");
+                        }
+                        else{
                             fillColor = "blue";
                         }
                         if (coordinates.length >= 2) {
@@ -617,13 +735,15 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                             color="black"
                         />
                     )}
-
-                    {outsidePolygon.length > 0 && (
+                    {/*
+   {outsidePolygon.length > 0 && (
                         <Polygon
                             positions={transformPolygonCoords(outsidePolygon)}
                             color="red"
                         />
                     )}
+
+*/}
 
 
                 </LayersControl>
@@ -645,7 +765,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
                 }}
             >
                 <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
-                    Filtros de Mapa
+                    Generar Mapas
                 </DialogTitle>
                 <DialogContent>
                     <FormGroup>
@@ -656,72 +776,122 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
                         <FormControlLabel
                             control={<Switch checked={filterAutoTracket} onChange={toggleFilterAutoTracket} />}
-                            label="AutoTracket"
+                            label="Auto Tracket"
+                        />
+
+                        <FormControlLabel
+                            control={<Switch checked={filterModeCutterBase} onChange={toggleFilterModeCutterBase} />}
+                            label="Modo corte base"
                         />
 
 
                         <FormControlLabel
                             control={<Switch checked={filterSpeed} onChange={toggleFilterSpeed} />}
-                            label="Filtrar por Velocidad"
+                            label="Velocidad (Km/H)"
                         />
+
+
                         <TextField
-                            label="Velocidad Baja Máxima"
+                            label="Bajo"
                             variant="outlined"
                             type="number"
                             name="low"
                             value={lowSpeed}
-                            onChange={e => setLowSpeed(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowSpeed(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
+
                             margin="normal"
                         />
                         <TextField
-                            label="Velocidad Media Máxima"
+                            label="Medio"
                             variant="outlined"
                             type="number"
                             name="medium"
                             value={medSpeed}
-                            onChange={e => setMedSpeed(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedSpeed(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
-                            label="Velocidad Alta Mínima"
+                            label="Alto"
                             variant="outlined"
                             type="number"
                             name="high"
                             value={highSpeed}
-                            onChange={e => setHighSpeed(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighSpeed(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 
                         <FormControlLabel
                             control={<Switch checked={filterGpsQuality} onChange={toggleFilterGpsQuality} />}
-                            label="Filtrar Calidad Gps"
+                            label="Calidad Gps"
                         />
 
                         <TextField
-                            label="Señal Gps Baja Máxima"
+                            label="Bajo"
                             variant="outlined"
                             type="number"
                             name="lowGps"
                             value={lowGpsQuality}
-                            onChange={e => setLowGpsQuality(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowGpsQuality(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
-                            label="Señal Gps Media Máxima"
+                            label="Medio"
                             variant="outlined"
                             type="number"
                             name="mediumGps"
                                 value={medGpsQuality}
-                            onChange={e => setMedGpsQuality(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedGpsQuality(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
-                            label="Señal Gps Alta Mínima"
+                            label="Alto"
                             variant="outlined"
                             type="number"
                             name="highGps"
                             value={highGpsQuality}
-                            onChange={e => setHighGpsQuality(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighGpsQuality(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 
@@ -733,30 +903,51 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
 
                         <TextField
-                            label="Combustible Bajo Máxima"
+                            label="Bajo"
                             variant="outlined"
                             type="number"
                             name="lowFuel"
                             value={lowFuel}
-                            onChange={e => setLowFuel(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowFuel(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
-                            label="Combustible Medio Máxima"
+                            label="Medio"
                             variant="outlined"
                             type="number"
                             name="mediumFuel"
                             value={medFuel}
-                            onChange={e => setMedFuel(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedFuel(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
-                            label="Combustible Alto Mínima"
+                            label="Alto"
                             variant="outlined"
                             type="number"
                             name="highFuel"
                             value={highFuel}
-                            onChange={e => setHighFuel(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighFuel(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 
@@ -768,65 +959,107 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot 
 
 
                         <TextField
-                            label="RPM Bajo Máxima"
+                            label="Bajo"
                             variant="outlined"
                             type="number"
                             name="lowRPM"
                             value={lowRpm}
-                            onChange={e => setLowRpm(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowRpm(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
-                            label="RPM Medio Máxima"
+                            label="Medio"
                             variant="outlined"
                             type="number"
                             name="mediumRPM"
                             value={medRpm}
-                            onChange={e => setMedRpm(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedRpm(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
-                            label="RPM Alto Mínima"
+                            label="Alto"
                             variant="outlined"
                             type="number"
                             name="highRPM"
                             value={highRpm}
-                            onChange={e => setHighRpm(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighRpm(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 
 
                         <FormControlLabel
                             control={<Switch checked={filterCutterBase} onChange={toggleFilterCutterBase} />}
-                                label="Cortador Base"
+                                label="Presión de cortador base (Bar)"
                         />
 
 
                         <TextField
-                            label="Cortador Base Bajo Máxima"
+                            label="Bajo"
                             variant="outlined"
                             type="number"
                             name="lowCutterBase"
                             value={lowCutterBase}
-                            onChange={e => setLowCutterBase(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowCutterBase(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
-                            label="Cortador Base Medio Máxima"
+                            label="Medio"
                             variant="outlined"
                             type="number"
                             name="mediumCutterBase"
                             value={medCutterBase}
-                            onChange={e => setMedCutterBase(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedCutterBase(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
-                            label="Cortador Base Alto Mínima"
+                            label="Alto"
                             variant="outlined"
                             type="number"
                             name="highCutterBase"
                             value={highCutterBase}
-                            onChange={e => setHighCutterBase(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighCutterBase(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 

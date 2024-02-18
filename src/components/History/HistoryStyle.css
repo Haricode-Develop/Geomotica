@@ -1,0 +1,33 @@
+/* MyTimeline.css */
+.timeline-container {
+    font-family: 'Arial', sans-serif;
+    padding: 20px;
+    width: 100%;
+    max-height: 100vh;
+
+}
+.timeline-scroll {
+    overflow-y: auto;
+    height: calc(100vh - 40px);
+}
+.vertical-timeline::before {
+    background: #d7d7d7;
+}
+
+.vertical-timeline-element-title {
+    color: #333;
+}
+
+.vertical-timeline-element-content {
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+}
+
+.filters {
+    margin-bottom: 20px;
+}
+
+.filters input {
+    padding: 10px;
+    margin-right: 10px;
+    font-size: 1em;
+}

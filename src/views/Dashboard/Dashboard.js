@@ -105,6 +105,8 @@ function Dashboard() {
     const [selectedFile, setSelectedFile] = useState(null);
     const [idMax, setIdMax] = useState(null);
     const [progressIteracion, setProgressIteracion] = useState(null);
+    const [processingFinished, setProcessingFinished] = useState(false);
+
     //======================= id del análisis por realizar
     const [idAnalisisAps, setIdAnalisisAps] = useState(null);
     const [idAnalisisCosechaMecanica, setIdAnalisisCosechaMecanica] = useState(null);
@@ -725,8 +727,13 @@ function Dashboard() {
         let formData = new FormData();
         formData.append('csv', archivo);
         formData.append('idTipoAnalisis', idAnalisis.data.idAnalisis);
+        setShowProgressBar(true);
+        setProgress(30);
+        setProgressMessage("Procesando los datos ingresados");
+
         archivo = null;
         try {
+
             const response = await axios.post(`${API_BASE_URL}dashboard/procesarCsv/`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -735,9 +742,12 @@ function Dashboard() {
                     cancel = c;
                 }),
             });
+            setProgress(50);
+
             formData = null;
             const data = response.data;
 
+            setProgress(70);
 
             // Genera un nuevo Blob y File para setSelectedFile
 
@@ -747,19 +757,47 @@ function Dashboard() {
 
             setSelectedFile(csvFile);
             setDatosMapeo(data.data);
+            setProgress(100);
+            setShowProgressBar(false);
+
         }catch (error) {
             console.error('Se produjo un error al intentar subir el archivo:', error);
             if (error.response) {
                 console.error('Respuesta del servidor:', error.response);
                 console.error('Headers:', error.response.headers);
                 console.error('Status:', error.response.status);
-                alert(`Error en fila ${error.response.data.fila}: ${error.response.data.error}`);
+                toast.warn(`Error en fila ${error.response.data.fila}: ${error.response.data.error}`, {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                });
+
             } else if (error.request) {
-                console.error('Error de solicitud:', error.request);
-                alert('Se produjo un error al enviar el archivo. No se recibió respuesta del servidor.');
+                toast.warn(`Se produjo un error al enviar el archivo. No se recibió respuesta del servidor.`, {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                });
+
             } else {
-                console.error('Error de configuración:', error.message);
-                alert('Se produjo un error al procesar el archivo.');
+                toast.warn(`Se produjo un error al procesar el archivo.`, {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                });
+
             }
             console.error('Configuración de la solicitud:', error.config);
         }
@@ -823,6 +861,7 @@ function Dashboard() {
                     break; // Rompe el bucle en caso de error
                 }
             }
+            setProcessingFinished(true);
         };
         reader.onerror = (error) => console.log(error);
         reader.readAsText(selectedFile);
@@ -847,7 +886,7 @@ function Dashboard() {
                     <div>
                         <h1 className="dashboard-title">Resumen de Análisis</h1>
                         <section className="map-section">
-                            {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} onAreaCalculated={handleAreaCalculation} percentageAutoPilot={handlePercentageCalculation}/>}
+                            {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} onAreaCalculated={handleAreaCalculation} percentageAutoPilot={handlePercentageCalculation} progressFinish={processingFinished}/>}
 
                         </section>
                     </div>
@@ -859,10 +898,10 @@ function Dashboard() {
                                         <DataCard title="Responsable">
                                             {displayValue(ResponsableAps)}
                                         </DataCard>
-                                        <DataCard title="Fecha Inicio Cosecha">
+                                        <DataCard title="Fecha Inicio">
                                             {displayValue(fechaInicioCosechaAps)}
                                         </DataCard>
-                                        <DataCard title="Fecha Fin Cosecha">
+                                        <DataCard title="Fecha Fin">
                                             {displayValue(fechaFinCosechaAps)}
                                         </DataCard>
                                         <DataCard title="Nombre operador">
@@ -904,25 +943,25 @@ function Dashboard() {
                             {
                                 datosCargadosCosechaMecanica  && selectedAnalysisType === 'COSECHA_MECANICA' && (
                                     <>
-                                        <DataCard title="Nombre Responsable">
+                                        <DataCard title="Responsable">
                                             {displayValue(nombreResponsableCm)}
                                         </DataCard>
-                                        <DataCard title="Fecha Inicio Cosecha">
+                                        <DataCard title="Fecha Inicio">
                                             {displayValue(fechaInicioCosechaCm)}
                                         </DataCard>
-                                        <DataCard title="Fecha Fin Cosecha">
+                                        <DataCard title="Fecha Fin">
                                             {displayValue(fechaFinCosechaCm)}
                                         </DataCard>
                                         <DataCard title="Nombre Finca">
                                             {displayValue(nombreFincaCm)}
                                         </DataCard>
-                                        <DataCard title="Codigo Parcela">
+                                        <DataCard title="Codigo Finca">
                                             {displayValue(codigoParcelaResponsableCm)}
                                         </DataCard>
-                                        <DataCard title="Nombre Operador">
+                                        <DataCard title="Operador">
                                             {displayValue(nombreOperadorCm)}
                                         </DataCard>
-                                        <DataCard title="No. Maquina">
+                                        <DataCard title="Equipo">
                                             {displayValue(nombreMaquinaCm)}
                                         </DataCard>
                                         <DataCard title="Actividad">
@@ -937,44 +976,44 @@ function Dashboard() {
                                         <DataCard title="Diferencia de Área">
                                             {displayValue(diferenciaDeAreaCm)}
                                         </DataCard>
-                                        <DataCard title="Hora Inicio">
+                                        <DataCard title="Hora Inicio (H)">
                                             {displayValue(horaInicioCm)}
                                         </DataCard>
-                                        <DataCard title="Hora Fin">
+                                        <DataCard title="Hora Fin (H)">
                                             {displayValue(horaFinalCm)}
                                         </DataCard>
-                                        <DataCard title="Tiempo total Actividad">
+                                        <DataCard title="Tiempo total (H)">
                                             {displayValue(tiempoTotalActividadCm)}
                                         </DataCard>
-                                        <DataCard title="Consumos de combustible">
+                                        <DataCard title="Combustible Gal/H">
                                             {displayValue(consumoCombustibleCm)}
                                         </DataCard>
 
-                                        <DataCard title="Promedio Calidad de señal Gps">
+                                        <DataCard title="Calidad GPS">
                                             {displayValue(calidadGpsCm)}
                                         </DataCard>
-                                        <DataCard title="Eficiencia">
+                                        <DataCard title="Eficiencia Ha/Hora">
                                             {displayValue(eficienciaCm)}
                                         </DataCard>
-                                        <DataCard title="Promedio Velocidad">
+                                        <DataCard title="Velocidad Km/H">
                                             {displayValue(promedioVelocidadCm)}
                                         </DataCard>
-                                        <DataCard title="Promedio RPM">
+                                        <DataCard title="RPM">
                                             {displayValue(rpmCm)}
                                         </DataCard>
-                                        <DataCard title="Promedio TCH">
+                                        <DataCard title="TCH">
                                             {displayValue(tchCm)}
                                         </DataCard>
-                                        <DataCard title="Promedio TAH">
+                                        <DataCard title="TAH">
                                             {displayValue(tah)}
                                         </DataCard>
-                                        <DataCard title="Porcentaje Área Piloto">
+                                        <DataCard title="Piloto Automático">
                                             {displayValue(porcentajeAreaPilotoCm)}
                                         </DataCard>
-                                        <DataCard title="Porcentaje Área AutoTracker">
+                                        <DataCard title="Auto Tracket">
                                             {displayValue(porcentajeAreaAutoTrackerCm)}
                                         </DataCard>
-                                        <DataCard title="Porcentaje Modo Cortador Base">
+                                        <DataCard title="Corte Base">
                                             {displayValue(porcentajeModoCortadorBaseCm)}
                                         </DataCard>
 
@@ -1108,7 +1147,7 @@ function Dashboard() {
                                     }}
                                     accept=".zip"
                                 />
-                                Selecciona tu ZIP
+                                Subir Shape File
                             </label>
                             <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template descargar-plantilla">
                                 Descargar plantilla

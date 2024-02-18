@@ -21,6 +21,9 @@ const Sidebar = () => {
             case 'Dashboard':
                 navigate('/dashboard');
                 break;
+            case 'Mapeo':
+                navigate('/mapeo');
+                break;
             case 'Historial':
                 navigate('/historial');
                 break;

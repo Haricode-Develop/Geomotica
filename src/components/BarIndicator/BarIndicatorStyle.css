@@ -1,7 +1,7 @@
 .bar-indicator {
-    top: 50px;
-    right: 50px; /* Modifica según la posición deseada */
-    background: rgba(255, 255, 255, 0.8); /* Fondo semitransparente */
+    top: 250px;
+    right: 50px;
+    background: rgba(255, 255, 255, 0.8);
     padding: 15px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -9,9 +9,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    position: fixed;
+    position: absolute;
     cursor: move;
-    height: 310px;/* Cursor indica que se puede mover */
+    height: 310px;
 }
 
 
@@ -25,11 +25,11 @@
 
 
 .bar {
-    width: 30px; /* Ancho de la barra (ahora representa la altura debido a la orientación vertical) */
-    height: 200px; /* Altura de la barra */
+    width: 30px;
+    height: 200px;
     background: linear-gradient(to top, green 0%, blue 100%);    border-radius: 10px;
     position: relative;
-    margin: 0 5px; /* Espacio a los lados de la barra */
+    margin: 0 5px;
 }
 
 .bar-container {
@@ -38,44 +38,44 @@
     height: 50%;
     border-radius: 8px;
     overflow: hidden;
-    background: #ddd; /* Neutral background for the gradient bar to sit on */
-    margin: 0 10px; /* Spacing around the bar */
+    background: #ddd;
+    margin: 0 10px;
 }
 
 .gradient-bar {
     width: 100%;
     height: 100%;
     background: linear-gradient(to right, #4caf50 0%, #ffeb3b 50%, #f44336 100%);
-    transition: width 0.3s ease-in-out; /* Smooth transition for bar width changes */
+    transition: width 0.3s ease-in-out;
 }
 
 .label {
-    font-size: 14px; /* Tamaño más grande para las etiquetas */
-    color: #333; /* Color oscuro para mejorar la visibilidad */
-    font-weight: bold; /* Hacer las letras más gruesas */
-    text-transform: uppercase; /* Opcional: para hacer las letras mayúsculas */
-    padding: 2px; /* Pequeño padding para las etiquetas */
-    background: none; /* Sin fondo para las etiquetas */
+    font-size: 14px;
+    color: #333;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding: 2px;
+    background: none;
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);/* Posicionamiento absoluto para ubicar dentro del contenedor padre */
+    transform: translateX(-50%);
 }
 
 .label.low, .label.high {
     border-radius: 8px;
     position: absolute;
     white-space: nowrap;
-    padding: 5px 10px; /* More padding for a pill-like appearance */
-    color: #000; /* White text for contrast */
+    padding: 5px 10px;
+    color: #000;
     margin: 0;
-    transform: translate(-50%, 0);/* Remove margins to align with the edges of the bar */
+    transform: translate(-50%, 0);
 }
 .label.low {
-    bottom: 0; /* Coloca la etiqueta 'Bajo' debajo de la barra */
-    transform: translate(-50%, 100%); /* Centrado horizontal */
+    bottom: 0;
+    transform: translate(-50%, 100%);
 }
 
 .label.high {
-    top: 0; /* Alineado con la parte superior del contenedor */
-    transform: translate(-50%, -100%); /* Desplaza hacia arriba para que aparezca encima de la barra */
+    top: 0;
+    transform: translate(-50%, -100%);
 }
