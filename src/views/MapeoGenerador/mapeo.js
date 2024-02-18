@@ -726,13 +726,15 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             color="black"
                         />
                     )}
-
-                    {outsidePolygon.length > 0 && (
+                    {/*
+   {outsidePolygon.length > 0 && (
                         <Polygon
                             positions={transformPolygonCoords(outsidePolygon)}
                             color="red"
                         />
                     )}
+
+*/}
 
 
                 </LayersControl>
