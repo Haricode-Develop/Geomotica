@@ -20,6 +20,17 @@ const BarIndicator = ({ filterType }) => {
             indicadorIzquierda = "Automático";
             indicadorDerecha = "Manual";
             break;
+        case "cutterBase":
+            title = "Presion Cortador Base";
+            break;
+        case "rpm":
+            title = "RPM";
+            break;
+        case "modeCutterBase":
+            title = "Modo de corte base";
+            indicadorIzquierda = "Automático";
+            indicadorDerecha = "Manual";
+            break;
         case "autoTracket":
             title = "Auto Tracket";
             indicadorIzquierda = "Enganchado";
@@ -31,10 +42,10 @@ const BarIndicator = ({ filterType }) => {
 
     let gradientStyle;
 
-    if (filterType === 'autoPilot' || filterType === 'autoTracket') {
+    if (filterType === 'autoPilot' || filterType === 'autoTracket' || filterType === 'modeCutterBase') {
         // Establecer el estilo de gradiente para Piloto Automático y Auto Tracker
         gradientStyle = { background: 'linear-gradient(to top, green 0%, blue 100%)' };
-        if (filterType === 'autoPilot') {
+        if (filterType === 'autoPilot' || filterType === 'modeCutterBase') {
             indicadorIzquierda = "Automático";
             indicadorDerecha = "Manual";
         } else {
