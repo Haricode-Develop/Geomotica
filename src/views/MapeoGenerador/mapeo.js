@@ -31,9 +31,9 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
     const [filterAutoTracket, setFilterAutoTracket] = useState(false);
 
     // Filtros de velocidad
-    const [lowSpeed, setLowSpeed] = useState(-1);
-    const [medSpeed, setMedSpeed] = useState(-1);
-    const [highSpeed, setHighSpeed] = useState(-1);
+    const [lowSpeed, setLowSpeed] = useState(0);
+    const [medSpeed, setMedSpeed] = useState(0);
+    const [highSpeed, setHighSpeed] = useState(0);
 
     // Filtros de calidad de GPS
     const [lowGpsQuality, setLowGpsQuality] = useState(0);
@@ -57,7 +57,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
     const [highCutterBase, setHighCutterBase] = useState(0);
 
 
-    const [zoom, setZoom] = useState(2);
+    const [zoom, setZoom] = useState(3);
 
 
     const [filterSpeed, setFilterSpeed] = useState(false);
@@ -85,6 +85,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         outsidePolygonArea: null,
         areaDifference: null
     });
+    const incrementFilterValue = (filterSetter, currentValue) => {
+        filterSetter(currentValue + 1);
+    };
+
+    // Función para decrementar los valores de los filtros
+    const decrementFilterValue = (filterSetter, currentValue) => {
+        filterSetter(currentValue - 1);
+    };
 
     const [percentage, setPercentage] = useState({
         autoTracket: null,
@@ -660,6 +668,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                     <BaseLayer checked name="Satellite View">
                         <TileLayer
                             url="https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+                            minZoom={3}
                             maxZoom={20}
                             subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
                         />
@@ -788,7 +797,15 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="low"
                             value={lowSpeed}
-                            onChange={e => setLowSpeed(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowSpeed(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
+
                             margin="normal"
                         />
                         <TextField
@@ -797,7 +814,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="medium"
                             value={medSpeed}
-                            onChange={e => setMedSpeed(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedSpeed(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
@@ -806,7 +830,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="high"
                             value={highSpeed}
-                            onChange={e => setHighSpeed(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighSpeed(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 
@@ -821,7 +852,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="lowGps"
                             value={lowGpsQuality}
-                            onChange={e => setLowGpsQuality(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowGpsQuality(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
@@ -830,7 +868,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="mediumGps"
                                 value={medGpsQuality}
-                            onChange={e => setMedGpsQuality(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedGpsQuality(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
@@ -839,7 +884,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="highGps"
                             value={highGpsQuality}
-                            onChange={e => setHighGpsQuality(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighGpsQuality(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 
@@ -856,7 +908,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="lowFuel"
                             value={lowFuel}
-                            onChange={e => setLowFuel(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowFuel(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
@@ -865,7 +924,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="mediumFuel"
                             value={medFuel}
-                            onChange={e => setMedFuel(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedFuel(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
@@ -874,7 +940,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="highFuel"
                             value={highFuel}
-                            onChange={e => setHighFuel(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighFuel(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 
@@ -891,7 +964,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="lowRPM"
                             value={lowRpm}
-                            onChange={e => setLowRpm(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowRpm(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
@@ -900,7 +980,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="mediumRPM"
                             value={medRpm}
-                            onChange={e => setMedRpm(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedRpm(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
@@ -909,7 +996,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="highRPM"
                             value={highRpm}
-                            onChange={e => setHighRpm(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighRpm(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 
@@ -926,7 +1020,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="lowCutterBase"
                             value={lowCutterBase}
-                            onChange={e => setLowCutterBase(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setLowCutterBase(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setLowCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
@@ -935,7 +1036,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="mediumCutterBase"
                             value={medCutterBase}
-                            onChange={e => setMedCutterBase(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setMedCutterBase(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setMedCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
                         <TextField
@@ -944,7 +1052,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             type="number"
                             name="highCutterBase"
                             value={highCutterBase}
-                            onChange={e => setHighCutterBase(Number(e.target.value))}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setHighCutterBase(value === '' ? '' : Number(value));
+                            }}
+                            onBlur={e => {
+                                const value = e.target.value;
+                                setHighCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
+                            }}
                             margin="normal"
                         />
 
