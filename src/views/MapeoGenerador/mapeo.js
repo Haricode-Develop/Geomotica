@@ -589,7 +589,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         }
         if(filter === "autoPilot" || filter === "modeCutterBase"){
             if(val !== '0' && val !== '1'){
-                return val.toLowerCase().trim() === 'automatic' ? "blue" : "green";
+                return val.toLowerCase().trim() === 'automatic' ? "green" : "blue";
 
             }else{
                 return val === '1' ? "red" : "blue";
@@ -765,7 +765,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 }}
             >
                 <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
-                    Filtros de Mapa
+                    Generar Mapas
                 </DialogTitle>
                 <DialogContent>
                     <FormGroup>
@@ -776,7 +776,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
                         <FormControlLabel
                             control={<Switch checked={filterAutoTracket} onChange={toggleFilterAutoTracket} />}
-                            label="Auto Tracker"
+                            label="Auto Tracket"
                         />
 
                         <FormControlLabel
@@ -787,7 +787,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
                         <FormControlLabel
                             control={<Switch checked={filterSpeed} onChange={toggleFilterSpeed} />}
-                            label="Velocidad"
+                            label="Velocidad (Km/H)"
                         />
 
 
@@ -1010,7 +1010,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
                         <FormControlLabel
                             control={<Switch checked={filterCutterBase} onChange={toggleFilterCutterBase} />}
-                                label="Modo corte base"
+                                label="Presión de cortador base (Bar)"
                         />
 
 

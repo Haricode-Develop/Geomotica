@@ -1147,7 +1147,7 @@ function Dashboard() {
                                     }}
                                     accept=".zip"
                                 />
-                                Selecciona tu ZIP
+                                Subir Shape File
                             </label>
                             <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template descargar-plantilla">
                                 Descargar plantilla

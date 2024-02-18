@@ -174,7 +174,7 @@ export const obtenerNombreResponsableCm = async (idAnalisisCosechaMecanica, setN
         const response = await axios.get(`${API_BASE_URL}dashboard/nombreResponsableCm/${idAnalisisCosechaMecanica}`);
 
 
-        setNombreResponsableCm(response.data[0]);
+        setNombreResponsableCm(response.data);
     } catch (error) {
         console.error("Error en obtenerNombreResponsableCm:", error);
     }
@@ -201,7 +201,7 @@ export const obtenerFechaFinCosechaCm = async (idAnalisisCosechaMecanica, setFec
 export const obtenerNombreFincaCm = async (idAnalisisCosechaMecanica, setNombreFincaCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/nombreFincaCm/${idAnalisisCosechaMecanica}`);
-        setNombreFincaCm(response.data[0]);
+        setNombreFincaCm(response.data);
     } catch (error) {
         console.error("Error en obtenerNombreFincaCm:", error);
     }
@@ -210,7 +210,8 @@ export const obtenerNombreFincaCm = async (idAnalisisCosechaMecanica, setNombreF
 export const obtenerCodigoParcelaResponsableCm = async (idAnalisisCosechaMecanica, setCodigoParcelaResponsableCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/codigoParcelaResponsableCm/${idAnalisisCosechaMecanica}`);
-        setCodigoParcelaResponsableCm(response.data[0]);
+        console.log("CODIGO PARCELA CON MÁS DATOS: ", response.data);
+        setCodigoParcelaResponsableCm(response.data);
     } catch (error) {
         console.error("Error en obtenerCodigoParcelaResponsableCm:", error);
     }
@@ -237,7 +238,7 @@ export const obtenerCalidadGpsCm = async(idAnalisisCosechaMecanica, setCalidadGp
 export const obtenerNombreOperadorCm = async (idAnalisisCosechaMecanica, setNombreOperadorCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/nombreOperadorCm/${idAnalisisCosechaMecanica}`);
-        setNombreOperadorCm(response.data[0]);
+        setNombreOperadorCm(response.data);
     } catch (error) {
         console.error("Error en obtenerNombreOperadorCm:", error);
     }
@@ -246,7 +247,7 @@ export const obtenerNombreOperadorCm = async (idAnalisisCosechaMecanica, setNomb
 export const obtenerNombreMaquinaCm = async (idAnalisisCosechaMecanica, setNombreMaquinaCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/nombreMaquinaCm/${idAnalisisCosechaMecanica}`);
-        setNombreMaquinaCm(response.data[0]);
+        setNombreMaquinaCm(response.data);
     } catch (error) {
         console.error("Error en obtenerNombreMaquinaCm:", error);
     }
@@ -255,7 +256,7 @@ export const obtenerNombreMaquinaCm = async (idAnalisisCosechaMecanica, setNombr
 export const obtenerActividadCm = async (idAnalisisCosechaMecanica, setActividadCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/actividadCm/${idAnalisisCosechaMecanica}`);
-        setActividadCm(response.data[0]);
+        setActividadCm(response.data);
     } catch (error) {
         console.error("Error en obtenerActividadCm:", error);
     }
@@ -623,8 +624,16 @@ export const obtenerPromedioVelocidadHerbicidas = async (idAnalisisHerbicidas, s
 export function displayValue(value) {
     if (value === undefined || value === null) {
         return 'N/A';
-    } else if (Array.isArray(value)) {
-        return value.join('\n');
+    } else if (Array.isArray(value) && value.length > 1) {
+        return (
+            <div style={{ overflowY: 'auto', maxHeight: '100px', listStyle: 'none'}}>
+                <ul>
+                    {value.map((item, index) => (
+                        <li key={index}>{item}</li>
+                    ))}
+                </ul>
+            </div>
+        );
     } else if (typeof value === 'object') {
         // Devolver solo los valores de las propiedades del objeto
         return Object.values(value).join(', ');
