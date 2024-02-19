@@ -34,6 +34,7 @@ import {
     obtenerPromedioVelocidadCm,
     obtenerTiempoTotalActividadCm,
     obtenerTahCm,
+    obtenerPresionCortadorBaseCm,
     obtenerTchCm,
     //Fertilización
     obtenerNombreFincaFertilizacion,
@@ -106,7 +107,7 @@ function Dashboard() {
     const [idMax, setIdMax] = useState(null);
     const [progressIteracion, setProgressIteracion] = useState(null);
     const [processingFinished, setProcessingFinished] = useState(false);
-
+    const [titleLoader, setTitleLoader] = useState("");
     //======================= id del análisis por realizar
     const [idAnalisisAps, setIdAnalisisAps] = useState(null);
     const [idAnalisisCosechaMecanica, setIdAnalisisCosechaMecanica] = useState(null);
@@ -174,6 +175,7 @@ function Dashboard() {
     const [rpmCm, setRpmCm] = useState(null);
     const [tchCm, setTchCm] = useState(null);
     const [tah, setTahCm] = useState(null);
+    const [presionCortadorBase, setPresionCortadorBase] = useState(null);
     const [porcentajeAreaAutoTrackerCm, setPorcentajeAreaAutoTrackerCm] = useState(null);
     const [porcentajeModoCortadorBaseCm, setPorcentajeModoCortadorBaseCm] = useState(null);
 
@@ -322,6 +324,7 @@ function Dashboard() {
                     obtenerCalidadGpsCm(idAnalisisCosechaMecanica, setCalidadGpsCm),
                     obtenerPromedioVelocidadCm(idAnalisisCosechaMecanica, setPromedioVelocidadCm),
                     obtenerConsumoCombustibleCm(idAnalisisCosechaMecanica, setConsumoCombustibleCm),
+                    obtenerPresionCortadorBaseCm(idAnalisisCosechaMecanica, setPresionCortadorBase),
                     obtenerTahCm(idAnalisisCosechaMecanica, setTahCm),
                     obtenerRpmCm(idAnalisisCosechaMecanica, setRpmCm),
                     obtenerTchCm(idAnalisisCosechaMecanica, setTchCm)
@@ -388,6 +391,7 @@ function Dashboard() {
             // Actualizar el estado basado en el progreso
             setProgress(progressNumber);
             setProgressMessage(message);
+
                 // Controlar la visibilidad de la barra de progreso
             setShowProgressBar(progressNumber < 100); // Esto reemplaza las dos llamadas anteriores
 
@@ -714,7 +718,7 @@ function Dashboard() {
             console.error("No se seleccionó ningún archivo");
             return;
         }
-
+        setTitleLoader("Subiendo Datos");
         let archivo = event.target.files[0];
 
 
@@ -805,6 +809,7 @@ function Dashboard() {
 
 
     const execBash = async () => {
+        setTitleLoader("Cargando Análisis");
         let validar = "ok";
 
         if (!selectedFile || !selectedZipFile) {
@@ -878,7 +883,7 @@ function Dashboard() {
                 isActive={runTutorial}
                 onClose={() => setRunTutorial(false)}
             />
-            <ProgressBar progress={progress} message={progressMessage} show={showProgressBar} />
+            <ProgressBar progress={progress} message={progressMessage} show={showProgressBar} title={titleLoader} />
 
             <main  className={`main-content ${!sidebarOpen ? 'expand' : ''}`} >
                 <div className={`dashboard-main`}>
@@ -967,15 +972,18 @@ function Dashboard() {
                                         <DataCard title="Actividad">
                                             {displayValue(actividadCm)}
                                         </DataCard>
-                                        <DataCard title="Área Neta">
+                                        {/*
+                                         <DataCard title="Área Neta">
                                             {displayValue(areaNetaCm)}
                                         </DataCard>
+                                          <DataCard title="Diferencia de Área">
+                                            {displayValue(diferenciaDeAreaCm)}
+                                        </DataCard>
+                                        */}
                                         <DataCard title="Área Bruta">
                                             {displayValue(areaBrutaCm)}
                                         </DataCard>
-                                        <DataCard title="Diferencia de Área">
-                                            {displayValue(diferenciaDeAreaCm)}
-                                        </DataCard>
+
                                         <DataCard title="Hora Inicio (H)">
                                             {displayValue(horaInicioCm)}
                                         </DataCard>
@@ -1007,6 +1015,10 @@ function Dashboard() {
                                         <DataCard title="TAH">
                                             {displayValue(tah)}
                                         </DataCard>
+                                        <DataCard title="Presion Cortador Base (Bar)">
+                                            {displayValue(presionCortadorBase)}
+                                        </DataCard>
+
                                         <DataCard title="Piloto Automático">
                                             {displayValue(porcentajeAreaPilotoCm)}
                                         </DataCard>
