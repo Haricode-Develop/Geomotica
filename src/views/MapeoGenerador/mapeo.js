@@ -269,7 +269,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
         const autoTracketPoints = pointsData.filter(point =>
             point.properties.AUTO_TRACKET &&
-            point.properties.AUTO_TRACKET.trim().toLowerCase() === 'engaged'
+            point.properties.AUTO_TRACKET.trim().toLowerCase() === 'disengaged'
         ).length;
 
         const modoCorteBase = pointsData.filter(point =>
