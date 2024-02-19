@@ -269,7 +269,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
         const autoTracketPoints = pointsData.filter(point =>
             point.properties.AUTO_TRACKET &&
-            point.properties.AUTO_TRACKET.trim().toLowerCase() === 'disengaged'
+            point.properties.AUTO_TRACKET.trim().toLowerCase() === 'engaged'
         ).length;
 
         const modoCorteBase = pointsData.filter(point =>
@@ -581,7 +581,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         if(filter === "autoTracket"){
             if(val !== '0' && val !== '1'){
 
-                return val.toLowerCase().trim() === 'engaged' ? "blue" : "green";
+                return val.toLowerCase().trim() === 'engaged' ? "green" : "blue";
             }else{
                 return val === '0' ? "blue" : "red";
 
