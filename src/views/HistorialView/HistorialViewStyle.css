@@ -16,3 +16,57 @@
 .historial-view.closed {
     padding-left: 250px;
 }
+
+
+.vertical-timeline-element-content {
+    cursor: pointer;
+    transition: box-shadow 0.3s ease;
+}
+
+.vertical-timeline-element-content:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.leyenda-container {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.map-container {
+    position: relative; /* Esta es la clave para el posicionamiento flotante */
+    height: 100%;
+    width: 100%;
+}
+
+/* No olvides ajustar tu .leyenda-container si es necesario */
+.leyenda-container {
+    position: absolute;
+    top: 10px;
+    left: 80%;
+    transform: translateX(-50%);
+    z-index: 400; /* Asegúrate que sea mayor que los elementos del mapa pero no tanto como para que interfiera con otros modales o tooltips */
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    padding: 10px;
+    pointer-events: none; /* Esto permite clickear a través del contenedor si no hay botones o links */
+}
+
+.leyenda-item {
+    pointer-events: auto; /* Esto permite clickear en los items de la leyenda */
+    /* Resto de tus estilos */
+}
+
+.leyenda-item.selected {
+    background-color: #4a83ec; /* O cualquier otro color que prefieras */
+    color: white;
+}
