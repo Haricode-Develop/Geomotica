@@ -242,3 +242,36 @@
         margin-bottom: 10px;
     }
 }
+
+
+.details-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    padding: 16px;
+}
+
+.detail-card {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e0e0e0;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.card-icon {
+    margin-right: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.card-content {
+    flex: 1;
+}
+
+.map-container {
+    height: 400px; /* ajusta según tus necesidades */
+    margin-top: 16px;
+}
+
+/* Asegúrate de añadir estilos para .details-header y otros elementos según sea necesario */

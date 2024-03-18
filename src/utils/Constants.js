@@ -175,6 +175,7 @@ export const obtenerNombreResponsableCm = async (idAnalisisCosechaMecanica, setN
 
 
         setNombreResponsableCm(response.data);
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerNombreResponsableCm:", error);
     }
@@ -184,6 +185,8 @@ export const obtenerFechaInicioCosechaCm = async (idAnalisisCosechaMecanica, set
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/fechaInicioCosechaCm/${idAnalisisCosechaMecanica}`);
         setFechaInicioCosechaCm(response.data[0]);
+
+        return response.data[0];
     } catch (error) {
         console.error("Error en obtenerFechaInicioCosechaCm:", error);
     }
@@ -193,6 +196,8 @@ export const obtenerFechaFinCosechaCm = async (idAnalisisCosechaMecanica, setFec
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/fechaFinCosechaCm/${idAnalisisCosechaMecanica}`);
         setFechaFinCosechaCm(response.data[0]);
+
+        return response.data[0];
     } catch (error) {
         console.error("Error en obtenerFechaFinCosechaCm:", error);
     }
@@ -202,6 +207,8 @@ export const obtenerNombreFincaCm = async (idAnalisisCosechaMecanica, setNombreF
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/nombreFincaCm/${idAnalisisCosechaMecanica}`);
         setNombreFincaCm(response.data);
+
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerNombreFincaCm:", error);
     }
@@ -212,6 +219,8 @@ export const obtenerCodigoParcelaResponsableCm = async (idAnalisisCosechaMecanic
         const response = await axios.get(`${API_BASE_URL}dashboard/codigoParcelaResponsableCm/${idAnalisisCosechaMecanica}`);
         console.log("CODIGO PARCELA CON MÁS DATOS: ", response.data);
         setCodigoParcelaResponsableCm(response.data);
+
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerCodigoParcelaResponsableCm:", error);
     }
@@ -221,6 +230,8 @@ export const obtenerPresionCortadorBaseCm = async (idAnalisisCosechaMecanica, se
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/presionCortadorBaseCm/${idAnalisisCosechaMecanica}`);
         setPresionCortadorBase(response.data);
+
+        return response.data;
     }catch(error){
         console.error("Error en obtener Presion Cortador Base: ", error);
     }
@@ -233,6 +244,7 @@ export const obtenerConsumoCombustibleCm = async(idAnalisisCosechaMecanica, setC
         const response = await axios.get(`${API_BASE_URL}dashboard/consumoCombustibleCm/${idAnalisisCosechaMecanica}`);
         setConsumoCombustibleCm(response.data);
 
+        return response.data;
     } catch(error){
         console.error("Error en obtenerConsumo COmbusitebleCm:", error);
     }
@@ -242,6 +254,8 @@ export const obtenerCalidadGpsCm = async(idAnalisisCosechaMecanica, setCalidadGp
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/calidadGpsCm/${idAnalisisCosechaMecanica}`);
         setCalidadGpsCm(response.data);
+
+        return response.data;
     }catch(error){
         console.error("Error en obtenerConsumo COmbusitebleCm:", error);
     }
@@ -250,6 +264,8 @@ export const obtenerNombreOperadorCm = async (idAnalisisCosechaMecanica, setNomb
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/nombreOperadorCm/${idAnalisisCosechaMecanica}`);
         setNombreOperadorCm(response.data);
+
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerNombreOperadorCm:", error);
     }
@@ -259,6 +275,8 @@ export const obtenerNombreMaquinaCm = async (idAnalisisCosechaMecanica, setNombr
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/nombreMaquinaCm/${idAnalisisCosechaMecanica}`);
         setNombreMaquinaCm(response.data);
+
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerNombreMaquinaCm:", error);
     }
@@ -268,6 +286,8 @@ export const obtenerActividadCm = async (idAnalisisCosechaMecanica, setActividad
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/actividadCm/${idAnalisisCosechaMecanica}`);
         setActividadCm(response.data);
+
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerActividadCm:", error);
     }
@@ -277,6 +297,8 @@ export const obtenerRpmCm = async (idAnalisisCosechaMecanica, setRpmCm) =>{
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/rpmCm/${idAnalisisCosechaMecanica}`);
         setRpmCm(response.data);
+
+        return response.data;
     } catch(error){
         console.error("Error en obtenerRpmCm:", error);
 
@@ -287,6 +309,8 @@ export const obtenerTchCm = async(idAnalisisCosechaMecanica, setTchCm) => {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/tchCm/${idAnalisisCosechaMecanica}`);
         setTchCm(response.data);
+
+        return response.data;
     }  catch(error){
         console.error("Error en obtenerRpmCm:", error);
     }
@@ -296,6 +320,8 @@ export const obtenerTahCm = async(idAnalisisCosechaMecanica, setTahCm) => {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/tahCm/${idAnalisisCosechaMecanica}`);
         setTahCm(response.data);
+
+        return response.data;
     }  catch(error){
         console.error("Error en obtenerRpmCm:", error);
     }
@@ -305,6 +331,8 @@ export const obtenerHoraInicioCm = async (idAnalisisCosechaMecanica, setHoraInic
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/horaInicioCm/${idAnalisisCosechaMecanica}`);
         setHoraInicioCm(response.data[0]);
+
+        return response.data[0];
     } catch (error) {
         console.error("Error en obtenerHoraInicioCm:", error);
     }
@@ -314,6 +342,8 @@ export const obtenerHoraFinalCm = async (idAnalisisCosechaMecanica, setHoraFinal
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/horaFinalCm/${idAnalisisCosechaMecanica}`);
         setHoraFinalCm(response.data[0]);
+
+        return response.data[0];
     } catch (error) {
         console.error("Error en obtenerHoraFinalCm:", error);
     }
@@ -323,6 +353,8 @@ export const obtenerTiempoTotalActividadCm = async (idAnalisisCosechaMecanica, s
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/tiempoTotalActividadCm/${idAnalisisCosechaMecanica}`);
         setTiempoTotalActividadCm(response.data[0]);
+
+        return response.data[0];
     } catch (error) {
         console.error("Error en obtenerTiempoTotalActividadCm:", error);
     }
@@ -335,6 +367,7 @@ export const obtenerPromedioVelocidadCm = async (idAnalisisCosechaMecanica, setP
         const response = await axios.get(`${API_BASE_URL}dashboard/promedioVelocidadCm/${idAnalisisCosechaMecanica}`);
         setPromedioVelocidadCm(`${response.data} Km/H`);
 
+        return `${response.data} Km/H`;
     } catch (error) {
         console.error("Error en obtenerPromedioVelocidadCm:", error);
     }

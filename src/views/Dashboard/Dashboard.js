@@ -174,7 +174,7 @@ function Dashboard() {
     const [calidadGpsCm, setCalidadGpsCm] = useState(null);
     const [rpmCm, setRpmCm] = useState(null);
     const [tchCm, setTchCm] = useState(null);
-    const [tah, setTahCm] = useState(null);
+    const [tahCm, setTahCm] = useState(null);
     const [presionCortadorBase, setPresionCortadorBase] = useState(null);
     const [porcentajeAreaAutoTrackerCm, setPorcentajeAreaAutoTrackerCm] = useState(null);
     const [porcentajeModoCortadorBaseCm, setPorcentajeModoCortadorBaseCm] = useState(null);
@@ -225,6 +225,7 @@ function Dashboard() {
     const [promedioVelocidadHerbicidas, setPromedioVelocidadHerbicidas] = useState(null);
 
     //===============================================================
+    const [datosCosechaMecanica, setDatosCosechaMecanica] = useState({});
 
 
     // ============================ Use Effect para carga de indicadores
@@ -293,7 +294,6 @@ function Dashboard() {
                         obtenerPromedioDosisRealFertilizacion(idAnalisisFertilizacion),
                         obtenerDosisTeoricaFertilizacion(idAnalisisFertilizacion)
                     ]);
-                    // Actualiza el estado después de completar todas las promesas
                     setDatosCargadosFertilizacion(true);
                 } catch (error) {
                     console.error("Error al cargar datos de Fertilización:", error);
@@ -303,13 +303,13 @@ function Dashboard() {
 
         // Invoca la función asíncrona
         fetchData();
-    }, [idAnalisisFertilizacion]); // Asegúrate de incluir todas las dependencias externas necesarias aquí
+    }, [idAnalisisFertilizacion]);
 
     // Indicadores Cosecha Mecánica
     useEffect(() => {
         const fetchData = async () => {
             try {
-                await Promise.all([
+                const datos= await Promise.all([
                     obtenerNombreResponsableCm(idAnalisisCosechaMecanica, setNombreResponsableCm),
                     obtenerFechaInicioCosechaCm(idAnalisisCosechaMecanica, setFechaInicioCosechaCm),
                     obtenerFechaFinCosechaCm(idAnalisisCosechaMecanica, setFechaFinCosechaCm),
@@ -328,13 +328,46 @@ function Dashboard() {
                     obtenerTahCm(idAnalisisCosechaMecanica, setTahCm),
                     obtenerRpmCm(idAnalisisCosechaMecanica, setRpmCm),
                     obtenerTchCm(idAnalisisCosechaMecanica, setTchCm)
-                ]);
+                ]).then(results => ({
+                    nombreResponsable: results[0],
+                    fechaInicioCosecha: results[1],
+                    fechaFinCosecha: results[2],
+                    nombreFinca: results[3],
+                    codigoParcelaResponsable: results[4],
+                    nombreOperador: results[5],
+                    nombreMaquina: results[6],
+                    actividad: results[7],
+                    horaInicio: results[8],
+                    horaFin: results[9],
+                    tiempoTotalActividad: results[10],
+                    calidadGps: results[11],
+                    promedioVelocidad: results[12],
+                    consumoCombustible: results[13],
+                    presionCortadorBase: results[14],
+                    tah: results[15],
+                    rpm: results[16],
+                    tch: results[17]
+                }));
+
+                setDatosCosechaMecanica(datos);
+
+                setDatosCargadosCosechaMecanica(true);
+
+                console.log("ESTE ES EL ID DEL ANALISIS DE LA PETICION", idAnalisisCosechaMecanica);
+                axios.post(`${API_BASE_URL}dashboard/cosecha_mecanica_analisis/${idAnalisisCosechaMecanica}`, { datos: datos })
+                    .then(response => {
+                        console.log("ESTA ES LA RESPUESTA AL SUBIR AL BUCKET: ");
+                        console.log(response.data);
+                    })
+                    .catch(error => {
+                        console.error("Error al enviar datos de cosecha mecánica", error);
+                    });
+
                 setDatosCargadosCosechaMecanica(true);
             } catch (error) {
                 console.error("Error al cargar datos de Cosecha:", error);
             }
         };
-        // Llamamos a fetchData solo si idAnalisisCosechaMecanica está disponible
         if (idAnalisisCosechaMecanica) {
             fetchData();
         }
@@ -1013,7 +1046,7 @@ function Dashboard() {
                                             {displayValue(tchCm)}
                                         </DataCard>
                                         <DataCard title="TAH">
-                                            {displayValue(tah)}
+                                            {displayValue(tahCm)}
                                         </DataCard>
                                         <DataCard title="Presion Cortador Base (Bar)">
                                             {displayValue(presionCortadorBase)}
