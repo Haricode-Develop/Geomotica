@@ -6,7 +6,6 @@ import 'leaflet/dist/leaflet.css';
 import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
 import 'react-vertical-timeline-component/style.min.css';
 import './HistoryStyle.css';
-import { TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import axios from 'axios';
 import { API_BASE_URL } from "../../utils/config";
 import Modal from "../Modal/Modal";
@@ -14,38 +13,51 @@ import 'leaflet-geotiff';
 import parseGeoraster from 'georaster';
 import GeoRasterLayer from 'georaster-layer-for-leaflet';
 import moment from 'moment';
-import { Drawer, Button } from '@mui/material';
-import Fab from '@mui/material/Fab';
+import { TextField, FormControl, InputLabel, Select, MenuItem, Drawer, Button, Fab, Tooltip, Slider } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-import Tooltip from '@mui/material/Tooltip';
 
-const colorMappingBool = (value) => {
-    return value === 1 ? 'green' : 'red';
+
+
+const colorMappingBool = (valueArray) => {
+    const value = valueArray[0];
+    const color = value === 1 ? '#00FF00' : '#FF0000';
+    return color;
 };
 
-const colorMappingGradient = (value) => {
-    const minVal = 0;
-    const maxVal = 6;
-    const normalized = (value - minVal) / (maxVal - minVal);
+const colorMappingGradient = (valueArray, minVal, midVal, maxVal) => {
+    const value = valueArray[0];
+    const range = maxVal - minVal;
+    const midPoint = midVal - minVal;
+    const normalized = (value - minVal) / range;
+
     if (normalized < 0.5) {
-        return `rgb(255, ${Math.round(255 * (normalized * 2))}, 0)`;
+        // De verde a amarillo
+        const midNormalized = normalized / 0.5;
+        const red = Math.round(255 * midNormalized);
+        const green = 255;
+        return `rgb(${red}, ${green}, 0)`;
     } else {
-        return `rgb(${Math.round(255 * (2 - normalized * 2))}, 255, 0)`;
+        // De amarillo a rojo
+        const topNormalized = (normalized - 0.5) / 0.5;
+        const red = 255;
+        const green = Math.round(255 * (1 - topNormalized));
+        return `rgb(${red}, ${green}, 0)`;
     }
 };
 
-function usePrevious(value) {
-    const ref = useRef();
-    useEffect(() => {
-        ref.current = value;
-    }, [value]);
-    return ref.current;
-}
 
-function GeoTIFFLayer({ url, bounds, selectedLegend }) {
+function GeoTIFFLayer({ url, bounds, selectedLegend, gradientValues }) {
     const map = useMap();
     const layerRef = useRef(null);
     const prevUrl = usePrevious(url);
+
+    function usePrevious(value) {
+        const ref = useRef();
+        useEffect(() => {
+            ref.current = value;
+        }, [value]);
+        return ref.current;
+    }
 
     useEffect(() => {
         if (prevUrl && layerRef.current) {
@@ -56,11 +68,11 @@ function GeoTIFFLayer({ url, bounds, selectedLegend }) {
         const loadGeoTIFF = async () => {
             const arrayBuffer = await fetch(url).then(response => response.arrayBuffer());
             const georaster = await parseGeoraster(arrayBuffer);
-            const pixelValuesToColorFn = selectedLegend === "Piloto Automatico Num" ||
-            selectedLegend === "Calidad De Senal" ||
-            selectedLegend === "Auto tracket Num" ||
-            selectedLegend === "Modo Corte Base Num" ?
-                colorMappingBool : colorMappingGradient;
+            console.log("LEYENDA SELECCIONADA: ", selectedLegend);
+            const pixelValuesToColorFn = selectedLegend === "PILOTO_AUTOMATICO" ||
+            selectedLegend === "AUTO_TRACKET" ||
+            selectedLegend === "MODO_CORTE_BASE" ?
+                colorMappingBool : (values) => colorMappingGradient(values, gradientValues.min, gradientValues.mid, gradientValues.max);
 
             const layer = new GeoRasterLayer({
                 georaster,
@@ -84,7 +96,7 @@ function GeoTIFFLayer({ url, bounds, selectedLegend }) {
                 layerRef.current = null;
             }
         };
-    }, [url, bounds, map, selectedLegend, prevUrl]);
+    }, [url, bounds, map, selectedLegend, prevUrl, gradientValues]); // Asegúrate de incluir gradientValues aquí
 
     return null;
 }
@@ -105,10 +117,17 @@ const MyTimeline = () => {
     const [endDate, setEndDate] = useState('');
     const [analisisData, setAnalisisData] = useState(0);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [gradientMin, setGradientMin] = useState(1);
+    const [gradientMid, setGradientMid] = useState(3);
+    const [gradientMax, setGradientMax] = useState(6);
+
 
     const obtenerTiffData = async (nombreAnalisis, idAnalisis) => {
 
         const analisisId = idAnalisis != null ? idAnalisis : selectedIdAnalisis;
+
+        console.log("ESTE ES EL NOMBRE DEL ANALISIS", nombreAnalisis);
+        setSelectedLegend(nombreAnalisis);
         const url = `${API_BASE_URL}historial/geojson/${nombreAnalisis}/${analisisId}`;
 
         try {
@@ -179,6 +198,7 @@ const MyTimeline = () => {
     const handleActivityChange = (e) => setSearchActivity(e.target.value);
     const handleFarmChange = (e) => setSearchFarm(e.target.value);
 
+
     const filteredEvents = events.filter(event => {
         const eventDate = moment(event.date);
         const isValidStartDate = startDate ? eventDate.isSameOrAfter(moment(startDate), 'day') : true;
@@ -206,16 +226,54 @@ const MyTimeline = () => {
 
     const renderMap = () => {
         if (!tiffData.url || tiffData.bounds.length === 0) return null;
-
+        const inputStyle = {
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            borderRadius: '5px',
+            padding: '5px',
+            margin: 'normal',
+            boxShadow: '0px 0px 10px rgba(0,0,0,0.5)'
+        };
         return (
                 <MapContainer
                     center={[(tiffData.bounds[0][0] + tiffData.bounds[1][0]) / 2, (tiffData.bounds[0][1] + tiffData.bounds[1][1]) / 2]}
                     zoom={13}
                     style={{ height: 'calc(100% - 50px)', width: '100%' }}
                 >
+                    <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000 }}>
+                        {selectedLegend !== "PILOTO_AUTOMATICO" && selectedLegend !== "AUTO_TRACKET" && selectedLegend !== "MODO_CORTE_BASE" && (
+                            <>
+                                <TextField
+                                    label="Min Value"
+                                    type="number"
+                                    value={gradientMin}
+                                    onChange={(e) => setGradientMin(Number(e.target.value))}
+                                    style={inputStyle}
+                                />
+                                <TextField
+                                    label="Mid Value"
+                                    type="number"
+                                    value={gradientMid}
+                                    onChange={(e) => setGradientMid(Number(e.target.value))}
+                                    style={inputStyle}
+                                />
+                                <TextField
+                                    label="Max Value"
+                                    type="number"
+                                    value={gradientMax}
+                                    onChange={(e) => setGradientMax(Number(e.target.value))}
+                                    style={inputStyle}
+                                />
+                            </>
+                        )}
+                    </div>
                     <TileLayer attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
                                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"/>
-                    <GeoTIFFLayer url={tiffData.url} bounds={tiffData.bounds} selectedLegend={selectedLegend} />
+                    <GeoTIFFLayer
+                        url={tiffData.url}
+                        bounds={tiffData.bounds}
+                        selectedLegend={selectedLegend}
+                        gradientValues={{ min: gradientMin, mid: gradientMid, max: gradientMax }}
+                    />
                     <Legend idAnalisis={selectedIdAnalisis} />
 
                 </MapContainer>
