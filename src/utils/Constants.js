@@ -217,7 +217,6 @@ export const obtenerNombreFincaCm = async (idAnalisisCosechaMecanica, setNombreF
 export const obtenerCodigoParcelaResponsableCm = async (idAnalisisCosechaMecanica, setCodigoParcelaResponsableCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/codigoParcelaResponsableCm/${idAnalisisCosechaMecanica}`);
-        console.log("CODIGO PARCELA CON MÁS DATOS: ", response.data);
         setCodigoParcelaResponsableCm(response.data);
 
         return response.data;

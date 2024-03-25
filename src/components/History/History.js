@@ -19,13 +19,20 @@ import InfoIcon from '@mui/icons-material/Info';
 
 
 const colorMappingBool = (valueArray) => {
+
     const value = valueArray[0];
+    if(value === 0){
+        return 'rgba(0, 0, 0, 0)';
+    }
     const color = value === 1 ? '#00FF00' : '#FF0000';
     return color;
 };
 
 const colorMappingGradient = (valueArray, minVal, midVal, maxVal) => {
     const value = valueArray[0];
+    if(value === 0){
+        return 'rgba(0, 0, 0, 0)';
+    }
     const range = maxVal - minVal;
     const midPoint = midVal - minVal;
     const normalized = (value - minVal) / range;
@@ -68,7 +75,6 @@ function GeoTIFFLayer({ url, bounds, selectedLegend, gradientValues }) {
         const loadGeoTIFF = async () => {
             const arrayBuffer = await fetch(url).then(response => response.arrayBuffer());
             const georaster = await parseGeoraster(arrayBuffer);
-            console.log("LEYENDA SELECCIONADA: ", selectedLegend);
             const pixelValuesToColorFn = selectedLegend === "PILOTO_AUTOMATICO" ||
             selectedLegend === "AUTO_TRACKET" ||
             selectedLegend === "MODO_CORTE_BASE" ?
@@ -126,7 +132,6 @@ const MyTimeline = () => {
 
         const analisisId = idAnalisis != null ? idAnalisis : selectedIdAnalisis;
 
-        console.log("ESTE ES EL NOMBRE DEL ANALISIS", nombreAnalisis);
         setSelectedLegend(nombreAnalisis);
         const url = `${API_BASE_URL}historial/geojson/${nombreAnalisis}/${analisisId}`;
 

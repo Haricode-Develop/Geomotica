@@ -909,6 +909,12 @@ function Dashboard() {
         setRunTutorial(true);
         setTutorialKey(prevKey => prevKey + 1);
     };
+
+
+    // Supongamos que esta función se llama cuando el usuario somete el formulario
+
+
+
     return (
         <div className="dashboard">
             <Tutorial

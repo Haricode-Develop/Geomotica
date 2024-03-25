@@ -85,14 +85,32 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         outsidePolygonArea: null,
         areaDifference: null
     });
-    const incrementFilterValue = (filterSetter, currentValue) => {
-        filterSetter(currentValue + 1);
-    };
 
-    // Función para decrementar los valores de los filtros
-    const decrementFilterValue = (filterSetter, currentValue) => {
-        filterSetter(currentValue - 1);
-    };
+    const [formData, setFormData] = useState({
+        filterAutoPilot: false,
+        filterAutoTracket: false,
+        filterModeCutterBase: false,
+        filterSpeed: false,
+        lowSpeed: 0,
+        medSpeed: 0,
+        highSpeed: 0,
+        filterGpsQuality: false,
+        lowGpsQuality: 0,
+        medGpsQuality: 0,
+        highGpsQuality: 0,
+        filterFuel: false,
+        lowFuel: 0,
+        medFuel: 0,
+        highFuel: 0,
+        filterRpm: false,
+        lowRpm: 0,
+        medRpm: 0,
+        highRpm: 0,
+        filterCutterBase: false,
+        lowCutterBase: 0,
+        medCutterBase: 0,
+        highCutterBase: 0
+    });
 
     const [percentage, setPercentage] = useState({
         autoTracket: null,
@@ -120,9 +138,9 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 const bounds = L.latLngBounds(latLngs);
                 map.fitBounds(bounds, { padding: [50, 50] });
             }
-        }, [filteredPoints, map]); // Dependencias del efecto
+        }, [filteredPoints, map]);
 
-        return null; // Este componente no renderiza nada
+        return null;
     };
 
     useEffect(() => {
@@ -141,7 +159,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
             const turfPolygon = turf.polygon([polygonCoords]);
             const areaInSquareMeters = turf.area(turfPolygon);
-            return areaInSquareMeters / 10000; // Convertir a hectáreas
+            return areaInSquareMeters / 10000;
         };
 
         if (polygon.length > 0 && outsidePolygon.length > 0) {
@@ -159,11 +177,21 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             });
             setIsAreaDataCalculated(true);
 
-            // Llamar a la función de callback si existe
             onAreaCalculated?.(polygonArea, outsidePolygonArea, areaDifference);
         }
     }, [polygon, outsidePolygon, onAreaCalculated]);
 
+    const manejarEnvioAlSalir = (e) => {
+
+        const datosFormulario = JSON.parse(localStorage.getItem('formData'));
+        if (datosFormulario) {
+            enviarDatosFormulario(datosFormulario).then(() => {
+                console.log('Datos enviados al salir.');
+            }).catch(error => {
+                console.error('Error al enviar datos al salir', error);
+            });
+        }
+    };
 
 
     useEffect(() => {
@@ -217,13 +245,31 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             }
         });
 
-        // Función de limpieza para terminar el worker y remover listeners del socket
         return () => {
             worker.terminate();
             socket.off('updateGeoJSONLayer');
-            socket.disconnect(); // Asegurarse de desconectar el socket también
+            socket.disconnect();
         };
     }, []);
+
+    useEffect(() => {
+        const verificarYEnviarDatos = () => {
+            if (
+                (filterSpeed && lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1) ||
+                (filterGpsQuality && lowGpsQuality !== -1 && medGpsQuality !== -1 && highGpsQuality !== -1) ||
+                (filterFuel && lowFuel !== -1 && medFuel !== -1 && highFuel !== -1) ||
+                (filterRpm && lowRpm !== -1 && medRpm !== -1 && highRpm !== -1) ||
+                (filterCutterBase && lowCutterBase !== -1 && medCutterBase !== -1 && highCutterBase !== -1) ||
+                filterAutoPilot || filterAutoTracket || filterModeCutterBase
+            ) {
+                console.log("ENTRE A VERIFICAR LOS DATOS *********");
+                manejarEnvioAlSalir();
+            }
+        };
+
+        verificarYEnviarDatos();
+    }, [filterSpeed, lowSpeed, medSpeed, highSpeed, filterGpsQuality, lowGpsQuality, medGpsQuality, highGpsQuality, filterFuel, lowFuel, medFuel, highFuel, filterRpm, lowRpm, medRpm, highRpm, filterCutterBase, lowCutterBase, medCutterBase, highCutterBase, filterAutoPilot, filterAutoTracket, filterModeCutterBase]);
+
 
     const transformPolygonCoords = (polygon) => {
         return polygon.map(ring => {
@@ -235,16 +281,42 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             }
         });
     };
+    const enviarDatosFormulario = async (datosFormulario) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}dashboard/ultimosDatosIngresados`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(datosFormulario),
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al enviar los datos');
+            }
+
+            const resultado = await response.json();
+        } catch (error) {
+            console.error('Error al enviar el formulario:', error);
+        }
+    };
+
+
+    useEffect(() => {
+        console.log("ESTE ES EL FORM DATA", formData);
+        localStorage.setItem('formData', JSON.stringify(formData));
+    }, [formData]);
+
+
 
     const convertTimeToDecimalHours = (time) => {
         const parts = time.split(' ');
         let days = 0;
         let timePart = time;
 
-        // Verificar si hay 'days' en la cadena de tiempo
         if (parts.length === 3 && parts[1] === 'days') {
-            days = parseInt(parts[0], 10); // Convertir días a número
-            timePart = parts[2]; // Parte de tiempo sin días
+            days = parseInt(parts[0], 10);
+            timePart = parts[2];
         }
 
         // Separar horas, minutos y segundos
@@ -323,9 +395,11 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterAutoTracket(false);
 
         setFilterAutoPilot(current => !current);
+        setFormData(prev => ({...prev, filterAutoPilot: !prev.filterAutoPilot}));
         setZoom(7);
         setMapKey(Date.now());
     };
+
     const toggleFilterAutoTracket = () => {
         setFilterRpm(false);
         setFilterFuel(false);
@@ -336,12 +410,13 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterAutoPilot(false);
 
         setFilterAutoTracket(current => !current);
+        setFormData(prev => ({...prev, filterAutoTracket: !prev.filterAutoTracket}));
         setZoom(7);
         setMapKey(Date.now());
     };
 
-    const toggleFilterModeCutterBase = ()   => {
 
+    const toggleFilterModeCutterBase = () => {
         setFilterRpm(false);
         setFilterFuel(false);
         setFilterSpeed(false);
@@ -349,10 +424,13 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterGpsQuality(false);
         setFilterAutoPilot(false);
         setFilterAutoTracket(false);
+
         setFilterModeCutterBase(current => !current);
+        setFormData(prev => ({...prev, filterModeCutterBase: !prev.filterModeCutterBase}));
         setZoom(7);
         setMapKey(Date.now());
     };
+
     const toggleFilterSpeed = () => {
         setFilterRpm(false);
         setFilterFuel(false);
@@ -364,13 +442,21 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
         if(lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1){
             setFilterSpeed(current => !current);
+            console.log("ENTRE AL DE VELOCIDAD ***********");
+            setFormData(prev => ({
+                ...prev,
+                filterSpeed: !prev.filterSpeed,
+                lowSpeed: lowSpeed,
+                medSpeed: medSpeed,
+                highSpeed: highSpeed
+            }));
             setZoom(7);
             setMapKey(Date.now());
         }
     };
 
-    const toggleFilterGpsQuality = () => {
 
+    const toggleFilterGpsQuality = () => {
         setFilterRpm(false);
         setFilterFuel(false);
         setFilterCutterBase(false);
@@ -381,14 +467,19 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
         if(lowGpsQuality !== -1 && medGpsQuality !== -1 && highGpsQuality !== -1){
             setFilterGpsQuality(current => !current);
+            setFormData(prev => ({
+                ...prev,
+                filterGpsQuality: !prev.filterGpsQuality,
+                lowGpsQuality: lowGpsQuality,
+                medGpsQuality: medGpsQuality,
+                highGpsQuality: highGpsQuality
+            }));
             setZoom(7);
             setMapKey(Date.now());
         }
-
     };
 
     const toggleFilterFuel = () => {
-
         setFilterRpm(false);
         setFilterCutterBase(false);
         setFilterAutoPilot(false);
@@ -397,16 +488,21 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterSpeed(false);
         setFilterGpsQuality(false);
 
-        if (lowFuel !== -1 && medFuel !== -1 && highFuel !== -1) {
+        if(lowFuel !== -1 && medFuel !== -1 && highFuel !== -1){
             setFilterFuel(current => !current);
+            setFormData(prev => ({
+                ...prev,
+                filterFuel: !prev.filterFuel,
+                lowFuel: lowFuel,
+                medFuel: medFuel,
+                highFuel: highFuel
+            }));
             setZoom(7);
             setMapKey(Date.now());
         }
-
-    }
+    };
 
     const toggleFilterRpm = () => {
-
         setFilterCutterBase(false);
         setFilterAutoPilot(false);
         setFilterAutoTracket(false);
@@ -415,16 +511,22 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterGpsQuality(false);
         setFilterFuel(false);
 
-        if (lowRpm !== -1 && medRpm !== -1 && highRpm !== -1) {
+        if(lowRpm !== -1 && medRpm !== -1 && highRpm !== -1){
             setFilterRpm(current => !current);
+            setFormData(prev => ({
+                ...prev,
+                filterRpm: !prev.filterRpm,
+                lowRpm: lowRpm,
+                medRpm: medRpm,
+                highRpm: highRpm
+            }));
             setZoom(7);
             setMapKey(Date.now());
         }
-    }
+    };
 
 
     const toggleFilterCutterBase = () => {
-
         setFilterAutoPilot(false);
         setFilterAutoTracket(false);
         setFilterSpeed(false);
@@ -433,13 +535,19 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterFuel(false);
         setFilterRpm(false);
 
-        if (lowCutterBase !== -1 && medCutterBase !== -1 && highCutterBase !== -1) {
+        if(lowCutterBase !== -1 && medCutterBase !== -1 && highCutterBase !== -1){
             setFilterCutterBase(current => !current);
+            setFormData(prev => ({
+                ...prev,
+                filterCutterBase: !prev.filterCutterBase,
+                lowCutterBase: lowCutterBase,
+                medCutterBase: medCutterBase,
+                highCutterBase: highCutterBase
+            }));
             setZoom(7);
             setMapKey(Date.now());
         }
-    }
-
+    };
     // ========= Filtros de velocidad
     useEffect(() => {
         if (filterSpeed) {
