@@ -411,7 +411,6 @@ function Dashboard() {
     }, [idAnalisisAps]);
 
 
-    // Evento que muestra el progreso del análisis
     useEffect(() => {
         const newSocket = io(API_BASE_URL);
         setSocket(newSocket);
@@ -421,19 +420,16 @@ function Dashboard() {
             const progressNumber = Number(data.progress);
             const message = data.message;
 
-            // Actualizar el estado basado en el progreso
             setProgress(progressNumber);
             setProgressMessage(message);
 
-                // Controlar la visibilidad de la barra de progreso
-            setShowProgressBar(progressNumber < 100); // Esto reemplaza las dos llamadas anteriores
+            setShowProgressBar(progressNumber < 100);
 
 
 
-            // Si el progreso alcanza el 80%, enviar un evento para finalizar
             if (progressNumber === 80) {
                 newSocket.emit('progressUpdate', { progress: 100, message: "Finalizado" });
-                setShowProgressBar(false); // Esto podría ser redundante dependiendo de tu lógica
+                setShowProgressBar(false);
             }
         });
 
@@ -687,7 +683,7 @@ function Dashboard() {
                 id = 4;
                 break;
             default:
-                id = null; // Asumiendo que quieres resetear o manejar el caso por defecto
+                id = null;
         }
         setIdAnalisisBash(id);
     }, [selectedAnalysisType, userData.ID_USUARIO]);
@@ -930,7 +926,13 @@ function Dashboard() {
                     <div>
                         <h1 className="dashboard-title">Resumen de Análisis</h1>
                         <section className="map-section">
-                            {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} onAreaCalculated={handleAreaCalculation} percentageAutoPilot={handlePercentageCalculation} progressFinish={processingFinished}/>}
+                            {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile}
+                                                                              onAreaCalculated={handleAreaCalculation}
+                                                                              percentageAutoPilot={handlePercentageCalculation}
+                                                                              progressFinish={processingFinished}
+                                                                              idAnalisis={ultimoAnalisis()}
+                            />
+                            }
 
                         </section>
                     </div>

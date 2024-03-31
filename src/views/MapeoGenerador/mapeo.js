@@ -16,7 +16,7 @@ import Draggable from 'react-draggable';
 
 const { BaseLayer } = LayersControl;
 
-const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot, progressFinish }) => {
+const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot, progressFinish, idAnalisis }) => {
     const [hullPolygon, setHullPolygon] = useState(null); // Estado para almacenar el polígono convex hull
 
     const [pilotAutoPercentage, setPilotAutoPercentage] = useState(0);
@@ -25,7 +25,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
     const [activeFilter, setActiveFilter] = useState(null);
 
     const [points, setPoints] = useState([]);
-    const [filteredPoints, setFilteredPoints] = useState([]); // Estado para almacenar los puntos filtrados
+    const [filteredPoints, setFilteredPoints] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
     const [filterAutoPilot, setFilterAutoPilot] = useState(false);
     const [filterAutoTracket, setFilterAutoTracket] = useState(false);
@@ -69,7 +69,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
-    const [mapKey, setMapKey] = useState(Date.now()); // Estado para la clave única del mapa
+    const [mapKey, setMapKey] = useState(Date.now());
     const workerRef = useRef(null);
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
@@ -109,7 +109,8 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         filterCutterBase: false,
         lowCutterBase: 0,
         medCutterBase: 0,
-        highCutterBase: 0
+        highCutterBase: 0,
+        idAnalisis: 0
     });
 
     const [percentage, setPercentage] = useState({
@@ -193,6 +194,18 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         }
     };
 
+    useEffect(() => {
+        if (idAnalisis && typeof idAnalisis.then === 'function') {
+            idAnalisis.then((resultado) => {
+                setFormData((prevFormData) => ({
+                    ...prevFormData,
+                    idAnalisis: resultado.data.ID_ANALISIS,
+                }));
+            }).catch(error => {
+                console.error("Error al obtener idAnalisis:", error);
+            });
+        }
+    }, [idAnalisis]);
 
     useEffect(() => {
         // Inicializar el worker
@@ -253,6 +266,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
     }, []);
 
     useEffect(() => {
+        localStorage.setItem('formData', JSON.stringify(formData));
+        console.log("ESTE ES EL FORM DATA", formData);
+    }, [formData, filterSpeed, filterGpsQuality, filterFuel, filterRpm, filterCutterBase, filterAutoPilot]);
+
+
+    useEffect(() => {
         const verificarYEnviarDatos = () => {
             if (
                 (filterSpeed && lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1) ||
@@ -301,11 +320,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         }
     };
 
-
-    useEffect(() => {
-        console.log("ESTE ES EL FORM DATA", formData);
-        localStorage.setItem('formData', JSON.stringify(formData));
-    }, [formData]);
 
 
 

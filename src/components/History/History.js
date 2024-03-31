@@ -102,7 +102,7 @@ function GeoTIFFLayer({ url, bounds, selectedLegend, gradientValues }) {
                 layerRef.current = null;
             }
         };
-    }, [url, bounds, map, selectedLegend, prevUrl, gradientValues]); // Asegúrate de incluir gradientValues aquí
+    }, [url, bounds, map, selectedLegend, prevUrl, gradientValues]);
 
     return null;
 }
@@ -124,8 +124,29 @@ const MyTimeline = () => {
     const [analisisData, setAnalisisData] = useState(0);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [gradientMin, setGradientMin] = useState(1);
-    const [gradientMid, setGradientMid] = useState(3);
-    const [gradientMax, setGradientMax] = useState(6);
+    const [gradientMid, setGradientMid] = useState(2);
+    const [gradientMax, setGradientMax] = useState(3);
+    const [lastValues, setLastValues] = useState({});
+
+
+    function convertLegens(legend){
+        switch(legend){
+            case "VELOCIDAD_Km_H":
+                legend = "VELOCIDAD";
+                break;
+            case "CALIDAD_DE_SENAL":
+                legend = "CALIDAD_GPS";
+                break;
+            case "CONSUMOS_DE_COMBUSTIBLE":
+                legend = "COMBUSTIBLE";
+                break;
+            case "PRESION_DE_CORTADOR_BASE":
+                legend = "PRESION_CORTADOR_BASE";
+                break;
+        }
+
+        return legend;
+    }
 
 
     const obtenerTiffData = async (nombreAnalisis, idAnalisis) => {
@@ -134,9 +155,16 @@ const MyTimeline = () => {
 
         setSelectedLegend(nombreAnalisis);
         const url = `${API_BASE_URL}historial/geojson/${nombreAnalisis}/${analisisId}`;
-
         try {
             const response = await axios.get(url);
+            console.log("ESTE ES EL ULTIMO ID DEL ANALISIS: ", idAnalisis);
+            const responseUltimosValores = await axios.get(`${API_BASE_URL}historial/ultimosValores`, {
+                params: { idAnalisis }
+            });
+            if (responseUltimosValores.data) {
+                setLastValues(responseUltimosValores.data.ultimosValores);
+            }
+
             if (response.data) {
                 const { url, bounds, urlAnalisis } = response.data;
                 const analisisResponse = await axios.get(urlAnalisis);
@@ -227,6 +255,17 @@ const MyTimeline = () => {
             }, 100);
         }
     };
+    useEffect(() => {
+        // Aquí suponemos que convertLegens es una función que ya tienes definida
+        // y que lastValues es un objeto de estado también definido en tu componente.
+        const legenKey = convertLegens(selectedLegend);
+        console.log("Valores actuales:", lastValues);
+        console.log("LEYENDAS", `${legenKey}_BAJO`);
+        console.log("BAJO", lastValues[`${legenKey}_BAJO`]);
+        console.log("Min Value:", lastValues[`${legenKey}_BAJO`] || gradientMin);
+        console.log("Mid Value:", lastValues[`${legenKey}_MEDIO`] || gradientMid);
+        console.log("Max Value:", lastValues[`${legenKey}_ALTO`] || gradientMax);
+    }, [lastValues, selectedLegend, gradientMin, gradientMid, gradientMax]);
 
 
     const renderMap = () => {
@@ -250,21 +289,21 @@ const MyTimeline = () => {
                                 <TextField
                                     label="Min Value"
                                     type="number"
-                                    value={gradientMin}
+                                    value={lastValues[0][`${convertLegens(selectedLegend)}_BAJO`] || gradientMin}
                                     onChange={(e) => setGradientMin(Number(e.target.value))}
                                     style={inputStyle}
                                 />
                                 <TextField
                                     label="Mid Value"
                                     type="number"
-                                    value={gradientMid}
+                                    value={lastValues[0][`${convertLegens(selectedLegend)}_MEDIO`] || gradientMid}
                                     onChange={(e) => setGradientMid(Number(e.target.value))}
                                     style={inputStyle}
                                 />
                                 <TextField
                                     label="Max Value"
                                     type="number"
-                                    value={gradientMax}
+                                    value={lastValues[0][`${convertLegens(selectedLegend)}_ALTO`] || gradientMax}
                                     onChange={(e) => setGradientMax(Number(e.target.value))}
                                     style={inputStyle}
                                 />
