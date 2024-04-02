@@ -187,7 +187,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         const datosFormulario = JSON.parse(localStorage.getItem('formData'));
         if (datosFormulario) {
             enviarDatosFormulario(datosFormulario).then(() => {
-                console.log('Datos enviados al salir.');
             }).catch(error => {
                 console.error('Error al enviar datos al salir', error);
             });
@@ -267,7 +266,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
     useEffect(() => {
         localStorage.setItem('formData', JSON.stringify(formData));
-        console.log("ESTE ES EL FORM DATA", formData);
     }, [formData, filterSpeed, filterGpsQuality, filterFuel, filterRpm, filterCutterBase, filterAutoPilot]);
 
 
@@ -281,7 +279,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 (filterCutterBase && lowCutterBase !== -1 && medCutterBase !== -1 && highCutterBase !== -1) ||
                 filterAutoPilot || filterAutoTracket || filterModeCutterBase
             ) {
-                console.log("ENTRE A VERIFICAR LOS DATOS *********");
                 manejarEnvioAlSalir();
             }
         };
@@ -456,7 +453,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
         if(lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1){
             setFilterSpeed(current => !current);
-            console.log("ENTRE AL DE VELOCIDAD ***********");
             setFormData(prev => ({
                 ...prev,
                 filterSpeed: !prev.filterSpeed,

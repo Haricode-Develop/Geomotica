@@ -15,8 +15,8 @@ import GeoRasterLayer from 'georaster-layer-for-leaflet';
 import moment from 'moment';
 import { TextField, FormControl, InputLabel, Select, MenuItem, Drawer, Button, Fab, Tooltip, Slider } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-
-
+import Loader from '../../components/loader/loader'
+import BarIndicator from "../BarIndicator/BarIndicator";
 
 const colorMappingBool = (valueArray) => {
 
@@ -57,6 +57,7 @@ function GeoTIFFLayer({ url, bounds, selectedLegend, gradientValues }) {
     const map = useMap();
     const layerRef = useRef(null);
     const prevUrl = usePrevious(url);
+    const [filterType, setFilterType] = useState(""); // Agregar este estado
 
     function usePrevious(value) {
         const ref = useRef();
@@ -127,6 +128,8 @@ const MyTimeline = () => {
     const [gradientMid, setGradientMid] = useState(2);
     const [gradientMax, setGradientMax] = useState(3);
     const [lastValues, setLastValues] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [selectedItem, setSelectedItem] = useState("");
 
 
     function convertLegens(legend){
@@ -148,8 +151,19 @@ const MyTimeline = () => {
         return legend;
     }
 
+    const handleLegendClick = (legend, idAnalisis) => {
+        const parsedType = parseLegendsForBarIndicator(legend);
+        let analisis = selectedIdAnalisis != null ? selectedIdAnalisis: idAnalisis;
+        if(selectedIdAnalisis == null){
+            setIsLoading(true);
+
+        }
+        setSelectedItem(parsedType);
+        obtenerTiffData(legend, analisis);
+    };
 
     const obtenerTiffData = async (nombreAnalisis, idAnalisis) => {
+        console.log("Iniciando carga");
 
         const analisisId = idAnalisis != null ? idAnalisis : selectedIdAnalisis;
 
@@ -157,12 +171,22 @@ const MyTimeline = () => {
         const url = `${API_BASE_URL}historial/geojson/${nombreAnalisis}/${analisisId}`;
         try {
             const response = await axios.get(url);
-            console.log("ESTE ES EL ULTIMO ID DEL ANALISIS: ", idAnalisis);
             const responseUltimosValores = await axios.get(`${API_BASE_URL}historial/ultimosValores`, {
                 params: { idAnalisis }
             });
-            if (responseUltimosValores.data) {
-                setLastValues(responseUltimosValores.data.ultimosValores);
+
+            if (responseUltimosValores.data && responseUltimosValores.data.ultimosValores) {
+                const ultimosValores = responseUltimosValores.data.ultimosValores;
+                if (Array.isArray(ultimosValores) && ultimosValores.length > 0) {
+                    setLastValues(ultimosValores);
+                    setGradientMin(ultimosValores[0][`${convertLegens(selectedLegend)}_BAJO`] || 1);
+                    setGradientMid(ultimosValores[0][`${convertLegens(selectedLegend)}_MEDIO`] || 2);
+                    setGradientMax(ultimosValores[0][`${convertLegens(selectedLegend)}_ALTO`] || 3);
+                } else {
+                    setGradientMin(1);
+                    setGradientMid(2);
+                    setGradientMax(3);
+                }
             }
 
             if (response.data) {
@@ -173,14 +197,39 @@ const MyTimeline = () => {
                 setTiffData({ url, bounds, urlAnalisis });
                 setIsModalOpen(true);
             }
-        } catch (error) {
+        }catch (error) {
             console.error("Error al obtener datos del TIFF: ", error);
+        } finally {
+            console.log("Finalizando carga");
+            setIsLoading(false);
         }
     };
 
+    function parseLegendsForBarIndicator(legend) {
+        switch (legend) {
+            case "VELOCIDAD_Km_H":
+                return "speed";
+            case "CALIDAD_DE_SENAL":
+                return "gpsQuality";
+            case "CONSUMOS_DE_COMBUSTIBLE":
+                return "fuel";
+            case "PILOTO_AUTOMATICO":
+                return "autoPilot";
+            case "PRESION_DE_CORTADOR_BASE":
+                return "cutterBase";
+            case "RPM":
+                return "rpm";
+            case "MODO_CORTE_BASE":
+                return "modeCutterBase";
+            case "AUTO_TRACKET":
+                return "autoTracket";
+            default:
+                return "";
+        }
+    }
 
-    // Modificar Legend para usar selectedIdAnalisis
     const Legend = ({ idAnalisis }) => (
+
         <div className="leyenda-container">
             {["VELOCIDAD_Km_H", "PILOTO_AUTOMATICO", "CALIDAD_DE_SENAL", "CONSUMOS_DE_COMBUSTIBLE", "AUTO_TRACKET", "RPM", "PRESION_DE_CORTADOR_BASE", "MODO_CORTE_BASE"].map(variable => (
                 <div
@@ -189,13 +238,26 @@ const MyTimeline = () => {
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData("text/plain", variable)}
                     onDragOver={(e) => e.preventDefault()}
-                    onClick={() => obtenerTiffData(variable, idAnalisis)}
+                    onClick={() => handleLegendClick(variable)}
                 >
                     {variable}
                 </div>
             ))}
         </div>
     );
+
+    useEffect(() => {
+        if (lastValues && Array.isArray(lastValues) && lastValues.length > 0 && selectedLegend) {
+            const convertedLegend = convertLegens(selectedLegend);
+            const minVal = lastValues[0][`${convertedLegend}_BAJO`];
+            const midVal = lastValues[0][`${convertedLegend}_MEDIO`];
+            const maxVal = lastValues[0][`${convertedLegend}_ALTO`];
+
+            if (minVal !== undefined) setGradientMin(minVal);
+            if (midVal !== undefined) setGradientMid(midVal);
+            if (maxVal !== undefined) setGradientMax(maxVal);
+        }
+    }, [selectedLegend, lastValues]);
 
 
     useEffect(() => {
@@ -255,18 +317,6 @@ const MyTimeline = () => {
             }, 100);
         }
     };
-    useEffect(() => {
-        // Aquí suponemos que convertLegens es una función que ya tienes definida
-        // y que lastValues es un objeto de estado también definido en tu componente.
-        const legenKey = convertLegens(selectedLegend);
-        console.log("Valores actuales:", lastValues);
-        console.log("LEYENDAS", `${legenKey}_BAJO`);
-        console.log("BAJO", lastValues[`${legenKey}_BAJO`]);
-        console.log("Min Value:", lastValues[`${legenKey}_BAJO`] || gradientMin);
-        console.log("Mid Value:", lastValues[`${legenKey}_MEDIO`] || gradientMid);
-        console.log("Max Value:", lastValues[`${legenKey}_ALTO`] || gradientMax);
-    }, [lastValues, selectedLegend, gradientMin, gradientMid, gradientMax]);
-
 
     const renderMap = () => {
         if (!tiffData.url || tiffData.bounds.length === 0) return null;
@@ -289,26 +339,27 @@ const MyTimeline = () => {
                                 <TextField
                                     label="Min Value"
                                     type="number"
-                                    value={lastValues[0][`${convertLegens(selectedLegend)}_BAJO`] || gradientMin}
+                                    value={gradientMin}
                                     onChange={(e) => setGradientMin(Number(e.target.value))}
                                     style={inputStyle}
                                 />
                                 <TextField
                                     label="Mid Value"
                                     type="number"
-                                    value={lastValues[0][`${convertLegens(selectedLegend)}_MEDIO`] || gradientMid}
+                                    value={gradientMid}
                                     onChange={(e) => setGradientMid(Number(e.target.value))}
                                     style={inputStyle}
                                 />
                                 <TextField
                                     label="Max Value"
                                     type="number"
-                                    value={lastValues[0][`${convertLegens(selectedLegend)}_ALTO`] || gradientMax}
+                                    value={gradientMax}
                                     onChange={(e) => setGradientMax(Number(e.target.value))}
                                     style={inputStyle}
                                 />
                             </>
                         )}
+                        <BarIndicator filterType={selectedItem} isHistory={true} />
                     </div>
                     <TileLayer attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
                                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"/>
@@ -527,7 +578,7 @@ const MyTimeline = () => {
                             iconStyle={{ background: 'rgb(33, 150, 243)', color: '#fff' }}
                             onTimelineElementClick={() => {
                                 setSelectedIdAnalisis(event.ID_ANALISIS);
-                                obtenerTiffData("VELOCIDAD_Km_H", event.ID_ANALISIS);
+                                handleLegendClick("VELOCIDAD_Km_H", event.ID_ANALISIS);
                             }}
                         >
                             <div className="timeline-element-content">
@@ -563,9 +614,11 @@ const MyTimeline = () => {
                 >
                     {drawerContent}
                 </Drawer>
-
                 {renderMap()}
             </Modal>
+            {isLoading && (
+                <Loader></Loader>
+            )}
         </div>
     );
 };

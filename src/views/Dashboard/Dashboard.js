@@ -14,6 +14,9 @@ import DataCard from "../../components/CardData/cardData";
 import html2canvas from 'html2canvas';
 import Tutorial from "../../components/Tutorial/Tutorial";
 import jsPDF from 'jspdf';
+import { Button, Snackbar, IconButton, Tooltip, Input, FormControl, InputLabel, MenuItem, Select, Link, Popover, Typography} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 import L from 'leaflet';
 import {
@@ -93,6 +96,15 @@ import {
 // Componente del Mapa
 
 function Dashboard() {
+
+    //====================== CARGA DE ARCHIVOS
+    const [uploadedCsvFileName, setUploadedCsvFileName] = useState("");
+    const [uploadedZipFileName, setUploadedZipFileName] = useState("");
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+
+
+    //=======================================
+
 
     //====================== INICIO DE SESIÓN
     const userData = JSON.parse(localStorage.getItem("userData"));
@@ -353,11 +365,9 @@ function Dashboard() {
 
                 setDatosCargadosCosechaMecanica(true);
 
-                console.log("ESTE ES EL ID DEL ANALISIS DE LA PETICION", idAnalisisCosechaMecanica);
                 axios.post(`${API_BASE_URL}dashboard/cosecha_mecanica_analisis/${idAnalisisCosechaMecanica}`, { datos: datos })
                     .then(response => {
-                        console.log("ESTA ES LA RESPUESTA AL SUBIR AL BUCKET: ");
-                        console.log(response.data);
+
                     })
                     .catch(error => {
                         console.error("Error al enviar datos de cosecha mecánica", error);
@@ -749,7 +759,8 @@ function Dashboard() {
         }
         setTitleLoader("Subiendo Datos");
         let archivo = event.target.files[0];
-
+        setOpenSnackbar(true);
+        setUploadedCsvFileName(archivo.name);
 
         const idAnalisis = await insertarUltimoAnalisis();
 
@@ -835,11 +846,59 @@ function Dashboard() {
             console.error('Configuración de la solicitud:', error.config);
         }
     }
+    const handleCloseSnackbar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpenSnackbar(false);
+    };
+
+    const actionSnackbar = (
+        <React.Fragment>
+            <Button color="secondary" size="small" onClick={handleCloseSnackbar}>
+                UNDO
+            </Button>
+            <IconButton size="small" aria-label="close" color="inherit" onClick={handleCloseSnackbar}>
+                <CloseIcon fontSize="small" />
+            </IconButton>
+        </React.Fragment>
+    );
+
+    function UploadButton({ onFileSelect, acceptedTypes, label, uploadedFileName }) {
+        return (
+            <div style={{ display: 'inline-block', margin: '0 8px' }}>
+                <input
+                    accept={acceptedTypes}
+                    style={{ display: 'none' }}
+                    id={`button-file-${label}`}
+                    multiple
+                    type="file"
+                    onChange={onFileSelect}
+                />
+                <label htmlFor={`button-file-${label}`}>
+                    <Tooltip title={uploadedFileName || ''} placement="top" arrow>
+                        <Button variant="contained" component="span" sx={{ my: 1 }}>
+                            {label}
+                        </Button>
+                    </Tooltip>
+                </label>
+            </div>
+        );
+    }
+
 
 
     const execBash = async () => {
         setTitleLoader("Cargando Análisis");
         let validar = "ok";
+        if (socket) {
+            console.log("Entre al Socket de execBash");
+            socket.emit('progressUpdate', { progress: 0, message: "Iniciando proceso" });
+        }else{
+            console.log("NO LO ENTRE al Socket de execBash");
+
+        }
+
 
         if (!selectedFile || !selectedZipFile) {
             toast.warn('Por favor, selecciona ambos archivos.', {
@@ -861,7 +920,6 @@ function Dashboard() {
             return;
         }
 
-        // Leer el archivo seleccionado para estimar el tamaño del lote
         const reader = new FileReader();
         reader.onload = async (e) => {
             const content = e.target.result;
@@ -906,10 +964,17 @@ function Dashboard() {
         setTutorialKey(prevKey => prevKey + 1);
     };
 
-
-    // Supongamos que esta función se llama cuando el usuario somete el formulario
-
-
+    const manejarSubidaZip = (event) => {
+        const file = event.target.files[0];
+        setSelectedZipFile(file);
+        if (file) {
+            setUploadedZipFileName(file.name);
+            setOpenSnackbar(true);
+        }
+    };
+    const handleAnalysisTypeChange = (event) => {
+        setSelectedAnalysisType(event.target.value);
+    };
 
     return (
         <div className="dashboard">
@@ -1182,38 +1247,103 @@ function Dashboard() {
                         </section>
 
                         <div className="analysis-controls">
-                            <label htmlFor="csv-file" className="custom-file-upload subir-csv">
-                                <input
-                                    id="csv-file"
-                                    type="file"
-                                    accept=".csv"
-                                    onChange={manejarSubidaArchivo}
+                            <div className="upload-buttons">
+                                <Tooltip title={!selectedAnalysisType ? "Selecciona un análisis antes de comenzar" : uploadedCsvFileName || 'No se ha seleccionado ningún archivo'}>
+                                    <Button
+                                        variant="contained"
+                                        component="label"
+                                        startIcon={<UploadFileIcon />}
+                                        sx={{ margin: 1 }}
+                                        disabled={!selectedAnalysisType}
+                                        color="success"
+                                    >
+                                        Selecciona tu CSV
+                                        <Input
+                                            type="file"
+                                            hidden
+                                            onChange={manejarSubidaArchivo}
+                                            accept=".csv"
+                                        />
+                                    </Button>
+                                </Tooltip>
+
+                                <Tooltip title={!selectedAnalysisType ? "Selecciona un análisis antes de comenzar" : uploadedCsvFileName || 'No se ha seleccionado ningún archivo'}>
+                                    <Button
+                                        variant="contained"
+                                        component="label"
+                                        color="info"
+                                        sx={{ margin: 1 }}
+                                        disabled={!selectedAnalysisType}
+
+                                    >
+                                        Subir Shape File
+                                        <Input
+                                            type="file"
+                                            hidden
+                                            onChange={manejarSubidaZip}
+                                            accept=".zip"
+                                        />
+                                    </Button>
+                                </Tooltip>
+
+                                <Snackbar
+                                    open={openSnackbar}
+                                    autoHideDuration={6000}
+                                    onClose={handleCloseSnackbar}
+                                    message={uploadedCsvFileName ? "Archivo CSV cargado" : "Archivo ZIP cargado"}
+                                    action={
+                                        <React.Fragment>
+                                            <IconButton size="small" aria-label="close" color="inherit" onClick={handleCloseSnackbar}>
+                                                <CloseIcon fontSize="small" />
+                                            </IconButton>
+                                        </React.Fragment>
+                                    }
                                 />
-                                Selecciona tu CSV
-                            </label>
-                            <label htmlFor="zip-file" className="custom-file-upload subir-zip">
-                                <input
-                                    id="zip-file"
-                                    type="file"
-                                    onChange={e => {
-                                        setSelectedZipFile(e.target.files[0]);
-                                    }}
-                                    accept=".zip"
-                                />
-                                Subir Shape File
-                            </label>
-                            <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template descargar-plantilla">
-                                Descargar plantilla
-                            </a>
-                            <select value={selectedAnalysisType} onChange={e => setSelectedAnalysisType(e.target.value)} className="type-selector tipo-analisis">
-                                <option value="">Seleccionar tipo de análisis</option>
-                                {Object.keys(analysisTemplates).map(type => (
-                                    <option value={type} key={type}>{type.replace(/_/g, ' ')}</option>
-                                ))}
-                            </select>
-                            <button onClick={execBash} className="action-button realizar-analisis">
+                            </div>
+                            <Tooltip title={!selectedAnalysisType ? "Selecciona un análisis antes de comenzar" : uploadedCsvFileName || 'No se ha seleccionado ningún archivo'}>
+                            <Link
+                                href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"}
+                                download
+                                underline="none"
+                            >
+                                <Button
+                                    variant="contained"
+                                    color="info"
+                                    disabled={!selectedAnalysisType}
+                                    sx={{ m: 1 }}
+                                >
+                                    Descargar plantilla
+                                </Button>
+                            </Link>
+                            </Tooltip>
+
+                            <FormControl variant="outlined" sx={{ m: 1, minWidth: 120 }}>
+                                <InputLabel id="analysis-type-selector-label">Tipo de Análisis</InputLabel>
+                                <Select
+                                    labelId="analysis-type-selector-label"
+                                    id="analysis-type-selector"
+                                    value={selectedAnalysisType}
+                                    onChange={handleAnalysisTypeChange}
+                                    label="Tipo de Análisis"
+                                >
+                                    <MenuItem value="">
+                                        <em>Ninguno</em>
+                                    </MenuItem>
+                                    {Object.keys(analysisTemplates).map((type) => (
+                                        <MenuItem value={type} key={type}>
+                                            {type.replace(/_/g, ' ')}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <Button
+                                variant="contained"
+                                color="warning"
+                                onClick={execBash}
+                                sx={{ margin: 1 }}
+                            >
                                 Realizar análisis
-                            </button>
+                            </Button>
                         </div>
 
                     </div>

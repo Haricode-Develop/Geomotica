@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import './BarIndicatorStyle.css';
 
-const BarIndicator = ({ filterType }) => {
+const BarIndicator = ({ filterType, isHistory }) => {
     let title = "";
     let indicadorIzquierda = "Bajo";
     let indicadorDerecha = "Alto";
@@ -58,6 +58,7 @@ const BarIndicator = ({ filterType }) => {
     }
 
     const barIndicatorRef = useRef(null);
+    const topStyle = isHistory ? { top: '100px' } : { top: '250px' };
 
     const dragStart = (e) => {
         const style = window.getComputedStyle(barIndicatorRef.current);
@@ -89,6 +90,7 @@ const BarIndicator = ({ filterType }) => {
         <div ref={barIndicatorRef}
              className="bar-indicator"
              draggable="true"
+             style={topStyle}
              onDragStart={dragStart}
              onDragOver={dragOver}
              onDrop={drop}>
