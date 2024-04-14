@@ -17,7 +17,7 @@ import jsPDF from 'jspdf';
 import { Button, Snackbar, IconButton, Tooltip, Input, FormControl, InputLabel, MenuItem, Select, Link, Popover, Typography} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-
+import AplicacionesAreas from "../Aplicaciones Areas/AplicacionesAreas";
 import L from 'leaflet';
 import {
     //Cosecha mecánica
@@ -771,6 +771,7 @@ function Dashboard() {
         let formData = new FormData();
         formData.append('csv', archivo);
         formData.append('idTipoAnalisis', idAnalisis.data.idAnalisis);
+        formData.append('tipoAnalisis', nombreAnalisis(idAnalisisBash))
         setShowProgressBar(true);
         setProgress(30);
         setProgressMessage("Procesando los datos ingresados");
@@ -819,6 +820,7 @@ function Dashboard() {
                     draggable: true,
                     progress: undefined,
                 });
+                setShowProgressBar(false);
 
             } else if (error.request) {
                 toast.warn(`Se produjo un error al enviar el archivo. No se recibió respuesta del servidor.`, {
@@ -830,6 +832,7 @@ function Dashboard() {
                     draggable: true,
                     progress: undefined,
                 });
+                setShowProgressBar(false);
 
             } else {
                 toast.warn(`Se produjo un error al procesar el archivo.`, {
@@ -841,6 +844,7 @@ function Dashboard() {
                     draggable: true,
                     progress: undefined,
                 });
+                setShowProgressBar(false);
 
             }
             console.error('Configuración de la solicitud:', error.config);
@@ -892,13 +896,8 @@ function Dashboard() {
         setTitleLoader("Cargando Análisis");
         let validar = "ok";
         if (socket) {
-            console.log("Entre al Socket de execBash");
             socket.emit('progressUpdate', { progress: 0, message: "Iniciando proceso" });
-        }else{
-            console.log("NO LO ENTRE al Socket de execBash");
-
         }
-
 
         if (!selectedFile || !selectedZipFile) {
             toast.warn('Por favor, selecciona ambos archivos.', {
@@ -923,34 +922,54 @@ function Dashboard() {
         const reader = new FileReader();
         reader.onload = async (e) => {
             const content = e.target.result;
-            const lines = content.split(/\r\n|\n/).length - 1;
+            console.log("ESTE ES EL ID DEL ANALISIS: ", idAnalisisBash);
+            if (idAnalisisBash === 2) {
+                const lines = content.split(/\r\n|\n/).length - 1;
+                const tamanoLote = 10000;
+                let offset = 0;
+                let esPrimeraIteracion = true;
+                console.log("ENTRE AL ANALISIS DE COSECHA MECANICA PARA CICLO ========");
+                while (offset < lines) {
 
-            const tamanoLote = 10000;
-            let offset = 0;
-            let esPrimeraIteracion = true;
+                    const formData = new FormData();
+                    formData.append('csv', selectedFile);
+                    formData.append('polygon', selectedZipFile);
+                    formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
 
-            while (offset < lines) {
+                    try {
+                        const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}/${lines}`, formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                            },
+                        });
+                        offset += tamanoLote;
+                        esPrimeraIteracion = false;
+                    } catch (error) {
+                        console.error("Error al procesar el lote:", error);
+                        break;
+                    }
+                }
+                setProcessingFinished(true);
+
+            } else {
+                let esPrimeraIteracion = true;
+
                 const formData = new FormData();
                 formData.append('csv', selectedFile);
                 formData.append('polygon', selectedZipFile);
                 formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
 
-                try {
+                const lines = content.split(/\r\n|\n/).length - 1;
+                let offset = 0;
+                try{
+
                     const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}/${lines}`, formData, {
                         headers: {
                             'Content-Type': 'multipart/form-data',
                         },
                     });
-                    offset += tamanoLote;
-                    esPrimeraIteracion = false;
-                    if (esPrimeraIteracion) {
-                        setShowProgressBar(false);
-                        esPrimeraIteracion = false;
-                    }
-                } catch (error) {
-                    console.error("Error al procesar el lote:", error);
-                    setShowProgressBar(false);
-                    break; // Rompe el bucle en caso de error
+                }catch(error){
+                    console.error("Error al procesar el lote de Aplicaciones Áreas");
                 }
             }
             setProcessingFinished(true);
@@ -991,12 +1010,22 @@ function Dashboard() {
                     <div>
                         <h1 className="dashboard-title">Resumen de Análisis</h1>
                         <section className="map-section">
-                            {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile}
+                            {selectedZipFile && selectedFile && selectedAnalysisType === 'COSECHA_MECANICA' && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile}
                                                                               onAreaCalculated={handleAreaCalculation}
                                                                               percentageAutoPilot={handlePercentageCalculation}
                                                                               progressFinish={processingFinished}
                                                                               idAnalisis={ultimoAnalisis()}
+                                                                                                                             tipoAnalisis={nombreAnalisis(idAnalisisBash)}
                             />
+                            }
+                            {selectedZipFile && selectedFile && selectedAnalysisType === 'APS' && <AplicacionesAreas
+                                csvData={datosMapeo}
+                                zipFile={selectedZipFile}
+                                progressFinish={processingFinished}
+                                idAnalisis={ultimoAnalisis()}
+                                tipoAnalisis={nombreAnalisis(idAnalisisBash)}
+                            />
+
                             }
 
                         </section>

@@ -16,7 +16,7 @@ import Draggable from 'react-draggable';
 
 const { BaseLayer } = LayersControl;
 
-const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot, progressFinish, idAnalisis }) => {
+const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot, progressFinish, idAnalisis, tipoAnalisis }) => {
     const [hullPolygon, setHullPolygon] = useState(null); // Estado para almacenar el polígono convex hull
 
     const [pilotAutoPercentage, setPilotAutoPercentage] = useState(0);
@@ -253,7 +253,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
         socket.on('updateGeoJSONLayer', (geojsonData) => {
             if (geojsonData) {
-                worker.postMessage({ action: 'processGeoJsonData', geojsonData });
+                worker.postMessage({ action: 'processGeoJsonData', geojsonData, type: tipoAnalisis });
             }
         });
 

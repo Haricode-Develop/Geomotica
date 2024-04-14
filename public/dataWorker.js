@@ -16,14 +16,26 @@ async function loadGeoJsonFromUrl(url) {
 
 
 self.onmessage = async function (e) {
-    const {action, geojsonData} = e.data;
+    const {action, geojsonData, type} = e.data;
 
     switch (action) {
         case 'processGeoJsonData':
             if (geojsonData) {
                 const loadedGeoJson = await loadGeoJsonFromUrl(geojsonData);
                 if (loadedGeoJson) {
-                    const processedData = processGeoJsonData(loadedGeoJson);
+                    let processedData;
+                    console.log("ESTE ES EL TIPO EN EL DATA WORKER: ", type);
+                    console.log("ESTE ES EL GEOJSON QUE VIENE", geojsonData);
+
+                    if(type === 'COSECHA_MECANICA'){
+                        processedData = processGeoJsonData(loadedGeoJson);
+
+                    }else if(type === 'APS'){
+                        console.log("Entre al if de aplicaciones Areas");
+                        processedData = processAplicacionesAreasData(loadedGeoJson);
+
+                    }
+
                     self.postMessage({action: 'geoJsonDataProcessed', data: processedData});
                 }
             }
@@ -80,4 +92,18 @@ function processGeoJsonData(geojsonData) {
         outsidePolygon: outsidePolygonCoordinates
     };
 
+}
+
+function processAplicacionesAreasData(geojsonData) {
+    const polygonFeatures = geojsonData.features.filter(feature => feature.geometry.type === 'Polygon');
+    console.log("ESTAS SON LAS PROPIEDADES DEL POLIGONO: ", polygonFeatures);
+    let polygons = polygonFeatures.map(feature => ({
+        id: feature.id,
+        properties: feature.properties,
+        polygon: extractCoordinates(feature)
+    }));
+    console.log("POLIGONOS: ", polygons);
+    return {
+        polygons: polygons
+    };
 }
