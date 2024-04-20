@@ -9,7 +9,6 @@ export const obtenerResponsableAps = async (idAnalisisAps, setResponsableAps) =>
 
         const response = await axios.get(`${API_BASE_URL}dashboard/responsableAps/${idAnalisisAps}`);
         setResponsableAps(response.data);
-        console.log("RESPONSABLE APS: ", response);
     } catch (error) {
         console.error("Error en obtenerResponsableAps:", error);
     }
@@ -49,7 +48,6 @@ export const obtenerCodigoLotesAps = async (idAnalisisAps, setCodigoLotes) => {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/codigoLotesAps/${idAnalisisAps}`);
         setCodigoLotes(response.data[0]);
-        console.log("RESPUESTA DE LOTES: ",response);
     } catch(error){
         console.error("Error en obtener Codigo Lotes:",error);
     }
@@ -67,7 +65,6 @@ export const obtenerDosisTeoricaAps = async (idAnalisisAps, setDosisTeorica)=> {
 export const obtenerHumedadDelCultivo = async (idAnalisisAps, setHumedadDelCultivo)=> {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/humedadDelCultivo/${idAnalisisAps}`);
-       console.log("RESPUESTA DE HUMEDAD DEL CULTIVO: ", response);
         setHumedadDelCultivo(response.data);
     }catch(error){
         console.error("Error en obtener Humedad del cultivo:",error);
@@ -77,7 +74,6 @@ export const obtenerHumedadDelCultivo = async (idAnalisisAps, setHumedadDelCulti
 export const obtenerTchEstimado = async (idAnalisisAps, setTchEstimado) => {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/tchEstimado/${idAnalisisAps}`);
-        console.log("RESPUESTA DE TC ESTIMADO: ", response);
         setTchEstimado(response.data);
     }catch(error){
         console.error("Error en obtener tch estimado: ");

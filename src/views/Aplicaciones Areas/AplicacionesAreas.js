@@ -7,12 +7,13 @@ import { API_BASE_URL } from '../../utils/config';
 import { points as turfPoints, polygon as turfPolygon, area as turfArea, convex as turfConvex, union as turfUnion, difference as turfDifference, intersect as turfIntersect  } from '@turf/turf';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip } from '@mui/material';
 import { FaMap } from "react-icons/fa";
+import BarIndicator from "../../components/BarIndicator/BarIndicator";
 
 
 
 const { BaseLayer } = LayersControl;
 
-const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated }) => {
+const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPromediosCalculated }) => {
     const [poligonos, setPoligonos] = useState([]);
     const [areasSuperpuestas, setAreasSuperpuestas] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
@@ -23,7 +24,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated }) => {
     const [filterValues, setFilterValues] = useState({
         VELOCIDAD: { low: 10, medium: 30, high: 50 },
         ALTURA: { low: 5, medium: 10, high: 15 },
-        DOSISREAL: { low: 0.5, medium: 1.5, high: 2.5 }  // Añadido valor medio para tener tres niveles
+        DOSISREAL: { low: 0.5, medium: 1.5, high: 2.5 }
     });
     const [poligonosPropiedades, setPoligonosPropiedades] = useState([]);
     const [intersectionsKey, setIntersectionsKey] = useState(Date.now());
@@ -63,7 +64,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated }) => {
             );
             const mapBounds = L.latLngBounds(latLngCoords);
             if (mapBounds.isValid() || activeFilter) {
-                console.log("ENTRE A LAS INSERCTION");
                 setIntersectionsKey(Date.now());
 
                 findIntersections(poligonos);
@@ -183,7 +183,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated }) => {
         setAreaAplicada(formattedAreaAplicada);
         setNonAppliedArea(formattedNonAppliedArea);
 
-        // Invocar el callback con los valores calculados
         if (onAreasCalculated) {
             onAreasCalculated({
                 areaSobreAplicada: formattedAreaSobreAplicada,
@@ -194,6 +193,25 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated }) => {
 
     }, [areasSuperpuestas, poligonos, onAreasCalculated]);
 
+    useEffect(() => {
+        if (poligonos.length === 0 || poligonosPropiedades.length === 0) return;
+
+        const totalVelocidad = poligonosPropiedades.reduce((acc, curr) => acc + (curr.VELOCIDAD || 0), 0);
+        const totalAltura = poligonosPropiedades.reduce((acc, curr) => acc + (curr.ALTURA || 0), 0);
+        const totalDosisReal = poligonosPropiedades.reduce((acc, curr) => acc + (curr.DOSISREAL || 0), 0);
+
+        const promedioVelocidad = (totalVelocidad / poligonosPropiedades.length).toFixed(3);
+        const promedioAltura = (totalAltura / poligonosPropiedades.length).toFixed(3);
+        const promedioDosisReal = (totalDosisReal / poligonosPropiedades.length).toFixed(3);
+
+        if(onPromediosCalculated){
+            onPromediosCalculated({
+                promedioVelocidad: promedioVelocidad,
+                promedioAltura: promedioAltura,
+                promedioDosisReal: promedioDosisReal
+            });
+        }
+    }, [poligonos, poligonosPropiedades, onPromediosCalculated]);
 
 
     const openFilterDialog = () => setIsFilterDialogOpen(true);
@@ -240,7 +258,9 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated }) => {
                     ))}
                 </LayersControl>
             </MapContainer>
-
+            {activeFilter && (
+                <BarIndicator filterType={activeFilter} isHistory={false} />
+            )}
             <Dialog open={isFilterDialogOpen} onClose={closeFilterDialog} aria-labelledby="draggable-dialog-title">
                 <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">Configuración de Filtros</DialogTitle>
                 <DialogContent>
@@ -267,6 +287,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated }) => {
                                     }
                                     label={`Activar Filtro de ${filterKey.charAt(0).toUpperCase() + filterKey.slice(1)}`}
                                 />
+
+
                                 {Object.keys(filterValues[filterKey]).map(valueKey => (
                                     <TextField
                                         key={valueKey}

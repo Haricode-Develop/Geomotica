@@ -163,7 +163,6 @@ const MyTimeline = () => {
     };
 
     const obtenerTiffData = async (nombreAnalisis, idAnalisis) => {
-        console.log("Iniciando carga");
 
         const analisisId = idAnalisis != null ? idAnalisis : selectedIdAnalisis;
 
@@ -200,7 +199,6 @@ const MyTimeline = () => {
         }catch (error) {
             console.error("Error al obtener datos del TIFF: ", error);
         } finally {
-            console.log("Finalizando carga");
             setIsLoading(false);
         }
     };

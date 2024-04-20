@@ -24,14 +24,11 @@ self.onmessage = async function (e) {
                 const loadedGeoJson = await loadGeoJsonFromUrl(geojsonData);
                 if (loadedGeoJson) {
                     let processedData;
-                    console.log("ESTE ES EL TIPO EN EL DATA WORKER: ", type);
-                    console.log("ESTE ES EL GEOJSON QUE VIENE", geojsonData);
 
                     if(type === 'COSECHA_MECANICA'){
                         processedData = processGeoJsonData(loadedGeoJson);
 
                     }else if(type === 'APS'){
-                        console.log("Entre al if de aplicaciones Areas");
                         processedData = processAplicacionesAreasData(loadedGeoJson);
 
                     }
@@ -96,7 +93,6 @@ function processGeoJsonData(geojsonData) {
 
 function processAplicacionesAreasData(geojsonData) {
     const polygonFeatures = geojsonData.features.filter(feature => feature.geometry.type === 'Polygon');
-    console.log("ESTAS SON LAS PROPIEDADES DEL POLIGONO: ", polygonFeatures);
     let polygons = polygonFeatures.map(feature => {
         const properties = feature.properties || {};
         return {
@@ -105,6 +101,5 @@ function processAplicacionesAreasData(geojsonData) {
             polygon: extractCoordinates(feature)
         };
     });
-    console.log("POLIGONOS: ", polygons);
     return { polygons: polygons };
 }

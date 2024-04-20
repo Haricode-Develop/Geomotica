@@ -158,6 +158,11 @@ function Dashboard() {
     const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
     const [areaAplicada, setAreaAplicada] = useState(0);
     const [areaNoAplicada, setAreaNoAplicada] = useState(0);
+
+    const [promedioVelocidad, setPromedioVelocidad] = useState(0);
+    const [promedioAltura, setPromedioAltura] = useState(0);
+    const [promedioDosisReal, setDosisReal] = useState(0);
+
     //=================================================
 
 
@@ -919,13 +924,11 @@ function Dashboard() {
         const reader = new FileReader();
         reader.onload = async (e) => {
             const content = e.target.result;
-            console.log("ESTE ES EL ID DEL ANALISIS: ", idAnalisisBash);
             if (idAnalisisBash === 2) {
                 const lines = content.split(/\r\n|\n/).length - 1;
                 const tamanoLote = 10000;
                 let offset = 0;
                 let esPrimeraIteracion = true;
-                console.log("ENTRE AL ANALISIS DE COSECHA MECANICA PARA CICLO ========");
                 while (offset < lines) {
 
                     const formData = new FormData();
@@ -998,6 +1001,13 @@ function Dashboard() {
         setAreaNoAplicada(areas.nonAppliedArea);
     };
 
+    const handlePromediosCalculados = (promedios) => {
+        setPromedioVelocidad(promedios.promedioVelocidad);
+        setPromedioAltura(promedios.promedioAltura);
+        setDosisReal(promedios.promedioDosisReal);
+    }
+
+
     return (
         <div className="dashboard">
             <Tutorial
@@ -1028,6 +1038,7 @@ function Dashboard() {
                                 idAnalisis={ultimoAnalisis()}
                                 tipoAnalisis={nombreAnalisis(idAnalisisBash)}
                                 onAreasCalculated={handleAreasCalculated}
+                                onPromediosCalculated={handlePromediosCalculados}
                             />
 
                             }
@@ -1086,6 +1097,16 @@ function Dashboard() {
                                         </DataCard>
                                         <DataCard title="Área Aplicada">
                                             {displayValue(areaAplicada)} ha
+                                        </DataCard>
+
+                                        <DataCard title="Velocidad">
+                                            {displayValue(promedioVelocidad)}
+                                        </DataCard>
+                                        <DataCard title="Altura">
+                                            {displayValue(promedioAltura)}
+                                        </DataCard>
+                                        <DataCard title="Dosis Real">
+                                            {displayValue(promedioDosisReal)}
                                         </DataCard>
                                         {/*
                                          <DataCard title="Área No Aplicada">

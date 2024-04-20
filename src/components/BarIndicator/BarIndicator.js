@@ -36,8 +36,18 @@ const BarIndicator = ({ filterType, isHistory }) => {
             indicadorIzquierda = "Enganchado";
             indicadorDerecha = "Desenganchado";
             break;
+        case "VELOCIDAD":
+            title = "Velocidad";
+            break;
+        case "ALTURA":
+            title = "Altura";
+            break;
+        case "DOSISREAL":
+            title = "Dosis Real";
+            break;
         default:
             title = "Indicador";
+            break;
     }
 
     let gradientStyle;
