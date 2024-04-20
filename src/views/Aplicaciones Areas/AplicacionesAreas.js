@@ -26,12 +26,25 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         ALTURA: { low: 5, medium: 10, high: 15 },
         DOSISREAL: { low: 0.5, medium: 1.5, high: 2.5 }
     });
+
+    useEffect(() => {
+        const newData = {
+            ...formData,
+            [activeFilter]: filterValues[activeFilter]
+        };
+        setFormData(newData);
+        localStorage.setItem('formData', JSON.stringify(newData));
+    }, [filterValues, activeFilter]);
+
+
+
     const [poligonosPropiedades, setPoligonosPropiedades] = useState([]);
     const [intersectionsKey, setIntersectionsKey] = useState(Date.now());
     const [showIntersections, setShowIntersections] = useState(true);
     const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
     const [areaAplicada, setAreaAplicada] = useState(0);
     const [nonAppliedArea, setNonAppliedArea] =useState(0);
+    const [formData, setFormData] = useState({});
 
     useEffect(() => {
         const worker = new Worker('dataWorker.js');
@@ -213,6 +226,41 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     }, [poligonos, poligonosPropiedades, onPromediosCalculated]);
 
+
+
+    const verificarYEnviarDatos = () => {
+        if (Object.keys(formData).length > 0) {
+            enviarDatosFormulario(formData).then(() => {
+                console.log("Datos enviados exitosamente");
+            }).catch(error => {
+                console.error('Error al enviar datos', error);
+            });
+        }
+    };
+    useEffect(() => {
+        window.addEventListener('beforeunload', verificarYEnviarDatos);
+        return () => window.removeEventListener('beforeunload', verificarYEnviarDatos);
+    }, [formData]);
+
+
+    const enviarDatosFormulario = async (datosFormulario) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/dashboard/ultimosDatosIngresadosAps`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(datosFormulario),
+            });
+            if (!response.ok) {
+                throw new Error('Error al enviar los datos');
+            }
+            const resultado = await response.json();
+            return resultado;
+        } catch (error) {
+            console.error('Error al enviar el formulario:', error);
+        }
+    };
 
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
