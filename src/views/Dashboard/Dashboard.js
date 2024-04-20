@@ -155,6 +155,9 @@ function Dashboard() {
     const [dosisTeorica, setDosisTeoricaAps] = useState(null);
     const [humedadDelCultivo, setHumedadDelCultivoAps] = useState(null);
     const [tchEstimado, setTchEstimadoAps] = useState(null);
+    const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
+    const [areaAplicada, setAreaAplicada] = useState(0);
+    const [areaNoAplicada, setAreaNoAplicada] = useState(0);
     //=================================================
 
 
@@ -989,6 +992,12 @@ function Dashboard() {
         setSelectedAnalysisType(event.target.value);
     };
 
+    const handleAreasCalculated = (areas) => {
+        setAreaSobreAplicada(areas.areaSobreAplicada);
+        setAreaAplicada(areas.areaAplicada);
+        setAreaNoAplicada(areas.nonAppliedArea);
+    };
+
     return (
         <div className="dashboard">
             <Tutorial
@@ -1018,6 +1027,7 @@ function Dashboard() {
                                 progressFinish={processingFinished}
                                 idAnalisis={ultimoAnalisis()}
                                 tipoAnalisis={nombreAnalisis(idAnalisisBash)}
+                                onAreasCalculated={handleAreasCalculated}
                             />
 
                             }
@@ -1071,6 +1081,18 @@ function Dashboard() {
                                         <DataCard title="TCH Estimado">
                                             {displayValue(tchEstimado)}
                                         </DataCard>
+                                        <DataCard title="Área Sobre Aplicada">
+                                            {displayValue(areaSobreAplicada)} ha
+                                        </DataCard>
+                                        <DataCard title="Área Aplicada">
+                                            {displayValue(areaAplicada)} ha
+                                        </DataCard>
+                                        {/*
+                                         <DataCard title="Área No Aplicada">
+                                            {displayValue(areaNoAplicada)} ha
+                                        </DataCard>
+                                        */}
+
                                     </>
                                 )
                             }

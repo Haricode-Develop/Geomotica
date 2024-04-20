@@ -49,6 +49,7 @@ export const obtenerCodigoLotesAps = async (idAnalisisAps, setCodigoLotes) => {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/codigoLotesAps/${idAnalisisAps}`);
         setCodigoLotes(response.data[0]);
+        console.log("RESPUESTA DE LOTES: ",response);
     } catch(error){
         console.error("Error en obtener Codigo Lotes:",error);
     }
@@ -57,7 +58,7 @@ export const obtenerCodigoLotesAps = async (idAnalisisAps, setCodigoLotes) => {
 export const obtenerDosisTeoricaAps = async (idAnalisisAps, setDosisTeorica)=> {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/dosisTeoricaAps/${idAnalisisAps}`);
-        setDosisTeorica(response.data[0]);
+        setDosisTeorica(response.data);
     } catch (error){
         console.error("Error en obtener Dosis teorica:",error);
     }
@@ -67,7 +68,7 @@ export const obtenerHumedadDelCultivo = async (idAnalisisAps, setHumedadDelCulti
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/humedadDelCultivo/${idAnalisisAps}`);
        console.log("RESPUESTA DE HUMEDAD DEL CULTIVO: ", response);
-        setHumedadDelCultivo(response.data[0]);
+        setHumedadDelCultivo(response.data);
     }catch(error){
         console.error("Error en obtener Humedad del cultivo:",error);
     }
@@ -77,7 +78,7 @@ export const obtenerTchEstimado = async (idAnalisisAps, setTchEstimado) => {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/tchEstimado/${idAnalisisAps}`);
         console.log("RESPUESTA DE TC ESTIMADO: ", response);
-        setTchEstimado(response.data[0]);
+        setTchEstimado(response.data);
     }catch(error){
         console.error("Error en obtener tch estimado: ");
     }
@@ -142,21 +143,12 @@ export const obtenerEficienciaAps = async (idAnalisisAps, setEficienciaAps) => {
     try {
 
         const response = await axios.get(`${API_BASE_URL}dashboard/eficienciaAps/${idAnalisisAps}`);
-        setEficienciaAps(response.data[0]);
+        setEficienciaAps(response.data);
     } catch (error) {
         console.error("Error en obtenerEficienciaAps:", error);
     }
 };
 
-export const obtenerPromedioVelocidadAps = async (idAnalisisAps, setPromedioVelocidadAps) => {
-    try {
-
-        const response = await axios.get(`${API_BASE_URL}dashboard/promedioVelocidadAps/${idAnalisisAps}`);
-        setPromedioVelocidadAps(response.data[0]);
-    } catch (error) {
-        console.error("Error en obtenerPromedioVelocidadAps:", error);
-    }
-};
 /*======================================================
 *  PETICIONES DE COSECHA_MECANICA
 * ======================================================*/

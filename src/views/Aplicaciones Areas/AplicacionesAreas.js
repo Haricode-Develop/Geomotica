@@ -4,13 +4,15 @@ import { MapContainer, TileLayer, Polygon, LayersControl } from 'react-leaflet';
 import L from 'leaflet';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '../../utils/config';
-import { polygon as turfPolygon, intersect as turfIntersect } from '@turf/turf';
+import { points as turfPoints, polygon as turfPolygon, area as turfArea, convex as turfConvex, union as turfUnion, difference as turfDifference, intersect as turfIntersect  } from '@turf/turf';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip } from '@mui/material';
 import { FaMap } from "react-icons/fa";
 
+
+
 const { BaseLayer } = LayersControl;
 
-const AplicacionesAreas = ({ idAnalisis, tipoAnalisis }) => {
+const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated }) => {
     const [poligonos, setPoligonos] = useState([]);
     const [areasSuperpuestas, setAreasSuperpuestas] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
@@ -26,6 +28,10 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis }) => {
     const [poligonosPropiedades, setPoligonosPropiedades] = useState([]);
     const [intersectionsKey, setIntersectionsKey] = useState(Date.now());
     const [showIntersections, setShowIntersections] = useState(true);
+    const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
+    const [areaAplicada, setAreaAplicada] = useState(0);
+    const [nonAppliedArea, setNonAppliedArea] =useState(0);
+
     useEffect(() => {
         const worker = new Worker('dataWorker.js');
         const socket = io(API_BASE_URL);
@@ -127,6 +133,68 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis }) => {
             setPoligonos(poligonos.map(polygon => [...polygon]));
         }
     }, [activeFilter, filterValues]);
+
+    useEffect(() => {
+        // Asegúrate de tener polígonos para procesar
+        if (poligonos.length === 0) return;
+
+        // Asegúrate de que cada polígono esté cerrado correctamente
+        const closedPolygons = poligonos.map(polygon => {
+            if (polygon[0] !== polygon[polygon.length - 1]) {
+                polygon.push(polygon[0]);
+            }
+            return polygon;
+        });
+
+        // Crear un solo polígono que une todos los polígonos aplicados
+        let unitedPolygons = turfPolygon([closedPolygons[0]]);
+        for (let i = 1; i < closedPolygons.length; i++) {
+            unitedPolygons = turfUnion(unitedPolygons, turfPolygon([closedPolygons[i]]));
+        }
+
+        // Calcula el área sobre aplicada
+        const areaSobreAplicadaHectareas = areasSuperpuestas.reduce((totalArea, polygon) => {
+            const turfPoly = turfPolygon([polygon]);
+            return totalArea + turfArea(turfPoly) / 10000;
+        }, 0);
+
+        // Calcula el área aplicada del polígono unido
+        const areaAplicadaHectareas = turfArea(unitedPolygons) / 10000;
+
+        // Crear la envolvente convexa de todos los puntos de los polígonos cerrados
+        const pointsForConvexHull = closedPolygons.flatMap(polygon =>
+            polygon.map(coordPair => [coordPair[1], coordPair[0]])
+        );
+
+        const convexHull = turfConvex(turfPoints(pointsForConvexHull));
+        const totalConvexHullArea = convexHull ? turfArea(convexHull) / 10000 : 0;
+
+        // Calcula el área no aplicada como la diferencia entre la envolvente convexa y el polígono unido
+        const differencePoly = turfDifference(convexHull, unitedPolygons);
+        const nonAppliedAreaHectareas = differencePoly ? turfArea(differencePoly) / 10000 : 0;
+
+        // Formatear números a tres decimales
+        const formattedAreaSobreAplicada = parseFloat(areaSobreAplicadaHectareas.toFixed(3));
+        const formattedAreaAplicada = parseFloat(areaAplicadaHectareas.toFixed(3));
+        const formattedNonAppliedArea = parseFloat(nonAppliedAreaHectareas.toFixed(3));
+
+        // Actualizar el estado con los valores formateados
+        setAreaSobreAplicada(formattedAreaSobreAplicada);
+        setAreaAplicada(formattedAreaAplicada);
+        setNonAppliedArea(formattedNonAppliedArea);
+
+        // Invocar el callback con los valores calculados
+        if (onAreasCalculated) {
+            onAreasCalculated({
+                areaSobreAplicada: formattedAreaSobreAplicada,
+                areaAplicada: formattedAreaAplicada,
+                nonAppliedArea: formattedNonAppliedArea
+            });
+        }
+
+    }, [areasSuperpuestas, poligonos, onAreasCalculated]);
+
+
 
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
