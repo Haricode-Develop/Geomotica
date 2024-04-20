@@ -57,22 +57,21 @@ import {
     obtenerHoraFinalFertilizacion,
     obtenerPromedioDosisRealFertilizacion,
     //APS
-    obtenerAreaBrutaAps,
     obtenerCodigoParcelasAps,
-    obtenerAreaNetaAps,
-    obtenerDiferenciaEntreAreasAps,
-    obtenerActividadAps,
+
     obtenerEficienciaAps,
     obtenerEquipoAps,
     obtenerFechaInicioCosechaAps,
     obtenerFechaFinCosechaAps,
     obtenerHoraInicioAps,
     obtenerHoraFinalAps,
-    obtenerPromedioVelocidadAps,
     obtenerNombreFincaAps,
     obtenerNombreOperadorAps,
-    obtenerTiempoTotalActividadesAps,
     obtenerResponsableAps,
+    obtenerCodigoLotesAps,
+    obtenerDosisTeoricaAps,
+    obtenerHumedadDelCultivo,
+    obtenerTchEstimado,
     //HERBICIDAS
     obtenerAreaBrutaHerbicidas,
     obtenerEficienciaHerbicidas,
@@ -145,22 +144,18 @@ function Dashboard() {
     const [ResponsableAps,setResponsableAps] = useState(null);
     const [fechaInicioCosechaAps, setFechaInicioCosechaAps] = useState(null);
     const [fechaFinCosechaAps, setFechaFinCosechaAps] = useState(null);
-    const [nombreFincaAps, setNombreFincaAps] = useState(null);
-    const [codigoParcelasAps, setCodigoParcelasAps] = useState(null);
     const [nombreOperadorAps, setNombreOperadorAps] = useState(null);
     const [equipoAps, setEquipoAps] = useState(null);
-    const [actividadAps, setActividadAps] = useState(null);
-    const [areaNetaAps, setAreaNetaAps] = useState(null);
-    const [areaBrutaAps, setAreaBrutaAps] = useState(null);
-    const [diferenciaEntreAreasAps, setDiferenciaEntreAreasAps] = useState(null);
     const [horaInicioAps, setHoraInicioAps] = useState(null);
     const [horaFinalAps, setHoraFinalAps] = useState(null);
-    const [tiempoTotalActividadesAps, setTiempoTotalActividadesAps] = useState(null);
     const [eficienciaAps, setEficienciaAps] = useState(null);
-    const [promedioVelocidadAps, setPromedioVelocidadAps] = useState(null);
-
+    const [nombreFincaAps, setNombreFincaAps] = useState(null);
+    const [codigoParcelasAps, setCodigoParcelasAps] = useState(null);
+    const [codigoLoresAps, setCodigoLotesAps] = useState(null);
+    const [dosisTeorica, setDosisTeoricaAps] = useState(null);
+    const [humedadDelCultivo, setHumedadDelCultivoAps] = useState(null);
+    const [tchEstimado, setTchEstimadoAps] = useState(null);
     //=================================================
-
 
 
     //================= Variables para análisis de cosecha mecánica
@@ -392,22 +387,21 @@ function Dashboard() {
             try {
                 // Espera a que todas las promesas se resuelvan
                 await Promise.all([
-                    obtenerResponsableAps(idAnalisisAps),
-                    obtenerFechaInicioCosechaAps(idAnalisisAps),
-                    obtenerFechaFinCosechaAps(idAnalisisAps),
-                    obtenerNombreFincaAps(idAnalisisAps),
-                    obtenerCodigoParcelasAps(idAnalisisAps),
-                    obtenerNombreOperadorAps(idAnalisisAps),
-                    obtenerEquipoAps(idAnalisisAps),
-                    obtenerActividadAps(idAnalisisAps),
-                    obtenerAreaNetaAps(idAnalisisAps),
-                    obtenerAreaBrutaAps(idAnalisisAps),
-                    obtenerDiferenciaEntreAreasAps(idAnalisisAps),
-                    obtenerHoraInicioAps(idAnalisisAps),
-                    obtenerHoraFinalAps(idAnalisisAps),
-                    obtenerTiempoTotalActividadesAps(idAnalisisAps),
-                    obtenerEficienciaAps(idAnalisisAps),
-                    obtenerPromedioVelocidadAps(idAnalisisAps)
+                    obtenerResponsableAps(idAnalisisAps, setResponsableAps),
+                    obtenerFechaInicioCosechaAps(idAnalisisAps, setFechaInicioCosechaAps),
+                    obtenerFechaFinCosechaAps(idAnalisisAps, setFechaFinCosechaAps),
+                    obtenerHoraInicioAps(idAnalisisAps, setHoraInicioAps),
+                    obtenerHoraFinalAps(idAnalisisAps, setHoraFinalAps),
+                    obtenerNombreOperadorAps(idAnalisisAps, setNombreOperadorAps),
+                    obtenerEquipoAps(idAnalisisAps, setEquipoAps),
+                    obtenerEficienciaAps(idAnalisisAps, setEficienciaAps),
+                    obtenerNombreFincaAps(idAnalisisAps, setNombreFincaAps),
+                    obtenerCodigoParcelasAps(idAnalisisAps, setCodigoParcelasAps),
+                    obtenerCodigoLotesAps(idAnalisisAps, setCodigoLotesAps),
+                    obtenerDosisTeoricaAps(idAnalisisAps, setDosisTeoricaAps),
+                    obtenerHumedadDelCultivo(idAnalisisAps, setHumedadDelCultivoAps),
+                    obtenerTchEstimado(idAnalisisAps, setTchEstimadoAps)
+
                 ]);
                 // Actualiza el estado después de completar todas las promesas
                 setDatosCargadosAps(true);
@@ -1044,38 +1038,38 @@ function Dashboard() {
                                         <DataCard title="Fecha Fin">
                                             {displayValue(fechaFinCosechaAps)}
                                         </DataCard>
-                                        <DataCard title="Nombre operador">
+                                        <DataCard title="Hora Inicio">
+                                            {displayValue(horaInicioAps)}
+                                        </DataCard>
+                                        <DataCard title="Hora Final">
+                                            {displayValue(horaFinalAps)}
+                                        </DataCard>
+                                        <DataCard title="Nombre Operador">
                                             {displayValue(nombreOperadorAps)}
                                         </DataCard>
                                         <DataCard title="Equipo">
                                             {displayValue(equipoAps)}
                                         </DataCard>
-                                        <DataCard title="Actividad">
-                                            {displayValue(actividadAps)}
-                                        </DataCard>
-                                        <DataCard title="Area Neta">
-                                            {displayValue(areaNetaAps)}
-                                        </DataCard>
-                                        <DataCard title="Area Bruta">
-                                            {displayValue(areaBrutaAps)}
-                                        </DataCard>
-                                        <DataCard title="Diferencia Entre Areas">
-                                            {displayValue(diferenciaEntreAreasAps)}
-                                        </DataCard>
-                                        <DataCard title="Hora Inicio APS">
-                                            {displayValue(horaInicioAps)}
-                                        </DataCard>
-                                        <DataCard title="Hora Final APS">
-                                            {displayValue(horaFinalAps)}
-                                        </DataCard>
-                                        <DataCard title="Tiempo Total Actividades">
-                                            {displayValue(tiempoTotalActividadesAps)}
-                                        </DataCard>
                                         <DataCard title="Eficiancia">
                                             {displayValue(eficienciaAps)}
                                         </DataCard>
-                                        <DataCard title="Promedio Velocidad">
-                                            {displayValue(promedioVelocidadAps)}
+                                        <DataCard title="Nombre Finca">
+                                            {displayValue(nombreFincaAps)}
+                                        </DataCard>
+                                        <DataCard title="Codigo Parcelas">
+                                            {displayValue(codigoParcelasAps)}
+                                        </DataCard>
+                                        <DataCard title="Codigo Lotes">
+                                            {displayValue(codigoLoresAps)}
+                                        </DataCard>
+                                        <DataCard title="Dosis Teorica">
+                                            {displayValue(dosisTeorica)}
+                                        </DataCard>
+                                        <DataCard title="Humedad del cultivo">
+                                            {displayValue(humedadDelCultivo)}
+                                        </DataCard>
+                                        <DataCard title="TCH Estimado">
+                                            {displayValue(tchEstimado)}
                                         </DataCard>
                                     </>
                                 )

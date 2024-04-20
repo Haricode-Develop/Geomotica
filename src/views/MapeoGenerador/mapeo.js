@@ -71,6 +71,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
     const [mapKey, setMapKey] = useState(Date.now());
     const workerRef = useRef(null);
+
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
 

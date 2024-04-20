@@ -97,13 +97,14 @@ function processGeoJsonData(geojsonData) {
 function processAplicacionesAreasData(geojsonData) {
     const polygonFeatures = geojsonData.features.filter(feature => feature.geometry.type === 'Polygon');
     console.log("ESTAS SON LAS PROPIEDADES DEL POLIGONO: ", polygonFeatures);
-    let polygons = polygonFeatures.map(feature => ({
-        id: feature.id,
-        properties: feature.properties,
-        polygon: extractCoordinates(feature)
-    }));
+    let polygons = polygonFeatures.map(feature => {
+        const properties = feature.properties || {};
+        return {
+            id: feature.id,
+            properties: properties,
+            polygon: extractCoordinates(feature)
+        };
+    });
     console.log("POLIGONOS: ", polygons);
-    return {
-        polygons: polygons
-    };
+    return { polygons: polygons };
 }

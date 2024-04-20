@@ -9,6 +9,7 @@ export const obtenerResponsableAps = async (idAnalisisAps, setResponsableAps) =>
 
         const response = await axios.get(`${API_BASE_URL}dashboard/responsableAps/${idAnalisisAps}`);
         setResponsableAps(response.data);
+        console.log("RESPONSABLE APS: ", response);
     } catch (error) {
         console.error("Error en obtenerResponsableAps:", error);
     }
@@ -18,7 +19,6 @@ export const obtenerFechaInicioCosechaAps = async (idAnalisisAps, setFechaInicio
     try {
 
         const response = await axios.get(`${API_BASE_URL}dashboard/fechaInicioCosechaAps/${idAnalisisAps}`);
-
         setFechaInicioCosechaAps(response.data[0]);
     } catch (error) {
         console.error("Error en obtenerFechaInicioCosechaAps:", error);
@@ -44,6 +44,47 @@ export const obtenerNombreFincaAps = async (idAnalisisAps, setNombreFincaAps) =>
         console.error("Error en obtenerNombreFincaAps:", error);
     }
 };
+
+export const obtenerCodigoLotesAps = async (idAnalisisAps, setCodigoLotes) => {
+    try{
+        const response = await axios.get(`${API_BASE_URL}dashboard/codigoLotesAps/${idAnalisisAps}`);
+        setCodigoLotes(response.data[0]);
+    } catch(error){
+        console.error("Error en obtener Codigo Lotes:",error);
+    }
+}
+
+export const obtenerDosisTeoricaAps = async (idAnalisisAps, setDosisTeorica)=> {
+    try{
+        const response = await axios.get(`${API_BASE_URL}dashboard/dosisTeoricaAps/${idAnalisisAps}`);
+        setDosisTeorica(response.data[0]);
+    } catch (error){
+        console.error("Error en obtener Dosis teorica:",error);
+    }
+}
+
+export const obtenerHumedadDelCultivo = async (idAnalisisAps, setHumedadDelCultivo)=> {
+    try{
+        const response = await axios.get(`${API_BASE_URL}dashboard/humedadDelCultivo/${idAnalisisAps}`);
+       console.log("RESPUESTA DE HUMEDAD DEL CULTIVO: ", response);
+        setHumedadDelCultivo(response.data[0]);
+    }catch(error){
+        console.error("Error en obtener Humedad del cultivo:",error);
+    }
+}
+
+export const obtenerTchEstimado = async (idAnalisisAps, setTchEstimado) => {
+    try{
+        const response = await axios.get(`${API_BASE_URL}dashboard/tchEstimado/${idAnalisisAps}`);
+        console.log("RESPUESTA DE TC ESTIMADO: ", response);
+        setTchEstimado(response.data[0]);
+    }catch(error){
+        console.error("Error en obtener tch estimado: ");
+    }
+
+}
+
+
 
 export const obtenerCodigoParcelasAps = async (idAnalisisAps, setCodigoParcelasAps) => {
     try {
@@ -75,45 +116,6 @@ export const obtenerEquipoAps = async (idAnalisisAps, setEquipoAps) => {
     }
 };
 
-export const obtenerActividadAps = async (idAnalisisAps, setActividadAps) => {
-    try {
-
-        const response = await axios.get(`${API_BASE_URL}dashboard/actividadAps/${idAnalisisAps}`);
-        setActividadAps(response.data);
-    } catch (error) {
-        console.error("Error en obtenerActividadAps:", error);
-    }
-};
-
-export const obtenerAreaNetaAps = async (idAnalisisAps, setAreaNetaAps) => {
-    try {
-
-        const response = await axios.get(`${API_BASE_URL}dashboard/areaNetaAps/${idAnalisisAps}`);
-        setAreaNetaAps(response.data[0]);
-    } catch (error) {
-        console.error("Error en obtenerAreaNetaAps:", error);
-    }
-};
-
-export const obtenerAreaBrutaAps = async (idAnalisisAps, setAreaBrutaAps) => {
-    try {
-
-        const response = await axios.get(`${API_BASE_URL}dashboard/areaBrutaAps/${idAnalisisAps}`);
-        setAreaBrutaAps(response.data[0]);
-    } catch (error) {
-        console.error("Error en obtenerAreaBrutaAps:", error);
-    }
-};
-
-export const obtenerDiferenciaEntreAreasAps = async (idAnalisisAps, setDiferenciaEntreAreasAps) => {
-    try {
-
-        const response = await axios.get(`${API_BASE_URL}dashboard/diferenciaEntreAreasAps/${idAnalisisAps}`);
-        setDiferenciaEntreAreasAps(response.data[0]);
-    } catch (error) {
-        console.error("Error en obtenerDiferenciaEntreAreasAps:", error);
-    }
-};
 
 export const obtenerHoraInicioAps = async (idAnalisisAps, setHoraInicioAps) => {
     try {
@@ -135,15 +137,6 @@ export const obtenerHoraFinalAps = async (idAnalisisAps, setHoraFinalAps) => {
     }
 };
 
-export const obtenerTiempoTotalActividadesAps = async (idAnalisisAps, setTiempoTotalActividadesAps) => {
-    try {
-
-        const response = await axios.get(`${API_BASE_URL}dashboard/tiempoTotalActividadesAps/${idAnalisisAps}`);
-        setTiempoTotalActividadesAps(response.data[0]);
-    } catch (error) {
-        console.error("Error en obtenerTiempoTotalActividadesAps:", error);
-    }
-};
 
 export const obtenerEficienciaAps = async (idAnalisisAps, setEficienciaAps) => {
     try {
