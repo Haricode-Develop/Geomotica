@@ -69,10 +69,14 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
         worker.onmessage = (e) => {
             if (e.data.action === 'geoJsonDataProcessed') {
-                const { polygons } = e.data.data;
-                const formattedPolygons = polygons.map(poly => formatPolygon(poly.polygon[0]));
-                setPoligonosPropiedades(polygons.map(poly => poly.properties));
-                setPoligonos(formattedPolygons);
+                if (e.data.action === 'geoJsonDataProcessed' && e.data.data && Array.isArray(e.data.data.polygons)) {
+                    const { polygons } = e.data.data;
+                    const formattedPolygons = polygons.map(poly => formatPolygon(poly.polygon[0]));
+                    setPoligonosPropiedades(polygons.map(poly => poly.properties));
+                    setPoligonos(formattedPolygons);
+                } else {
+                    console.error('Datos recibidos no son válidos:', e.data);
+                }
             }
         };
 

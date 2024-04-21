@@ -25,10 +25,14 @@ self.onmessage = async function (e) {
                 if (loadedGeoJson) {
                     let processedData;
 
+
+                    console.log(type);
                     if(type === 'COSECHA_MECANICA'){
+                        console.log("COSECHA MECANICA");
                         processedData = processGeoJsonData(loadedGeoJson);
 
                     }else if(type === 'APLICACIONES_AEREAS'){
+                        console.log("APLICACIONES AEREAS");
                         processedData = processAplicacionesAreasData(loadedGeoJson);
 
                     }
