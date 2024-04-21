@@ -88,7 +88,7 @@ import {
     obtenerOperadorHerbicidas,
     obtenerParcelaHerbicidas,
     obtenerResponsableHerbicidas,
-    displayValue
+    displayValue, obtenerTiempoTotalAps
 
 
 } from "../../utils/Constants";
@@ -142,6 +142,7 @@ function Dashboard() {
 
     //================= Variables para análisis de aps
     const [ResponsableAps,setResponsableAps] = useState(null);
+    const [tiempoTotalAps, setTiempoTotalAps] = useState(null);
     const [fechaInicioCosechaAps, setFechaInicioCosechaAps] = useState(null);
     const [fechaFinCosechaAps, setFechaFinCosechaAps] = useState(null);
     const [nombreOperadorAps, setNombreOperadorAps] = useState(null);
@@ -397,6 +398,7 @@ function Dashboard() {
                 await Promise.all([
                     obtenerResponsableAps(idAnalisisAps, setResponsableAps),
                     obtenerFechaInicioCosechaAps(idAnalisisAps, setFechaInicioCosechaAps),
+                    obtenerTiempoTotalAps(idAnalisisAps,setTiempoTotalAps),
                     obtenerFechaFinCosechaAps(idAnalisisAps, setFechaFinCosechaAps),
                     obtenerHoraInicioAps(idAnalisisAps, setHoraInicioAps),
                     obtenerHoraFinalAps(idAnalisisAps, setHoraFinalAps),
@@ -1065,6 +1067,9 @@ function Dashboard() {
                                         <DataCard title="Hora Final">
                                             {displayValue(horaFinalAps)}
                                         </DataCard>
+                                        <DataCard title="Tiempo Total">
+                                            {displayValue(tiempoTotalAps)}
+                                        </DataCard>
                                         <DataCard title="Nombre Operador">
                                             {displayValue(nombreOperadorAps)}
                                         </DataCard>
@@ -1108,6 +1113,7 @@ function Dashboard() {
                                         <DataCard title="Dosis Real">
                                             {displayValue(promedioDosisReal)}
                                         </DataCard>
+
                                         {/*
                                          <DataCard title="Área No Aplicada">
                                             {displayValue(areaNoAplicada)} ha

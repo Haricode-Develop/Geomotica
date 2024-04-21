@@ -24,6 +24,15 @@ export const obtenerFechaInicioCosechaAps = async (idAnalisisAps, setFechaInicio
     }
 };
 
+export const obtenerTiempoTotalAps = async(idAnalisisAps, setTiempoTotalAps)  => {
+    try{
+    const response = await axios.get(`${API_BASE_URL}dashboard/tiempoTotalAps/${idAnalisisAps}`);
+    setTiempoTotalAps(response.data[0]);
+    }catch(error){
+        console.error("Error en obtenerTiempoTotalAps:", error);
+
+    }
+}
 export const obtenerFechaFinCosechaAps = async (idAnalisisAps, setFechaFinCosechaAps) => {
     try {
 
