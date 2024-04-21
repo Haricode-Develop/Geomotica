@@ -28,7 +28,7 @@ self.onmessage = async function (e) {
                     if(type === 'COSECHA_MECANICA'){
                         processedData = processGeoJsonData(loadedGeoJson);
 
-                    }else if(type === 'APS'){
+                    }else if(type === 'APLICACIONES_AEREAS'){
                         processedData = processAplicacionesAreasData(loadedGeoJson);
 
                     }

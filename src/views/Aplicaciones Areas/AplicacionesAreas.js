@@ -21,20 +21,37 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [map, setMap] = useState(null);
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState(null);
+    const [velocidadFiltroActivado, setVelocidadFiltroActivado] = useState(false);
+    const [alturaFiltroActivado, setAlturaFiltroActivado] = useState(false);
+    const [dosisRealFiltroActivado, setDosisRealFiltroActivado] = useState(false);
+
     const [filterValues, setFilterValues] = useState({
-        VELOCIDAD: { low: 10, medium: 30, high: 50 },
-        ALTURA: { low: 5, medium: 10, high: 15 },
-        DOSISREAL: { low: 0.5, medium: 1.5, high: 2.5 }
+        VELOCIDAD: { low: 0, medium: 0, high: 0 },
+        ALTURA: { low: 0, medium: 0, high: 0 },
+        DOSISREAL: { low: 0, medium: 0, high: 0 }
     });
 
     useEffect(() => {
-        const newData = {
-            ...formData,
-            [activeFilter]: filterValues[activeFilter]
-        };
-        setFormData(newData);
-        localStorage.setItem('formData', JSON.stringify(newData));
-    }, [filterValues, activeFilter]);
+        if (activeFilter) {
+            const newData = {
+                ...formData,
+                [activeFilter]: filterValues[activeFilter]
+            };
+            setFormData(newData);
+        }
+        localStorage.setItem('formData', JSON.stringify(formData));
+    }, [filterValues, activeFilter, idAnalisis]);
+
+    useEffect(() => {
+        Promise.resolve(idAnalisis)
+            .then(resolvedId => {
+                const actualId = resolvedId.data?.ID_ANALISIS;
+                setFormData(currentData => ({
+                    ...currentData,
+                    idAnalisis: actualId
+                }));
+            });
+    }, [idAnalisis]);
 
 
 
@@ -44,7 +61,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
     const [areaAplicada, setAreaAplicada] = useState(0);
     const [nonAppliedArea, setNonAppliedArea] =useState(0);
-    const [formData, setFormData] = useState({});
+    const [formData, setFormData] = useState({idAnalisis: idAnalisis,});
 
     useEffect(() => {
         const worker = new Worker('dataWorker.js');
@@ -112,6 +129,9 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
     const handleFilterChange = (e, filterType) => {
         const { checked } = e.target;
+        if(filterType === "VELOCIDAD") setVelocidadFiltroActivado(true);
+        if(filterType === "ALTURA") setAlturaFiltroActivado(true);
+        if(filterType === "DOSISREAL") setDosisRealFiltroActivado(true);
         if (checked) {
             setActiveFilter(filterType);
         } else {
@@ -119,6 +139,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             setIntersectionsKey(Date.now());
 
         }
+        verificarYEnviarDatos();
+
     };
 
     const getPolygonColor = (properties) => {
@@ -229,6 +251,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
 
     const verificarYEnviarDatos = () => {
+
         if (Object.keys(formData).length > 0) {
             enviarDatosFormulario(formData).then(() => {
                 console.log("Datos enviados exitosamente");
@@ -237,30 +260,48 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             });
         }
     };
-    useEffect(() => {
-        window.addEventListener('beforeunload', verificarYEnviarDatos);
-        return () => window.removeEventListener('beforeunload', verificarYEnviarDatos);
-    }, [formData]);
 
 
-    const enviarDatosFormulario = async (datosFormulario) => {
+
+    const enviarDatosFormulario = async () => {
+        const dataParaEnviar = {
+            idAnalisis: formData.idAnalisis || 0,
+            velocidadFiltro: velocidadFiltroActivado ? 1: 0,
+            velocidadBajo: formData.VELOCIDAD?.low || 0,
+            velocidadMedio: formData.VELOCIDAD?.medium || 0,
+            velocidadAlto: formData.VELOCIDAD?.high || 0,
+            alturaFiltro: alturaFiltroActivado ? 1 : 0,
+            alturaBajo: formData.ALTURA?.low || 0,
+            alturaMedio: formData.ALTURA?.medium || 0,
+            alturaAlto: formData.ALTURA?.high || 0,
+            dosisRealFiltro: dosisRealFiltroActivado ? 1: 0,
+            dosisRealBajo: formData.DOSISREAL?.low || 0,
+            dosisRealMedio: formData.DOSISREAL?.medium || 0,
+            dosisRealAlto: formData.DOSISREAL?.high || 0
+        };
+
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard/ultimosDatosIngresadosAps`, {
+            const response = await fetch(`${API_BASE_URL}dashboard/ultimosDatosIngresadosAps`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(datosFormulario),
+                body: JSON.stringify(dataParaEnviar),
             });
+
             if (!response.ok) {
-                throw new Error('Error al enviar los datos');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
             const resultado = await response.json();
             return resultado;
         } catch (error) {
             console.error('Error al enviar el formulario:', error);
         }
     };
+
+
+
 
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);

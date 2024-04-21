@@ -460,7 +460,7 @@ function Dashboard() {
 
             const handleDatosInsertados = async () => {
                 switch (selectedAnalysisTypeRef.current) {
-                    case 'APS':
+                    case 'APLICACIONES_AEREAS':
                         await cargaDatosAps();
                         break;
                     case 'COSECHA_MECANICA':
@@ -652,7 +652,7 @@ function Dashboard() {
     // Templates de los csv para el ingreso de cada uno de los análisis
 
     const analysisTemplates = {
-        APS: "/templates/APS.csv",
+        APLICACIONES_AEREAS: "/templates/APS.csv",
         COSECHA_MECANICA: "/templates/COSECHA_MECANICA.csv",
         FERTILIZACION: "/templates/FERTILIZACION.csv",
         HERBICIDAS: "/templates/HERBICIDAS.csv"
@@ -682,7 +682,7 @@ function Dashboard() {
         selectedAnalysisTypeRef.current = selectedAnalysisType;
         let id;
         switch (selectedAnalysisType) {
-            case 'APS':
+            case 'APLICACIONES_AEREAS':
                 id = 1;
                 break;
             case 'COSECHA_MECANICA':
@@ -703,7 +703,7 @@ function Dashboard() {
     function nombreAnalisis(idAnalisis){
         switch (idAnalisis) {
             case 1:
-                return "APS";
+                return "APLICACIONES_AEREAS";
                 break;
             case 2:
                 return "COSECHA_MECANICA";
@@ -1031,7 +1031,7 @@ function Dashboard() {
                                                                                                                              tipoAnalisis={nombreAnalisis(idAnalisisBash)}
                             />
                             }
-                            {selectedZipFile && selectedFile && selectedAnalysisType === 'APS' && <AplicacionesAreas
+                            {selectedZipFile && selectedFile && selectedAnalysisType === 'APLICACIONES_AEREAS' && <AplicacionesAreas
                                 csvData={datosMapeo}
                                 zipFile={selectedZipFile}
                                 progressFinish={processingFinished}
@@ -1048,7 +1048,7 @@ function Dashboard() {
                     <div className="seccion-analisis" ref={dashboardRef}>
                         <section className="data-section" >
                             {
-                                datosCargadosAps && selectedAnalysisType === 'APS' && (
+                                datosCargadosAps && selectedAnalysisType === 'APLICACIONES_AEREAS' && (
                                     <>
                                         <DataCard title="Responsable">
                                             {displayValue(ResponsableAps)}
