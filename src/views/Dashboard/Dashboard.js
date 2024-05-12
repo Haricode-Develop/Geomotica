@@ -70,7 +70,7 @@ import {
     obtenerResponsableAps,
     obtenerCodigoLotesAps,
     obtenerDosisTeoricaAps,
-    obtenerHumedadDelCultivo,
+    obtenerHumedadDelCultivoAps,
     obtenerTchEstimado,
     //HERBICIDAS
     obtenerAreaBrutaHerbicidas,
@@ -154,7 +154,7 @@ function Dashboard() {
     const [codigoParcelasAps, setCodigoParcelasAps] = useState(null);
     const [codigoLoresAps, setCodigoLotesAps] = useState(null);
     const [dosisTeorica, setDosisTeoricaAps] = useState(null);
-    const [humedadDelCultivo, setHumedadDelCultivoAps] = useState(null);
+    const [humedadDelCultivoAps, setHumedadDelCultivoAps] = useState(null);
     const [tchEstimado, setTchEstimadoAps] = useState(null);
     const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
     const [areaAplicada, setAreaAplicada] = useState(0);
@@ -409,7 +409,7 @@ function Dashboard() {
                     obtenerCodigoParcelasAps(idAnalisisAps, setCodigoParcelasAps),
                     obtenerCodigoLotesAps(idAnalisisAps, setCodigoLotesAps),
                     obtenerDosisTeoricaAps(idAnalisisAps, setDosisTeoricaAps),
-                    obtenerHumedadDelCultivo(idAnalisisAps, setHumedadDelCultivoAps),
+                    obtenerHumedadDelCultivoAps(idAnalisisAps, setHumedadDelCultivoAps),
                     obtenerTchEstimado(idAnalisisAps, setTchEstimadoAps)
 
                 ]);
@@ -1092,7 +1092,7 @@ function Dashboard() {
                                             {displayValue(dosisTeorica)}
                                         </DataCard>
                                         <DataCard title="Humedad del cultivo">
-                                            {displayValue(humedadDelCultivo)}
+                                            {displayValue(humedadDelCultivoAps)}
                                         </DataCard>
                                         <DataCard title="TCH Estimado">
                                             {displayValue(tchEstimado)}

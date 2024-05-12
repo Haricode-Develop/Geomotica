@@ -71,7 +71,7 @@ export const obtenerDosisTeoricaAps = async (idAnalisisAps, setDosisTeorica)=> {
     }
 }
 
-export const obtenerHumedadDelCultivo = async (idAnalisisAps, setHumedadDelCultivo)=> {
+export const obtenerHumedadDelCultivoAps = async (idAnalisisAps, setHumedadDelCultivo)=> {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/humedadDelCultivo/${idAnalisisAps}`);
         setHumedadDelCultivo(response.data);

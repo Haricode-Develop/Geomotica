@@ -13,8 +13,6 @@ async function loadGeoJsonFromUrl(url) {
 }
 
 
-
-
 self.onmessage = async function (e) {
     const {action, geojsonData, type} = e.data;
 
@@ -26,15 +24,17 @@ self.onmessage = async function (e) {
                     let processedData;
 
 
-                    console.log(type);
                     if(type === 'COSECHA_MECANICA'){
-                        console.log("COSECHA MECANICA");
                         processedData = processGeoJsonData(loadedGeoJson);
-
                     }else if(type === 'APLICACIONES_AEREAS'){
-                        console.log("APLICACIONES AEREAS");
-                        processedData = processAplicacionesAreasData(loadedGeoJson);
-
+                        const isKMLType = loadedGeoJson.features.some(feature => feature.properties && feature.properties.type === 'KML');
+                        if (isKMLType) {
+                            console.log("Entre para procesar aplicaciones areas KML");
+                            processedData = processLineStringData(loadedGeoJson);
+                        } else {
+                            console.log("Entre para procesar aplicaciones areas GeoJSON");
+                            processedData = processAplicacionesAreasData(loadedGeoJson);
+                        }
                     }
 
                     self.postMessage({action: 'geoJsonDataProcessed', data: processedData});
@@ -107,3 +107,37 @@ function processAplicacionesAreasData(geojsonData) {
     });
     return { polygons: polygons };
 }
+
+
+function processLineStringData(geojsonData) {
+    // Filtrar features para procesar solo aquellos que tienen type KML en sus propiedades
+    console.log("Entre al método de process string data *********");
+    let lineFeatures = geojsonData.features.filter(feature => feature.properties && feature.properties.type === 'KML');
+    console.log("ESTE ES EL LINE FEATURES ", lineFeatures);
+    // Modificar los datos para asegurar que el tipo de geometría es LineString
+    lineFeatures.forEach(feature => {
+        if (feature.geometry.type !== 'LineString') {
+            feature.geometry.type = 'LineString'; // Asegurarnos de que el tipo sea LineString
+        }
+    });
+    console.log("ESTE ES EL LINE FEATURES DESPUES DE MODIFICARLO ", lineFeatures);
+    return {
+        lines: lineFeatures.map(feature => {
+            const path = feature.geometry.coordinates.map(coord => {
+                // Asegurarse de que las coordenadas son de longitud y latitud
+                if (coord.length >= 2) {
+                    return [coord[1], coord[0]]; // Convertir [lng, lat] a [lat, lng]
+                }
+                return null;
+            }).filter(coord => coord != null); // Filtrar coordenadas no válidas
+            return {
+                id: feature.id,
+                properties: feature.properties,
+                path: path
+            };
+        })
+    };
+}
+
+
+

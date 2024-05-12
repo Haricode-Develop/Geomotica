@@ -36,6 +36,11 @@ const BarIndicator = ({ filterType, isHistory }) => {
             indicadorIzquierda = "Enganchado";
             indicadorDerecha = "Desenganchado";
             break;
+        case "aplicacionesAreas":
+            title = "Aplicaciones Áreas";
+            indicadorIzquierda = "Área aplicada";
+            indicadorDerecha = "Área sobre aplicada";
+            break;
         case "VELOCIDAD":
             title = "Velocidad";
             break;
@@ -58,10 +63,15 @@ const BarIndicator = ({ filterType, isHistory }) => {
         if (filterType === 'autoPilot' || filterType === 'modeCutterBase') {
             indicadorIzquierda = "Automático";
             indicadorDerecha = "Manual";
-        } else {
+        } else
+        {
             indicadorIzquierda = "Enganchado";
             indicadorDerecha = "Desenganchado";
         }
+    }else if(filterType === 'aplicacionesAreas'){
+        gradientStyle = { background: 'linear-gradient(to top, green 0%, red 100%)' };
+        indicadorIzquierda = "Área Aplicada";
+        indicadorDerecha = "Área sobre aplicada";
     } else {
         // Estilo de gradiente para otros tipos de filtros
         gradientStyle = { background: 'linear-gradient(to top, #4caf50 0%, #ffeb3b 50%, #f44336 100%)' };

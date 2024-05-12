@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './AplicacionesAreasStyle.css';
-import { MapContainer, TileLayer, Polygon, LayersControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, LayersControl, useMap, Polyline} from 'react-leaflet';
 import L from 'leaflet';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '../../utils/config';
@@ -18,12 +18,14 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [areasSuperpuestas, setAreasSuperpuestas] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
     const [zoom, setZoom] = useState(3);
-    const [map, setMap] = useState(null);
+   const [map, setMap] = useState(null);
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState(null);
     const [velocidadFiltroActivado, setVelocidadFiltroActivado] = useState(false);
     const [alturaFiltroActivado, setAlturaFiltroActivado] = useState(false);
     const [dosisRealFiltroActivado, setDosisRealFiltroActivado] = useState(false);
+    const [isMapaCreated, setIsMapaCreated] = useState(new Date());
+    const [nonIntersectedAreas, setNonIntersectedAreas] = useState([]);
 
     const [filterValues, setFilterValues] = useState({
         VELOCIDAD: { low: 0, medium: 0, high: 0 },
@@ -60,22 +62,26 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [showIntersections, setShowIntersections] = useState(true);
     const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
     const [areaAplicada, setAreaAplicada] = useState(0);
+    const [lineas, setLineas] = useState([]);
+
     const [nonAppliedArea, setNonAppliedArea] =useState(0);
     const [formData, setFormData] = useState({idAnalisis: idAnalisis,});
-
+    const mapRef = useRef();
     useEffect(() => {
         const worker = new Worker('dataWorker.js');
         const socket = io(API_BASE_URL);
 
         worker.onmessage = (e) => {
             if (e.data.action === 'geoJsonDataProcessed') {
-                if (e.data.action === 'geoJsonDataProcessed' && e.data.data && Array.isArray(e.data.data.polygons)) {
+                if (e.data.data.polygons) {
                     const { polygons } = e.data.data;
                     const formattedPolygons = polygons.map(poly => formatPolygon(poly.polygon[0]));
-                    setPoligonosPropiedades(polygons.map(poly => poly.properties));
                     setPoligonos(formattedPolygons);
-                } else {
-                    console.error('Datos recibidos no son válidos:', e.data);
+                }
+                if (e.data.data.lines) {
+                    const { lines } = e.data.data;
+                    const formattedLines = lines.map(line => line.path);
+                    setLineas(formattedLines);
                 }
             }
         };
@@ -91,12 +97,39 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         };
     }, [tipoAnalisis]);
 
+
+    // Este useEffect se ejecutará cada vez que los polígonos cambien
+    useEffect(() => {
+        if (mapRef.current != null && poligonos.length > 0) {
+            const map = mapRef.current;
+            const bounds = L.latLngBounds(poligonos.flat());
+            map.fitBounds(bounds);
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+
+        if(mapRef.current != null && lineas.length > 0){
+            const map = mapRef.current;
+            console.log("ESTE ES EL MAPA", map);
+            const bounds = L.latLngBounds(lineas.flat());
+            console.log("ESTOS SON LOS BOUNDS: ", bounds);
+            map.fitBounds(bounds);
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+    }, [poligonos, lineas]);
+
+
+
     useEffect(() => {
         if (map && poligonos.length > 0) {
             const latLngCoords = poligonos.flatMap(polygon =>
                 polygon.map(coordPair => [coordPair[1], coordPair[0]])
             );
             const mapBounds = L.latLngBounds(latLngCoords);
+
             if (mapBounds.isValid() || activeFilter) {
                 setIntersectionsKey(Date.now());
 
@@ -130,6 +163,39 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         });
         setAreasSuperpuestas(intersections);
     };
+
+// Calcular la unión de todos los polígonos menos el actual
+    const calculateNonIntersectedAreas = (polygons) => {
+        let nonIntersectedAreas = [];
+
+        if (polygons.length > 1) {
+            const unionOfAllPolygons = polygons.slice(1).reduce((acc, polygon) => {
+                return turfUnion(acc, turfPolygon([polygon]));
+            }, turfPolygon([polygons[0]]));
+
+            polygons.forEach(polygon => {
+                const difference = turfDifference(turfPolygon([polygon]), unionOfAllPolygons);
+                if (difference) {
+                    nonIntersectedAreas.push(difference.geometry.coordinates);
+                }
+            });
+        } else {
+            // Si sólo hay un polígono, no hay intersección que considerar
+            nonIntersectedAreas.push(polygons[0]);
+        }
+
+        return nonIntersectedAreas;
+    };
+
+    useEffect(() => {
+        // Utiliza el useEffect para calcular las áreas no intersectadas y actualizar el estado
+        if (poligonos.length > 0) {
+            const newNonIntersectedAreas = calculateNonIntersectedAreas(poligonos);
+            setNonIntersectedAreas(newNonIntersectedAreas);
+        }
+    }, [poligonos]);
+
+
 
     const handleFilterChange = (e, filterType) => {
         const { checked } = e.target;
@@ -173,64 +239,59 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     }, [activeFilter, filterValues]);
 
+
+    const correctionFactor = 1.014;
+    const correctionFactorIntersections = 1.98;
+
     useEffect(() => {
-        // Asegúrate de tener polígonos para procesar
         if (poligonos.length === 0) return;
 
-        // Asegúrate de que cada polígono esté cerrado correctamente
-        const closedPolygons = poligonos.map(polygon => {
-            if (polygon[0] !== polygon[polygon.length - 1]) {
-                polygon.push(polygon[0]);
+        const correctPoligons = poligonos.map(polygon => {
+            const correctedPolygon = polygon.map(coord => [coord[1], coord[0]]);
+            if (correctedPolygon[0] !== correctedPolygon[correctedPolygon.length - 1]) {
+                correctedPolygon.push(correctedPolygon[0]);
             }
-            return polygon;
+            return correctedPolygon;
         });
 
-        // Crear un solo polígono que une todos los polígonos aplicados
-        let unitedPolygons = turfPolygon([closedPolygons[0]]);
-        for (let i = 1; i < closedPolygons.length; i++) {
-            unitedPolygons = turfUnion(unitedPolygons, turfPolygon([closedPolygons[i]]));
+        const turfPolygons = correctPoligons.map(polygon => turfPolygon([polygon]));
+
+        let unionPolygons = turfPolygons[0];
+        for (let i = 1; i < turfPolygons.length; i++) {
+            unionPolygons = turfUnion(unionPolygons, turfPolygons[i]);
         }
 
-        // Calcula el área sobre aplicada
-        const areaSobreAplicadaHectareas = areasSuperpuestas.reduce((totalArea, polygon) => {
-            const turfPoly = turfPolygon([polygon]);
-            return totalArea + turfArea(turfPoly) / 10000;
-        }, 0);
+        // Área total de la unión de polígonos en hectáreas con factor de corrección
+        const totalUnionArea = (turfArea(unionPolygons) / 10000) * correctionFactor;
 
-        // Calcula el área aplicada del polígono unido
-        const areaAplicadaHectareas = turfArea(unitedPolygons) / 10000;
+        let totalIntersectedArea = 0;
+        const correctedIntersections = areasSuperpuestas.map(intersection => {
+            const correctedIntersection = intersection.map(coord => [coord[1], coord[0]]);
+            if (correctedIntersection[0] !== correctedIntersection[correctedIntersection.length - 1]) {
+                correctedIntersection.push(correctedIntersection[0]);
+            }
+            return correctedIntersection;
+        });
 
-        // Crear la envolvente convexa de todos los puntos de los polígonos cerrados
-        const pointsForConvexHull = closedPolygons.flatMap(polygon =>
-            polygon.map(coordPair => [coordPair[1], coordPair[0]])
-        );
+        correctedIntersections.forEach(intersected => {
+            totalIntersectedArea += (turfArea(turfPolygon([intersected])) / 10000) * correctionFactorIntersections;
+        });
 
-        const convexHull = turfConvex(turfPoints(pointsForConvexHull));
-        const totalConvexHullArea = convexHull ? turfArea(convexHull) / 10000 : 0;
-
-        // Calcula el área no aplicada como la diferencia entre la envolvente convexa y el polígono unido
-        const differencePoly = turfDifference(convexHull, unitedPolygons);
-        const nonAppliedAreaHectareas = differencePoly ? turfArea(differencePoly) / 10000 : 0;
-
-        // Formatear números a tres decimales
-        const formattedAreaSobreAplicada = parseFloat(areaSobreAplicadaHectareas.toFixed(3));
-        const formattedAreaAplicada = parseFloat(areaAplicadaHectareas.toFixed(3));
-        const formattedNonAppliedArea = parseFloat(nonAppliedAreaHectareas.toFixed(3));
-
-        // Actualizar el estado con los valores formateados
-        setAreaSobreAplicada(formattedAreaSobreAplicada);
-        setAreaAplicada(formattedAreaAplicada);
-        setNonAppliedArea(formattedNonAppliedArea);
+        setAreaAplicada(totalUnionArea.toFixed(3));
+        setAreaSobreAplicada(totalIntersectedArea.toFixed(3));
 
         if (onAreasCalculated) {
             onAreasCalculated({
-                areaSobreAplicada: formattedAreaSobreAplicada,
-                areaAplicada: formattedAreaAplicada,
-                nonAppliedArea: formattedNonAppliedArea
+                areaSobreAplicada: totalIntersectedArea.toFixed(3),
+                areaAplicada: totalUnionArea.toFixed(3)
             });
         }
 
-    }, [areasSuperpuestas, poligonos, onAreasCalculated]);
+    }, [poligonos, onAreasCalculated, areasSuperpuestas]);
+
+
+
+
 
     useEffect(() => {
         if (poligonos.length === 0 || poligonosPropiedades.length === 0) return;
@@ -304,7 +365,11 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     };
 
+    const normalizeLabel = (key) => {
+        if (key === 'DOSISREAL') return 'Dosis real';
 
+        return key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+    };
 
 
     const openFilterDialog = () => setIsFilterDialogOpen(true);
@@ -320,7 +385,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 </Tooltip>
             </div>
 
-            <MapContainer center={mapCenter} zoom={zoom} style={{ height: '100vh', width: '100%' }} whenReady={setMap}>
+            <MapContainer key={isMapaCreated} center={mapCenter} zoom={zoom} style={{ height: '100vh', width: '100%' }} whenReady={setMap}  ref={mapRef}>
+
                 <LayersControl position="topright">
                     <BaseLayer checked name="Satellite View">
                         <TileLayer
@@ -345,15 +411,36 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             weight={3}
                         />
                     ))}
-
+                    {lineas.map((linea, index) => (
+                        <Polyline key={`line-${index}`} positions={linea} color="red" />
+                    ))}
                     {showIntersections && areasSuperpuestas.map((area, index) => (
                         <Polygon key={`intersection-${index}-${intersectionsKey}`} positions={area} color="red" weight={3} />
                     ))}
+
+                    {
+                        nonIntersectedAreas.map((nonIntersected, index) => {
+                            // Asumimos que cada área no intersectada ya está en formato de coordenadas de Leaflet
+                            const positions = nonIntersected.map(coords => [coords[1], coords[0]]); // Invierte las coordenadas para Leaflet
+                            return (
+                                <Polygon
+                                    key={`nonIntersectedArea-${index}`}
+                                    positions={positions}
+                                    color="yellow"
+                                    weight={3}
+                                />
+                            );
+                        })
+                    }
+
+
                 </LayersControl>
             </MapContainer>
-            {activeFilter && (
-                <BarIndicator filterType={activeFilter} isHistory={false} />
+
+            {poligonos.length > 0 && lineas.length === 0 && (
+                <BarIndicator filterType={activeFilter ? activeFilter : "aplicacionesAreas"} isHistory={false} />
             )}
+
             <Dialog open={isFilterDialogOpen} onClose={closeFilterDialog} aria-labelledby="draggable-dialog-title">
                 <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">Configuración de Filtros</DialogTitle>
                 <DialogContent>
@@ -378,9 +465,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                                             name={filterKey}
                                         />
                                     }
-                                    label={`Activar Filtro de ${filterKey.charAt(0).toUpperCase() + filterKey.slice(1)}`}
+                                    label={normalizeLabel(filterKey)}
                                 />
-
 
                                 {Object.keys(filterValues[filterKey]).map(valueKey => (
                                     <TextField
