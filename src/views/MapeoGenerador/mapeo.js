@@ -291,7 +291,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
     const transformPolygonCoords = (polygon) => {
         return polygon.map(ring => {
             if (Array.isArray(ring) && ring.every(coords => Array.isArray(coords) && coords.length === 2 && coords.every(coord => typeof coord === 'number'))) {
-                return ring.map(coords => [coords[0], coords[1]]);
+                return ring.map(coords => [coords[1], coords[0]]);
             } else {
                 console.error('Coordenadas no válidas en Polygon:', ring);
                 return [];

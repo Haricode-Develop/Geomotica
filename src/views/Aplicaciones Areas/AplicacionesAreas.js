@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Polygon, LayersControl, useMap, Polyline} from
 import L from 'leaflet';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '../../utils/config';
-import { points as turfPoints, polygon as turfPolygon, area as turfArea, convex as turfConvex, union as turfUnion, difference as turfDifference, intersect as turfIntersect  } from '@turf/turf';
+import { points as turfPoints, polygon as turfPolygon, area as turfArea, convex as turfConvex, union as turfUnion, difference as turfDifference, intersect as turfIntersect, buffer as turfBuffer  } from '@turf/turf';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip } from '@mui/material';
 import { FaMap } from "react-icons/fa";
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
@@ -17,8 +17,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [poligonos, setPoligonos] = useState([]);
     const [areasSuperpuestas, setAreasSuperpuestas] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
-    const [zoom, setZoom] = useState(3);
-   const [map, setMap] = useState(null);
+    const [map, setMap] = useState(null);
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState(null);
     const [velocidadFiltroActivado, setVelocidadFiltroActivado] = useState(false);
@@ -26,43 +25,13 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [dosisRealFiltroActivado, setDosisRealFiltroActivado] = useState(false);
     const [isMapaCreated, setIsMapaCreated] = useState(new Date());
     const [nonIntersectedAreas, setNonIntersectedAreas] = useState([]);
-
-    const [filterValues, setFilterValues] = useState({
-        VELOCIDAD: { low: 0, medium: 0, high: 0 },
-        ALTURA: { low: 0, medium: 0, high: 0 },
-        DOSISREAL: { low: 0, medium: 0, high: 0 }
-    });
-
-    useEffect(() => {
-        if (activeFilter) {
-            const newData = {
-                ...formData,
-                [activeFilter]: filterValues[activeFilter]
-            };
-            setFormData(newData);
-        }
-        localStorage.setItem('formData', JSON.stringify(formData));
-    }, [filterValues, activeFilter, idAnalisis]);
-
-    useEffect(() => {
-        Promise.resolve(idAnalisis)
-            .then(resolvedId => {
-                const actualId = resolvedId.data?.ID_ANALISIS;
-                setFormData(currentData => ({
-                    ...currentData,
-                    idAnalisis: actualId
-                }));
-            });
-    }, [idAnalisis]);
-
-
-
     const [poligonosPropiedades, setPoligonosPropiedades] = useState([]);
     const [intersectionsKey, setIntersectionsKey] = useState(Date.now());
     const [showIntersections, setShowIntersections] = useState(true);
     const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
     const [areaAplicada, setAreaAplicada] = useState(0);
     const [lineas, setLineas] = useState([]);
+    const [bufferedLines, setBufferedLines] = useState([]);
 
     const [nonAppliedArea, setNonAppliedArea] =useState(0);
     const [formData, setFormData] = useState({idAnalisis: idAnalisis,});
@@ -111,9 +80,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
         if(mapRef.current != null && lineas.length > 0){
             const map = mapRef.current;
-            console.log("ESTE ES EL MAPA", map);
             const bounds = L.latLngBounds(lineas.flat());
-            console.log("ESTOS SON LOS BOUNDS: ", bounds);
             map.fitBounds(bounds);
             setTimeout(() => {
                 map.invalidateSize();
@@ -129,14 +96,84 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 polygon.map(coordPair => [coordPair[1], coordPair[0]])
             );
             const mapBounds = L.latLngBounds(latLngCoords);
-
             if (mapBounds.isValid() || activeFilter) {
                 setIntersectionsKey(Date.now());
-
                 findIntersections(poligonos);
             }
         }
-    }, [map, poligonos, activeFilter]);
+    }, [map, poligonos, lineas, activeFilter]);
+
+
+    const [filterValues, setFilterValues] = useState({
+        VELOCIDAD: { low: 0, medium: 0, high: 0 },
+        ALTURA: { low: 0, medium: 0, high: 0 },
+        DOSISREAL: { low: 0, medium: 0, high: 0 }
+    });
+
+    useEffect(() => {
+        if (activeFilter) {
+            const newData = {
+                ...formData,
+                [activeFilter]: filterValues[activeFilter]
+            };
+            setFormData(newData);
+        }
+        localStorage.setItem('formData', JSON.stringify(formData));
+    }, [filterValues, activeFilter, idAnalisis]);
+
+    useEffect(() => {
+        Promise.resolve(idAnalisis)
+            .then(resolvedId => {
+                const actualId = resolvedId.data?.ID_ANALISIS;
+                setFormData(currentData => ({
+                    ...currentData,
+                    idAnalisis: actualId
+                }));
+            });
+    }, [idAnalisis]);
+
+
+    const addBufferToLine = (line, width) => {
+        const lineString = {
+            type: "Feature",
+            geometry: {
+                type: "LineString",
+                coordinates: line.map(coord => [coord[1], coord[0]])
+            }
+        };
+        return turfBuffer(lineString, width, { units: 'meters' });
+    };
+
+
+    const isClosedPolygon = (line) => {
+        if (line.length < 4) {
+            console.log("Resultado falso: El polígono no tiene suficientes puntos.");
+            return false;
+        }
+        const firstPoint = line[0];
+        const lastPoint = line[line.length - 1];
+
+        const result = firstPoint[0] === lastPoint[0] && firstPoint[1] === lastPoint[1];
+        if (result) {
+            console.log("Resultado verdadero: El polígono está cerrado.");
+        } else {
+            console.log("Resultado falso: El polígono no está cerrado.");
+        }
+
+        return result;
+    };
+
+    const processLine = (line) => {
+        const result = isClosedPolygon(line);
+        if (result) {
+            console.log("Resultado verdadero: La línea es un polígono cerrado.", line);
+        } else {
+            console.log("Resultado falso: La línea no es un polígono cerrado.", line);
+        }
+        return result;
+    };
+
+
 
     const formatPolygon = (polygon) => {
         if (polygon[0] !== polygon[polygon.length - 1]) {
@@ -144,6 +181,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
         return polygon;
     };
+
 
     const findIntersections = (polygons) => {
         let intersections = [];
@@ -283,7 +321,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         if (onAreasCalculated) {
             onAreasCalculated({
                 areaSobreAplicada: totalIntersectedArea.toFixed(3),
-                areaAplicada: totalUnionArea.toFixed(3)
+                areaAplicada: (totalUnionArea.toFixed(3) - totalIntersectedArea.toFixed(3)).toFixed(3)
             });
         }
 
@@ -313,6 +351,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     }, [poligonos, poligonosPropiedades, onPromediosCalculated]);
 
+    useEffect(() => {
+        if (lineas.length > 0) {
+            const buffered = lineas.map(line => addBufferToLine(line, 10));
+            setBufferedLines(buffered);
+        }
+    }, [lineas]);
 
 
     const verificarYEnviarDatos = () => {
@@ -385,7 +429,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 </Tooltip>
             </div>
 
-            <MapContainer key={isMapaCreated} center={mapCenter} zoom={zoom} style={{ height: '100vh', width: '100%' }} whenReady={setMap}  ref={mapRef}>
+            <MapContainer key={isMapaCreated} center={mapCenter} zoom={3} style={{ height: '100vh', width: '100%' }} whenReady={setMap}  ref={mapRef}>
 
                 <LayersControl position="topright">
                     <BaseLayer checked name="Satellite View">
@@ -410,6 +454,9 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             color={getPolygonColor(poligonosPropiedades[index])}
                             weight={3}
                         />
+                    ))}
+                    {bufferedLines.map((bufferedLine, index) => (
+                        <Polygon key={`buffered-${index}`} positions={bufferedLine.geometry.coordinates[0]} color="purple" weight={3} />
                     ))}
                     {lineas.map((linea, index) => (
                         <Polyline key={`line-${index}`} positions={linea} color="red" />
