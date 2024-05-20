@@ -1,15 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './AplicacionesAreasStyle.css';
-import { MapContainer, TileLayer, Polygon, LayersControl, useMap, Polyline} from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, LayersControl, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '../../utils/config';
-import { points as turfPoints, polygon as turfPolygon, area as turfArea, convex as turfConvex, union as turfUnion, difference as turfDifference, intersect as turfIntersect, buffer as turfBuffer  } from '@turf/turf';
+import { points as turfPoints, polygon as turfPolygon, area as turfArea, convex as turfConvex, union as turfUnion, difference as turfDifference, intersect as turfIntersect, buffer as turfBuffer } from '@turf/turf';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip } from '@mui/material';
 import { FaMap } from "react-icons/fa";
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
-
-
 
 const { BaseLayer } = LayersControl;
 
@@ -33,9 +31,9 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [lineas, setLineas] = useState([]);
     const [bufferedLines, setBufferedLines] = useState([]);
 
-    const [nonAppliedArea, setNonAppliedArea] =useState(0);
-    const [formData, setFormData] = useState({idAnalisis: idAnalisis,});
+    const [formData, setFormData] = useState({ idAnalisis: idAnalisis, });
     const mapRef = useRef();
+
     useEffect(() => {
         const worker = new Worker('dataWorker.js');
         const socket = io(API_BASE_URL);
@@ -45,6 +43,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 if (e.data.data.polygons) {
                     const { polygons } = e.data.data;
                     const formattedPolygons = polygons.map(poly => formatPolygon(poly.polygon[0]));
+                    setPoligonosPropiedades(polygons.map(poly => poly.properties));
                     setPoligonos(formattedPolygons);
                 }
                 if (e.data.data.lines) {
@@ -66,7 +65,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         };
     }, [tipoAnalisis]);
 
-
     // Este useEffect se ejecutará cada vez que los polígonos cambien
     useEffect(() => {
         if (mapRef.current != null && poligonos.length > 0) {
@@ -78,7 +76,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             }, 100);
         }
 
-        if(mapRef.current != null && lineas.length > 0){
+        if (mapRef.current != null && lineas.length > 0) {
             const map = mapRef.current;
             const bounds = L.latLngBounds(lineas.flat());
             map.fitBounds(bounds);
@@ -87,8 +85,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             }, 100);
         }
     }, [poligonos, lineas]);
-
-
 
     useEffect(() => {
         if (map && poligonos.length > 0) {
@@ -102,7 +98,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             }
         }
     }, [map, poligonos, lineas, activeFilter]);
-
 
     const [filterValues, setFilterValues] = useState({
         VELOCIDAD: { low: 0, medium: 0, high: 0 },
@@ -132,7 +127,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             });
     }, [idAnalisis]);
 
-
     const addBufferToLine = (line, width) => {
         const lineString = {
             type: "Feature",
@@ -144,21 +138,14 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         return turfBuffer(lineString, width, { units: 'meters' });
     };
 
-
     const isClosedPolygon = (line) => {
         if (line.length < 4) {
-            console.log("Resultado falso: El polígono no tiene suficientes puntos.");
             return false;
         }
         const firstPoint = line[0];
         const lastPoint = line[line.length - 1];
 
         const result = firstPoint[0] === lastPoint[0] && firstPoint[1] === lastPoint[1];
-        if (result) {
-            console.log("Resultado verdadero: El polígono está cerrado.");
-        } else {
-            console.log("Resultado falso: El polígono no está cerrado.");
-        }
 
         return result;
     };
@@ -173,15 +160,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         return result;
     };
 
-
-
     const formatPolygon = (polygon) => {
         if (polygon[0] !== polygon[polygon.length - 1]) {
             polygon.push(polygon[0]);
         }
         return polygon;
     };
-
 
     const findIntersections = (polygons) => {
         let intersections = [];
@@ -202,7 +186,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         setAreasSuperpuestas(intersections);
     };
 
-// Calcular la unión de todos los polígonos menos el actual
+    // Calcular la unión de todos los polígonos menos el actual
     const calculateNonIntersectedAreas = (polygons) => {
         let nonIntersectedAreas = [];
 
@@ -233,22 +217,18 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     }, [poligonos]);
 
-
-
     const handleFilterChange = (e, filterType) => {
         const { checked } = e.target;
-        if(filterType === "VELOCIDAD") setVelocidadFiltroActivado(true);
-        if(filterType === "ALTURA") setAlturaFiltroActivado(true);
-        if(filterType === "DOSISREAL") setDosisRealFiltroActivado(true);
+        if (filterType === "VELOCIDAD") setVelocidadFiltroActivado(true);
+        if (filterType === "ALTURA") setAlturaFiltroActivado(true);
+        if (filterType === "DOSISREAL") setDosisRealFiltroActivado(true);
         if (checked) {
             setActiveFilter(filterType);
         } else {
             setActiveFilter(null);
             setIntersectionsKey(Date.now());
-
         }
         verificarYEnviarDatos();
-
     };
 
     const getPolygonColor = (properties) => {
@@ -276,7 +256,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             setPoligonos(poligonos.map(polygon => [...polygon]));
         }
     }, [activeFilter, filterValues]);
-
 
     const correctionFactor = 1.014;
     const correctionFactorIntersections = 1.98;
@@ -327,13 +306,9 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
     }, [poligonos, onAreasCalculated, areasSuperpuestas]);
 
-
-
-
-
     useEffect(() => {
-        if (poligonos.length === 0 || poligonosPropiedades.length === 0) return;
 
+        if (poligonos.length === 0 || poligonosPropiedades.length === 0) return;
         const totalVelocidad = poligonosPropiedades.reduce((acc, curr) => acc + (curr.VELOCIDAD || 0), 0);
         const totalAltura = poligonosPropiedades.reduce((acc, curr) => acc + (curr.ALTURA || 0), 0);
         const totalDosisReal = poligonosPropiedades.reduce((acc, curr) => acc + (curr.DOSISREAL || 0), 0);
@@ -342,7 +317,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         const promedioAltura = (totalAltura / poligonosPropiedades.length).toFixed(3);
         const promedioDosisReal = (totalDosisReal / poligonosPropiedades.length).toFixed(3);
 
-        if(onPromediosCalculated){
+        if (onPromediosCalculated) {
             onPromediosCalculated({
                 promedioVelocidad: promedioVelocidad,
                 promedioAltura: promedioAltura,
@@ -353,14 +328,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
     useEffect(() => {
         if (lineas.length > 0) {
-            const buffered = lineas.map(line => addBufferToLine(line, 10));
+            const buffered = lineas.map(line => addBufferToLine(line, 5));
             setBufferedLines(buffered);
         }
     }, [lineas]);
 
-
     const verificarYEnviarDatos = () => {
-
         if (Object.keys(formData).length > 0) {
             enviarDatosFormulario(formData).then(() => {
                 console.log("Datos enviados exitosamente");
@@ -370,12 +343,10 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     };
 
-
-
     const enviarDatosFormulario = async () => {
         const dataParaEnviar = {
             idAnalisis: formData.idAnalisis || 0,
-            velocidadFiltro: velocidadFiltroActivado ? 1: 0,
+            velocidadFiltro: velocidadFiltroActivado ? 1 : 0,
             velocidadBajo: formData.VELOCIDAD?.low || 0,
             velocidadMedio: formData.VELOCIDAD?.medium || 0,
             velocidadAlto: formData.VELOCIDAD?.high || 0,
@@ -383,7 +354,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             alturaBajo: formData.ALTURA?.low || 0,
             alturaMedio: formData.ALTURA?.medium || 0,
             alturaAlto: formData.ALTURA?.high || 0,
-            dosisRealFiltro: dosisRealFiltroActivado ? 1: 0,
+            dosisRealFiltro: dosisRealFiltroActivado ? 1 : 0,
             dosisRealBajo: formData.DOSISREAL?.low || 0,
             dosisRealMedio: formData.DOSISREAL?.medium || 0,
             dosisRealAlto: formData.DOSISREAL?.high || 0
@@ -415,7 +386,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         return key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
     };
 
-
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
 
@@ -429,8 +399,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 </Tooltip>
             </div>
 
-            <MapContainer key={isMapaCreated} center={mapCenter} zoom={3} style={{ height: '100vh', width: '100%' }} whenReady={setMap}  ref={mapRef}>
-
+            <MapContainer key={isMapaCreated} center={mapCenter} zoom={3} style={{ height: '100vh', width: '100%' }} whenReady={setMap} ref={mapRef}>
                 <LayersControl position="topright">
                     <BaseLayer checked name="Satellite View">
                         <TileLayer
@@ -456,7 +425,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                         />
                     ))}
                     {bufferedLines.map((bufferedLine, index) => (
-                        <Polygon key={`buffered-${index}`} positions={bufferedLine.geometry.coordinates[0]} color="purple" weight={3} />
+                        <Polygon key={`buffered-${index}`} positions={bufferedLine.geometry.coordinates[0].map(coord => [coord[1], coord[0]])} color="purple" weight={3} />
                     ))}
                     {lineas.map((linea, index) => (
                         <Polyline key={`line-${index}`} positions={linea} color="red" />
@@ -479,7 +448,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             );
                         })
                     }
-
 
                 </LayersControl>
             </MapContainer>
@@ -523,7 +491,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                                         name={valueKey}
                                         value={filterValues[filterKey][valueKey]}
                                         onChange={(e) => {
-                                            const newValues = {...filterValues};
+                                            const newValues = { ...filterValues };
                                             newValues[filterKey][valueKey] = parseFloat(e.target.value);
                                             setFilterValues(newValues);
                                         }}
