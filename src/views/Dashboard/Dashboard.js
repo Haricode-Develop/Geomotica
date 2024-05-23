@@ -88,7 +88,7 @@ import {
     obtenerOperadorHerbicidas,
     obtenerParcelaHerbicidas,
     obtenerResponsableHerbicidas,
-    displayValue, obtenerTiempoTotalAps
+    displayValue, obtenerTiempoTotalAps, obtenerProductoAps
 
 
 } from "../../utils/Constants";
@@ -163,6 +163,7 @@ function Dashboard() {
     const [promedioVelocidad, setPromedioVelocidad] = useState(0);
     const [promedioAltura, setPromedioAltura] = useState(0);
     const [promedioDosisReal, setDosisReal] = useState(0);
+    const [productoAps, setProductoAps] = useState(null);
 
     //=================================================
 
@@ -410,7 +411,8 @@ function Dashboard() {
                     obtenerCodigoLotesAps(idAnalisisAps, setCodigoLotesAps),
                     obtenerDosisTeoricaAps(idAnalisisAps, setDosisTeoricaAps),
                     obtenerHumedadDelCultivoAps(idAnalisisAps, setHumedadDelCultivoAps),
-                    obtenerTchEstimado(idAnalisisAps, setTchEstimadoAps)
+                    obtenerTchEstimado(idAnalisisAps, setTchEstimadoAps),
+                    obtenerProductoAps(idAnalisisAps, setProductoAps)
 
                 ]);
                 // Actualiza el estado después de completar todas las promesas
@@ -654,7 +656,7 @@ function Dashboard() {
     // Templates de los csv para el ingreso de cada uno de los análisis
 
     const analysisTemplates = {
-        APLICACIONES_AEREAS: "/templates/APS.csv",
+        APLICACIONES_AEREAS: "/templates/APLICACIONES_AEREAS.csv",
         COSECHA_MECANICA: "/templates/COSECHA_MECANICA.csv",
         FERTILIZACION: "/templates/FERTILIZACION.csv",
         HERBICIDAS: "/templates/HERBICIDAS.csv"
@@ -1090,6 +1092,9 @@ function Dashboard() {
                                         </DataCard>
                                         <DataCard title="Dosis Teorica">
                                             {displayValue(dosisTeorica)}
+                                        </DataCard>
+                                        <DataCard title="Producto">
+                                            {displayValue(productoAps)}
                                         </DataCard>
                                         <DataCard title="Humedad del cultivo">
                                             {displayValue(humedadDelCultivoAps)}

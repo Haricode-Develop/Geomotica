@@ -90,6 +90,15 @@ export const obtenerTchEstimado = async (idAnalisisAps, setTchEstimado) => {
 
 }
 
+export const obtenerProductoAps = async (idAnalisisAps, setProductoAps) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}dashboard/productoAps/${idAnalisisAps}`);
+        console.log("ESTA ES LA RESPUESTA DE PRODUCTOS APS: ", response.data);
+        setProductoAps(response.data.resultado);
+    } catch (error) {
+        console.error("Error en obtener Producto APS:", error);
+    }
+}
 
 
 export const obtenerCodigoParcelasAps = async (idAnalisisAps, setCodigoParcelasAps) => {
