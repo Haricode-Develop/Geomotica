@@ -997,6 +997,10 @@ function Dashboard() {
         setDosisReal(promedios.promedioDosisReal);
     }
 
+    const esValorValido = (valor) => {
+        return valor !== '' && valor !== 0 && valor !== null && valor !== undefined;
+    }
+
 
     return (
         <div className="dashboard">
@@ -1037,258 +1041,246 @@ function Dashboard() {
                     </div>
                     <div className="seccion-analisis" ref={dashboardRef}>
                         <section className="data-section" >
-                            {
-                                datosCargadosAps && selectedAnalysisType === 'APLICACIONES_AEREAS' && (
-                                    <>
-                                        {ResponsableAps && (
-                                            <DataCard title="Responsable">
-                                                {displayValue(ResponsableAps)}
-                                            </DataCard>
-                                        )}
-                                        {fechaInicioCosechaAps && (
-                                            <DataCard title="Fecha Inicio">
-                                                {displayValue(fechaInicioCosechaAps)}
-                                            </DataCard>
-                                        )}
-                                        {fechaFinCosechaAps && (
-                                            <DataCard title="Fecha Fin">
-                                                {displayValue(fechaFinCosechaAps)}
-                                            </DataCard>
-                                        )}
-                                        {horaInicioAps && (
-                                            <DataCard title="Hora Inicio">
-                                                {displayValue(horaInicioAps)}
-                                            </DataCard>
-                                        )}
-                                        {horaFinalAps && (
-                                            <DataCard title="Hora Final">
-                                                {displayValue(horaFinalAps)}
-                                            </DataCard>
-                                        )}
-                                        {tiempoTotalAps && (
-                                            <DataCard title="Tiempo Total">
-                                                {displayValue(tiempoTotalAps)}
-                                            </DataCard>
-                                        )}
-                                        {nombreOperadorAps && (
-                                            <DataCard title="Nombre Operador">
-                                                {displayValue(nombreOperadorAps)}
-                                            </DataCard>
-                                        )}
-                                        {equipoAps && (
-                                            <DataCard title="Equipo">
-                                                {displayValue(equipoAps)}
-                                            </DataCard>
-                                        )}
-                                        {eficienciaAps && (
-                                            <DataCard title="Eficiencia">
-                                                {displayValue(eficienciaAps)}
-                                            </DataCard>
-                                        )}
-                                        {nombreFincaAps && (
-                                            <DataCard title="Nombre Finca">
-                                                {displayValue(nombreFincaAps)}
-                                            </DataCard>
-                                        )}
-                                        {codigoParcelasAps && (
-                                            <DataCard title="Codigo Parcelas">
-                                                {displayValue(codigoParcelasAps)}
-                                            </DataCard>
-                                        )}
-                                        {codigoLoresAps && (
-                                            <DataCard title="Codigo Lotes">
-                                                {displayValue(codigoLoresAps)}
-                                            </DataCard>
-                                        )}
-                                        {dosisTeorica && (
-                                            <DataCard title="Dosis Teorica">
-                                                {displayValue(dosisTeorica)}
-                                            </DataCard>
-                                        )}
-                                        {productoAps && (
-                                            <DataCard title="Producto">
-                                                {displayValue(productoAps)}
-                                            </DataCard>
-                                        )}
-                                        {humedadDelCultivoAps && (
-                                            <DataCard title="Humedad del cultivo">
-                                                {displayValue(humedadDelCultivoAps)}
-                                            </DataCard>
-                                        )}
-                                        {tchEstimado && (
-                                            <DataCard title="TCH Estimado">
-                                                {displayValue(tchEstimado)}
-                                            </DataCard>
-                                        )}
-                                        {areaSobreAplicada && (
-                                            <DataCard title="Área Sobre Aplicada">
-                                                {displayValue(areaSobreAplicada)} ha
-                                            </DataCard>
-                                        )}
-                                        {areaAplicada && (
-                                            <DataCard title="Área Aplicada">
-                                                {displayValue(areaAplicada)} ha
-                                            </DataCard>
-                                        )}
-                                        {promedioVelocidad && (
-                                            <DataCard title="Velocidad">
-                                                {displayValue(promedioVelocidad)}
-                                            </DataCard>
-                                        )}
-                                        {promedioAltura && (
-                                            <DataCard title="Altura">
-                                                {displayValue(promedioAltura)}
-                                            </DataCard>
-                                        )}
-                                        {promedioDosisReal && (
-                                            <DataCard title="Dosis Real">
-                                                {displayValue(promedioDosisReal)}
-                                            </DataCard>
-                                        )}
-                                        {/*
-        {areaNoAplicada && (
-            <DataCard title="Área No Aplicada">
-                {displayValue(areaNoAplicada)} ha
-            </DataCard>
-        )}
-        */}
-                                    </>
-                                )
-
-                            }
-                            {
-                                datosCargadosCosechaMecanica && selectedAnalysisType === 'COSECHA_MECANICA' && (
-                                    <>
-                                        {nombreResponsableCm && (
-                                            <DataCard title="Responsable">
-                                                {displayValue(nombreResponsableCm)}
-                                            </DataCard>
-                                        )}
-                                        {fechaInicioCosechaCm && (
-                                            <DataCard title="Fecha Inicio">
-                                                {displayValue(fechaInicioCosechaCm)}
-                                            </DataCard>
-                                        )}
-                                        {fechaFinCosechaCm && (
-                                            <DataCard title="Fecha Fin">
-                                                {displayValue(fechaFinCosechaCm)}
-                                            </DataCard>
-                                        )}
-                                        {nombreFincaCm && (
-                                            <DataCard title="Nombre Finca">
-                                                {displayValue(nombreFincaCm)}
-                                            </DataCard>
-                                        )}
-                                        {codigoParcelaResponsableCm && (
-                                            <DataCard title="Codigo Finca">
-                                                {displayValue(codigoParcelaResponsableCm)}
-                                            </DataCard>
-                                        )}
-                                        {nombreOperadorCm && (
-                                            <DataCard title="Operador">
-                                                {displayValue(nombreOperadorCm)}
-                                            </DataCard>
-                                        )}
-                                        {nombreMaquinaCm && (
-                                            <DataCard title="Equipo">
-                                                {displayValue(nombreMaquinaCm)}
-                                            </DataCard>
-                                        )}
-                                        {actividadCm && (
-                                            <DataCard title="Actividad">
-                                                {displayValue(actividadCm)}
-                                            </DataCard>
-                                        )}
-                                        {/*
-        {areaNetaCm && (
-            <DataCard title="Área Neta">
-                {displayValue(areaNetaCm)}
-            </DataCard>
-        )}
-        {diferenciaDeAreaCm && (
-            <DataCard title="Diferencia de Área">
-                {displayValue(diferenciaDeAreaCm)}
-            </DataCard>
-        )}
-        */}
-                                        {areaBrutaCm && (
-                                            <DataCard title="Área Bruta">
-                                                {displayValue(areaBrutaCm)}
-                                            </DataCard>
-                                        )}
-                                        {horaInicioCm && (
-                                            <DataCard title="Hora Inicio (H)">
-                                                {displayValue(horaInicioCm)}
-                                            </DataCard>
-                                        )}
-                                        {horaFinalCm && (
-                                            <DataCard title="Hora Fin (H)">
-                                                {displayValue(horaFinalCm)}
-                                            </DataCard>
-                                        )}
-                                        {tiempoTotalActividadCm && (
-                                            <DataCard title="Tiempo total (H)">
-                                                {displayValue(tiempoTotalActividadCm)}
-                                            </DataCard>
-                                        )}
-                                        {consumoCombustibleCm && (
-                                            <DataCard title="Combustible Gal/H">
-                                                {displayValue(consumoCombustibleCm)}
-                                            </DataCard>
-                                        )}
-                                        {calidadGpsCm && (
-                                            <DataCard title="Calidad GPS">
-                                                {displayValue(calidadGpsCm)}
-                                            </DataCard>
-                                        )}
-                                        {eficienciaCm && (
-                                            <DataCard title="Eficiencia Ha/Hora">
-                                                {displayValue(eficienciaCm)}
-                                            </DataCard>
-                                        )}
-                                        {promedioVelocidadCm && (
-                                            <DataCard title="Velocidad Km/H">
-                                                {displayValue(promedioVelocidadCm)}
-                                            </DataCard>
-                                        )}
-                                        {rpmCm && (
-                                            <DataCard title="RPM">
-                                                {displayValue(rpmCm)}
-                                            </DataCard>
-                                        )}
-                                        {tchCm && (
-                                            <DataCard title="TCH">
-                                                {displayValue(tchCm)}
-                                            </DataCard>
-                                        )}
-                                        {tahCm && (
-                                            <DataCard title="TAH">
-                                                {displayValue(tahCm)}
-                                            </DataCard>
-                                        )}
-                                        {presionCortadorBase && (
-                                            <DataCard title="Presion Cortador Base (Bar)">
-                                                {displayValue(presionCortadorBase)}
-                                            </DataCard>
-                                        )}
-                                        {porcentajeAreaPilotoCm && (
-                                            <DataCard title="Piloto Automático">
-                                                {displayValue(porcentajeAreaPilotoCm)}
-                                            </DataCard>
-                                        )}
-                                        {porcentajeAreaAutoTrackerCm && (
-                                            <DataCard title="Auto Tracket">
-                                                {displayValue(porcentajeAreaAutoTrackerCm)}
-                                            </DataCard>
-                                        )}
-                                        {porcentajeModoCortadorBaseCm && (
-                                            <DataCard title="Corte Base">
-                                                {displayValue(porcentajeModoCortadorBaseCm)}
-                                            </DataCard>
-                                        )}
-                                    </>
-                                )
-                            }
+                            {datosCargadosAps && selectedAnalysisType === 'APLICACIONES_AEREAS' && (
+                                <>
+                                    {esValorValido(ResponsableAps) && (
+                                        <DataCard title="Responsable">
+                                            {displayValue(ResponsableAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(fechaInicioCosechaAps) && (
+                                        <DataCard title="Fecha Inicio">
+                                            {displayValue(fechaInicioCosechaAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(fechaFinCosechaAps) && (
+                                        <DataCard title="Fecha Fin">
+                                            {displayValue(fechaFinCosechaAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(horaInicioAps) && (
+                                        <DataCard title="Hora Inicio">
+                                            {displayValue(horaInicioAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(horaFinalAps) && (
+                                        <DataCard title="Hora Final">
+                                            {displayValue(horaFinalAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(tiempoTotalAps) && (
+                                        <DataCard title="Tiempo Total">
+                                            {displayValue(tiempoTotalAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(nombreOperadorAps) && (
+                                        <DataCard title="Nombre Operador">
+                                            {displayValue(nombreOperadorAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(equipoAps) && (
+                                        <DataCard title="Equipo">
+                                            {displayValue(equipoAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(eficienciaAps) && (
+                                        <DataCard title="Eficiencia">
+                                            {displayValue(eficienciaAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(nombreFincaAps) && (
+                                        <DataCard title="Nombre Finca">
+                                            {displayValue(nombreFincaAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(codigoParcelasAps) && (
+                                        <DataCard title="Codigo Parcelas">
+                                            {displayValue(codigoParcelasAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(codigoLoresAps) && (
+                                        <DataCard title="Codigo Lotes">
+                                            {displayValue(codigoLoresAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(dosisTeorica) && (
+                                        <DataCard title="Dosis Teorica">
+                                            {displayValue(dosisTeorica)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(productoAps) && (
+                                        <DataCard title="Producto">
+                                            {displayValue(productoAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(humedadDelCultivoAps) && (
+                                        <DataCard title="Humedad del cultivo">
+                                            {displayValue(humedadDelCultivoAps)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(tchEstimado) && (
+                                        <DataCard title="TCH Estimado">
+                                            {displayValue(tchEstimado)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(areaSobreAplicada) && (
+                                        <DataCard title="Área Sobre Aplicada">
+                                            {displayValue(areaSobreAplicada)} ha
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(areaAplicada) && (
+                                        <DataCard title="Área Aplicada">
+                                            {displayValue(areaAplicada)} ha
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(promedioVelocidad) && (
+                                        <DataCard title="Velocidad">
+                                            {displayValue(promedioVelocidad)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(promedioAltura) && (
+                                        <DataCard title="Altura">
+                                            {displayValue(promedioAltura)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(promedioDosisReal) && (
+                                        <DataCard title="Dosis Real">
+                                            {displayValue(promedioDosisReal)}
+                                        </DataCard>
+                                    )}
+                                </>
+                            )}
+                            {datosCargadosCosechaMecanica && selectedAnalysisType === 'COSECHA_MECANICA' && (
+                                <>
+                                    {esValorValido(nombreResponsableCm) && (
+                                        <DataCard title="Responsable">
+                                            {displayValue(nombreResponsableCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(fechaInicioCosechaCm) && (
+                                        <DataCard title="Fecha Inicio">
+                                            {displayValue(fechaInicioCosechaCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(fechaFinCosechaCm) && (
+                                        <DataCard title="Fecha Fin">
+                                            {displayValue(fechaFinCosechaCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(nombreFincaCm) && (
+                                        <DataCard title="Nombre Finca">
+                                            {displayValue(nombreFincaCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(codigoParcelaResponsableCm) && (
+                                        <DataCard title="Codigo Finca">
+                                            {displayValue(codigoParcelaResponsableCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(nombreOperadorCm) && (
+                                        <DataCard title="Operador">
+                                            {displayValue(nombreOperadorCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(nombreMaquinaCm) && (
+                                        <DataCard title="Equipo">
+                                            {displayValue(nombreMaquinaCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(actividadCm) && (
+                                        <DataCard title="Actividad">
+                                            {displayValue(actividadCm)}
+                                        </DataCard>
+                                    )}
+                                    {/*
+                {esValorValido(areaNetaCm) && (
+                    <DataCard title="Área Neta">
+                        {displayValue(areaNetaCm)}
+                    </DataCard>
+                )}
+                {esValorValido(diferenciaDeAreaCm) && (
+                    <DataCard title="Diferencia de Área">
+                        {displayValue(diferenciaDeAreaCm)}
+                    </DataCard>
+                )}
+                */}
+                                    {esValorValido(areaBrutaCm) && (
+                                        <DataCard title="Área Bruta">
+                                            {displayValue(areaBrutaCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(horaInicioCm) && (
+                                        <DataCard title="Hora Inicio (H)">
+                                            {displayValue(horaInicioCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(horaFinalCm) && (
+                                        <DataCard title="Hora Fin (H)">
+                                            {displayValue(horaFinalCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(tiempoTotalActividadCm) && (
+                                        <DataCard title="Tiempo total (H)">
+                                            {displayValue(tiempoTotalActividadCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(consumoCombustibleCm) && (
+                                        <DataCard title="Combustible Gal/H">
+                                            {displayValue(consumoCombustibleCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(calidadGpsCm) && (
+                                        <DataCard title="Calidad GPS">
+                                            {displayValue(calidadGpsCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(eficienciaCm) && (
+                                        <DataCard title="Eficiencia Ha/Hora">
+                                            {displayValue(eficienciaCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(promedioVelocidadCm) && (
+                                        <DataCard title="Velocidad Km/H">
+                                            {displayValue(promedioVelocidadCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(rpmCm) && (
+                                        <DataCard title="RPM">
+                                            {displayValue(rpmCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(tchCm) && (
+                                        <DataCard title="TCH">
+                                            {displayValue(tchCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(tahCm) && (
+                                        <DataCard title="TAH">
+                                            {displayValue(tahCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(presionCortadorBase) && (
+                                        <DataCard title="Presion Cortador Base (Bar)">
+                                            {displayValue(presionCortadorBase)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(porcentajeAreaPilotoCm) && (
+                                        <DataCard title="Piloto Automático">
+                                            {displayValue(porcentajeAreaPilotoCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(porcentajeAreaAutoTrackerCm) && (
+                                        <DataCard title="Auto Tracket">
+                                            {displayValue(porcentajeAreaAutoTrackerCm)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(porcentajeModoCortadorBaseCm) && (
+                                        <DataCard title="Corte Base">
+                                            {displayValue(porcentajeModoCortadorBaseCm)}
+                                        </DataCard>
+                                    )}
+                                </>
+                            )}
                             {
                                 datosCargadosFertilizacion && selectedAnalysisType === 'FERTILIZACION' && (
                                     <>
