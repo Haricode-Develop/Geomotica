@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/img/logo.png";
 import axios from "axios";
 import { API_BASE_URL } from "../../utils/config";
 import { AuthContext } from "../../context/AuthContext.js";
@@ -59,11 +59,10 @@ const Login = () => {
       <header />
       <div className="login-container ">
         <div className="login-form-container--left container">
-          <h2>¡Bienvenido!</h2>
-          <p>Ingresa para acceder a tu cuenta.</p>
+
         </div>
         <div className="login-form-container--right container">
-          <img src={logo} alt="Logo de la empresa" className="logo" />
+          <img src={logo} alt="Logo de la empresa" className="logo"/>
           <form onSubmit={handleSubmit}>
             <div className="mb-3 text-center">
               <label for="emailInput" class="form-label">

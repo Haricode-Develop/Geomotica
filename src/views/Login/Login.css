@@ -62,7 +62,7 @@
 .login-form-container--left{
     font-family: 'Open Sans', sans-serif;
     color: wheat;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('../../assets/login/login-form.jfif');
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('../../assets/img/principal.jpeg');
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
@@ -94,9 +94,9 @@
 
 .logo {
     display: block;
-    width: 70%;
+    width: 35% !important;
+    height: 36%!important;
     margin: 0 auto;
-    margin-bottom: 20px;
 }
 
 .input {

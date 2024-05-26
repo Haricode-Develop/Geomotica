@@ -119,6 +119,18 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         autoPilot: null,
         totalEfficiency: null
     });
+
+    const [availableFilters, setAvailableFilters] = useState({
+        speed: false,
+        gpsQuality: false,
+        fuel: false,
+        rpm: false,
+        cutterBase: false,
+        autoPilot: false,
+        autoTracket: false,
+        modeCutterBase: false,
+    });
+
     const changeActiveFilter = (newFilter) => {
         setActiveFilter(newFilter);
     };
@@ -219,7 +231,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 setPoints(newPoints);
                 setPolygon(newPolygon);
                 setOutsidePolygon(newOutsidePolygon);
-
+                console.log("ESTOS SON LOS PUNTOS DEL WORKER: ", newPoints);
                 if (Array.isArray(newPolygon) && newPolygon.length > 0) {
                     const polygonLatLngs = newPolygon.map(([lng, lat]) => {
                         if (typeof lat === 'number' && typeof lng === 'number') {
@@ -735,34 +747,58 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         }
     }
 
+    useEffect(() => {
+        const checkAvailableFilters = () => {
+            const hasSpeed = points.some(point => point.properties.VELOCIDAD_Km_H != null);
+            const hasGpsQuality = points.some(point => point.properties.CALIDAD_DE_SENAL != null);
+            const hasFuel = points.some(point => point.properties.CONSUMOS_DE_COMBUSTIBLE != null);
+            const hasRpm = points.some(point => point.properties.RPM != null);
+            const hasCutterBase = points.some(point => point.properties.PRESION_DE_CORTADOR_BASE != null);
+            const hasAutoPilot = points.some(point => point.properties.PILOTO_AUTOMATICO != null);
+            const hasAutoTracket = points.some(point => point.properties.AUTO_TRACKET != null);
+            const hasModeCutterBase = points.some(point => point.properties.MODO_CORTE_BASE != null);
 
+            setAvailableFilters({
+                speed: hasSpeed,
+                gpsQuality: hasGpsQuality,
+                fuel: hasFuel,
+                rpm: hasRpm,
+                cutterBase: hasCutterBase,
+                autoPilot: hasAutoPilot,
+                autoTracket: hasAutoTracket,
+                modeCutterBase: hasModeCutterBase,
+            });
+        };
+
+        checkAvailableFilters();
+    }, [points]);
 
 
 
     return (
         <>
-            {filterSpeed && (
+            {availableFilters.speed && filterSpeed && (
                 <BarIndicator filterType="speed" low={lowSpeed} medium={medSpeed} high={highSpeed} />
             )}
-            {filterGpsQuality && (
+            {availableFilters.gpsQuality && filterGpsQuality && (
                 <BarIndicator filterType="gpsQuality" low={lowGpsQuality} medium={medGpsQuality} high={highGpsQuality} />
             )}
-            {filterFuel && (
+            {availableFilters.fuel && filterFuel && (
                 <BarIndicator filterType="fuel" low={lowFuel} medium={medFuel} high={highFuel} />
             )}
-            {filterRpm && (
+            {availableFilters.rpm && filterRpm && (
                 <BarIndicator filterType="rpm" low={lowRpm} medium={medRpm} high={highRpm} />
             )}
-            {filterCutterBase && (
+            {availableFilters.cutterBase && filterCutterBase && (
                 <BarIndicator filterType="cutterBase" low={lowCutterBase} medium={medCutterBase} high={highCutterBase} />
             )}
-            {filterAutoPilot && (
+            {availableFilters.autoPilot && filterAutoPilot && (
                 <BarIndicator filterType="autoPilot" low={0} medium={0} high={1} />
             )}
-            {filterAutoTracket && (
+            {availableFilters.autoTracket && filterAutoTracket && (
                 <BarIndicator filterType="autoTracket" low={0} medium={0} high={1} />
             )}
-            {filterModeCutterBase && (
+            {availableFilters.modeCutterBase && filterModeCutterBase && (
                 <BarIndicator filterType="modeCutterBase" low={0} medium={0} high={1} />
             )}
 
@@ -888,23 +924,38 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 </DialogTitle>
                 <DialogContent>
                     <FormGroup>
+                        {availableFilters.autoPilot && (
+                            <>
                         <FormControlLabel
                             control={<Switch checked={filterAutoPilot} onChange={toggleFilter} />}
                             label="Piloto Automático"
                         />
+                            </>
+                        )}
 
-                        <FormControlLabel
+
+                        {availableFilters.autoTracket && (
+                            <>
+                            <FormControlLabel
                             control={<Switch checked={filterAutoTracket} onChange={toggleFilterAutoTracket} />}
                             label="Auto Tracket"
                         />
+                            </>
+                        )}
 
+                        {availableFilters.modeCutterBase && (
+                            <>
                         <FormControlLabel
                             control={<Switch checked={filterModeCutterBase} onChange={toggleFilterModeCutterBase} />}
                             label="Modo corte base"
                         />
+                            </>
+                        )}
 
+                        {availableFilters.speed && (
 
-                        <FormControlLabel
+                            <>
+                            <FormControlLabel
                             control={<Switch checked={filterSpeed} onChange={toggleFilterSpeed} />}
                             label="Velocidad (Km/H)"
                         />
@@ -959,7 +1010,11 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             }}
                             margin="normal"
                         />
+                            </>
+                    )}
 
+                        {availableFilters.gpsQuality && (
+                            <>
                         <FormControlLabel
                             control={<Switch checked={filterGpsQuality} onChange={toggleFilterGpsQuality} />}
                             label="Calidad Gps"
@@ -1014,7 +1069,11 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             margin="normal"
                         />
 
+                            </>
+                        )}
 
+                        {availableFilters.fuel && (
+                            <>
                         <FormControlLabel
                             control={<Switch checked={filterFuel} onChange={toggleFilterFuel} />}
                             label="Combustible"
@@ -1069,8 +1128,13 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             }}
                             margin="normal"
                         />
+                            </>
+                        )}
 
 
+
+                        {availableFilters.rpm && (
+                            <>
                         <FormControlLabel
                             control={<Switch checked={filterRpm} onChange={toggleFilterRpm} />}
                             label="RPM"
@@ -1125,8 +1189,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             }}
                             margin="normal"
                         />
+                            </>
+                        )}
 
 
+                        {availableFilters.cutterBase && (
+                            <>
                         <FormControlLabel
                             control={<Switch checked={filterCutterBase} onChange={toggleFilterCutterBase} />}
                                 label="Presión de cortador base (Bar)"
@@ -1181,7 +1249,8 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                             }}
                             margin="normal"
                         />
-
+                            </>
+                        )}
                     </FormGroup>
                 </DialogContent>
                 <DialogActions>

@@ -771,13 +771,12 @@ function Dashboard() {
         const idAnalisis = await insertarUltimoAnalisis();
 
         setIdMax(idAnalisis.data.idAnalisis);
-
-        // Aquí la la petición del end point para procesar el Csv:
-        //
+        const isExcel = archivo.name.endsWith('.xlsx') || archivo.name.endsWith('.xls');
         let formData = new FormData();
         formData.append('csv', archivo);
         formData.append('idTipoAnalisis', idAnalisis.data.idAnalisis);
-        formData.append('tipoAnalisis', nombreAnalisis(idAnalisisBash))
+        formData.append('tipoAnalisis', nombreAnalisis(idAnalisisBash));
+        formData.append('isExcel', isExcel);
         setShowProgressBar(true);
         setProgress(30);
         setProgressMessage("Procesando los datos ingresados");
@@ -803,7 +802,6 @@ function Dashboard() {
             // Genera un nuevo Blob y File para setSelectedFile
 
             const csvBlob = new Blob([Papa.unparse(data)], { type: 'text/csv' });
-
             const csvFile = new File([csvBlob], 'procesado.csv');
 
             setSelectedFile(csvFile);
@@ -905,18 +903,7 @@ function Dashboard() {
             socket.emit('progressUpdate', { progress: 0, message: "Iniciando proceso" });
         }
 
-        if (!selectedFile || !selectedZipFile) {
-            toast.warn('Por favor, selecciona ambos archivos.', {
-                position: "top-right",
-                autoClose: 5000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-            });
-            return;
-        } else if (!idAnalisisBash) {
+        if (!idAnalisisBash) {
             toast.error('Debe seleccionar un análisis antes de continuar', {
                 position: toast.POSITION.TOP_RIGHT,
                 autoClose: 5000,
@@ -939,7 +926,6 @@ function Dashboard() {
                     formData.append('csv', selectedFile);
                     formData.append('polygon', selectedZipFile);
                     formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
-
                     try {
                         const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}/${lines}`, formData, {
                             headers: {
@@ -1027,7 +1013,7 @@ function Dashboard() {
                     <div>
                         <h1 className="dashboard-title">Resumen de Análisis</h1>
                         <section className="map-section">
-                            {selectedZipFile && selectedFile && selectedAnalysisType === 'COSECHA_MECANICA' && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile}
+                            {selectedFile && selectedAnalysisType === 'COSECHA_MECANICA' && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile}
                                                                               onAreaCalculated={handleAreaCalculation}
                                                                               percentageAutoPilot={handlePercentageCalculation}
                                                                               progressFinish={processingFinished}
@@ -1054,165 +1040,252 @@ function Dashboard() {
                             {
                                 datosCargadosAps && selectedAnalysisType === 'APLICACIONES_AEREAS' && (
                                     <>
-                                        <DataCard title="Responsable">
-                                            {displayValue(ResponsableAps)}
-                                        </DataCard>
-                                        <DataCard title="Fecha Inicio">
-                                            {displayValue(fechaInicioCosechaAps)}
-                                        </DataCard>
-                                        <DataCard title="Fecha Fin">
-                                            {displayValue(fechaFinCosechaAps)}
-                                        </DataCard>
-                                        <DataCard title="Hora Inicio">
-                                            {displayValue(horaInicioAps)}
-                                        </DataCard>
-                                        <DataCard title="Hora Final">
-                                            {displayValue(horaFinalAps)}
-                                        </DataCard>
-                                        <DataCard title="Tiempo Total">
-                                            {displayValue(tiempoTotalAps)}
-                                        </DataCard>
-                                        <DataCard title="Nombre Operador">
-                                            {displayValue(nombreOperadorAps)}
-                                        </DataCard>
-                                        <DataCard title="Equipo">
-                                            {displayValue(equipoAps)}
-                                        </DataCard>
-                                        <DataCard title="Eficiancia">
-                                            {displayValue(eficienciaAps)}
-                                        </DataCard>
-                                        <DataCard title="Nombre Finca">
-                                            {displayValue(nombreFincaAps)}
-                                        </DataCard>
-                                        <DataCard title="Codigo Parcelas">
-                                            {displayValue(codigoParcelasAps)}
-                                        </DataCard>
-                                        <DataCard title="Codigo Lotes">
-                                            {displayValue(codigoLoresAps)}
-                                        </DataCard>
-                                        <DataCard title="Dosis Teorica">
-                                            {displayValue(dosisTeorica)}
-                                        </DataCard>
-                                        <DataCard title="Producto">
-                                            {displayValue(productoAps)}
-                                        </DataCard>
-                                        <DataCard title="Humedad del cultivo">
-                                            {displayValue(humedadDelCultivoAps)}
-                                        </DataCard>
-                                        <DataCard title="TCH Estimado">
-                                            {displayValue(tchEstimado)}
-                                        </DataCard>
-                                        <DataCard title="Área Sobre Aplicada">
-                                            {displayValue(areaSobreAplicada)} ha
-                                        </DataCard>
-                                        <DataCard title="Área Aplicada">
-                                            {displayValue(areaAplicada)} ha
-                                        </DataCard>
-
-                                        <DataCard title="Velocidad">
-                                            {displayValue(promedioVelocidad)}
-                                        </DataCard>
-                                        <DataCard title="Altura">
-                                            {displayValue(promedioAltura)}
-                                        </DataCard>
-                                        <DataCard title="Dosis Real">
-                                            {displayValue(promedioDosisReal)}
-                                        </DataCard>
-
+                                        {ResponsableAps && (
+                                            <DataCard title="Responsable">
+                                                {displayValue(ResponsableAps)}
+                                            </DataCard>
+                                        )}
+                                        {fechaInicioCosechaAps && (
+                                            <DataCard title="Fecha Inicio">
+                                                {displayValue(fechaInicioCosechaAps)}
+                                            </DataCard>
+                                        )}
+                                        {fechaFinCosechaAps && (
+                                            <DataCard title="Fecha Fin">
+                                                {displayValue(fechaFinCosechaAps)}
+                                            </DataCard>
+                                        )}
+                                        {horaInicioAps && (
+                                            <DataCard title="Hora Inicio">
+                                                {displayValue(horaInicioAps)}
+                                            </DataCard>
+                                        )}
+                                        {horaFinalAps && (
+                                            <DataCard title="Hora Final">
+                                                {displayValue(horaFinalAps)}
+                                            </DataCard>
+                                        )}
+                                        {tiempoTotalAps && (
+                                            <DataCard title="Tiempo Total">
+                                                {displayValue(tiempoTotalAps)}
+                                            </DataCard>
+                                        )}
+                                        {nombreOperadorAps && (
+                                            <DataCard title="Nombre Operador">
+                                                {displayValue(nombreOperadorAps)}
+                                            </DataCard>
+                                        )}
+                                        {equipoAps && (
+                                            <DataCard title="Equipo">
+                                                {displayValue(equipoAps)}
+                                            </DataCard>
+                                        )}
+                                        {eficienciaAps && (
+                                            <DataCard title="Eficiencia">
+                                                {displayValue(eficienciaAps)}
+                                            </DataCard>
+                                        )}
+                                        {nombreFincaAps && (
+                                            <DataCard title="Nombre Finca">
+                                                {displayValue(nombreFincaAps)}
+                                            </DataCard>
+                                        )}
+                                        {codigoParcelasAps && (
+                                            <DataCard title="Codigo Parcelas">
+                                                {displayValue(codigoParcelasAps)}
+                                            </DataCard>
+                                        )}
+                                        {codigoLoresAps && (
+                                            <DataCard title="Codigo Lotes">
+                                                {displayValue(codigoLoresAps)}
+                                            </DataCard>
+                                        )}
+                                        {dosisTeorica && (
+                                            <DataCard title="Dosis Teorica">
+                                                {displayValue(dosisTeorica)}
+                                            </DataCard>
+                                        )}
+                                        {productoAps && (
+                                            <DataCard title="Producto">
+                                                {displayValue(productoAps)}
+                                            </DataCard>
+                                        )}
+                                        {humedadDelCultivoAps && (
+                                            <DataCard title="Humedad del cultivo">
+                                                {displayValue(humedadDelCultivoAps)}
+                                            </DataCard>
+                                        )}
+                                        {tchEstimado && (
+                                            <DataCard title="TCH Estimado">
+                                                {displayValue(tchEstimado)}
+                                            </DataCard>
+                                        )}
+                                        {areaSobreAplicada && (
+                                            <DataCard title="Área Sobre Aplicada">
+                                                {displayValue(areaSobreAplicada)} ha
+                                            </DataCard>
+                                        )}
+                                        {areaAplicada && (
+                                            <DataCard title="Área Aplicada">
+                                                {displayValue(areaAplicada)} ha
+                                            </DataCard>
+                                        )}
+                                        {promedioVelocidad && (
+                                            <DataCard title="Velocidad">
+                                                {displayValue(promedioVelocidad)}
+                                            </DataCard>
+                                        )}
+                                        {promedioAltura && (
+                                            <DataCard title="Altura">
+                                                {displayValue(promedioAltura)}
+                                            </DataCard>
+                                        )}
+                                        {promedioDosisReal && (
+                                            <DataCard title="Dosis Real">
+                                                {displayValue(promedioDosisReal)}
+                                            </DataCard>
+                                        )}
                                         {/*
-                                         <DataCard title="Área No Aplicada">
-                                            {displayValue(areaNoAplicada)} ha
-                                        </DataCard>
-                                        */}
-
+        {areaNoAplicada && (
+            <DataCard title="Área No Aplicada">
+                {displayValue(areaNoAplicada)} ha
+            </DataCard>
+        )}
+        */}
                                     </>
                                 )
+
                             }
                             {
-                                datosCargadosCosechaMecanica  && selectedAnalysisType === 'COSECHA_MECANICA' && (
+                                datosCargadosCosechaMecanica && selectedAnalysisType === 'COSECHA_MECANICA' && (
                                     <>
-                                        <DataCard title="Responsable">
-                                            {displayValue(nombreResponsableCm)}
-                                        </DataCard>
-                                        <DataCard title="Fecha Inicio">
-                                            {displayValue(fechaInicioCosechaCm)}
-                                        </DataCard>
-                                        <DataCard title="Fecha Fin">
-                                            {displayValue(fechaFinCosechaCm)}
-                                        </DataCard>
-                                        <DataCard title="Nombre Finca">
-                                            {displayValue(nombreFincaCm)}
-                                        </DataCard>
-                                        <DataCard title="Codigo Finca">
-                                            {displayValue(codigoParcelaResponsableCm)}
-                                        </DataCard>
-                                        <DataCard title="Operador">
-                                            {displayValue(nombreOperadorCm)}
-                                        </DataCard>
-                                        <DataCard title="Equipo">
-                                            {displayValue(nombreMaquinaCm)}
-                                        </DataCard>
-                                        <DataCard title="Actividad">
-                                            {displayValue(actividadCm)}
-                                        </DataCard>
+                                        {nombreResponsableCm && (
+                                            <DataCard title="Responsable">
+                                                {displayValue(nombreResponsableCm)}
+                                            </DataCard>
+                                        )}
+                                        {fechaInicioCosechaCm && (
+                                            <DataCard title="Fecha Inicio">
+                                                {displayValue(fechaInicioCosechaCm)}
+                                            </DataCard>
+                                        )}
+                                        {fechaFinCosechaCm && (
+                                            <DataCard title="Fecha Fin">
+                                                {displayValue(fechaFinCosechaCm)}
+                                            </DataCard>
+                                        )}
+                                        {nombreFincaCm && (
+                                            <DataCard title="Nombre Finca">
+                                                {displayValue(nombreFincaCm)}
+                                            </DataCard>
+                                        )}
+                                        {codigoParcelaResponsableCm && (
+                                            <DataCard title="Codigo Finca">
+                                                {displayValue(codigoParcelaResponsableCm)}
+                                            </DataCard>
+                                        )}
+                                        {nombreOperadorCm && (
+                                            <DataCard title="Operador">
+                                                {displayValue(nombreOperadorCm)}
+                                            </DataCard>
+                                        )}
+                                        {nombreMaquinaCm && (
+                                            <DataCard title="Equipo">
+                                                {displayValue(nombreMaquinaCm)}
+                                            </DataCard>
+                                        )}
+                                        {actividadCm && (
+                                            <DataCard title="Actividad">
+                                                {displayValue(actividadCm)}
+                                            </DataCard>
+                                        )}
                                         {/*
-                                         <DataCard title="Área Neta">
-                                            {displayValue(areaNetaCm)}
-                                        </DataCard>
-                                          <DataCard title="Diferencia de Área">
-                                            {displayValue(diferenciaDeAreaCm)}
-                                        </DataCard>
-                                        */}
-                                        <DataCard title="Área Bruta">
-                                            {displayValue(areaBrutaCm)}
-                                        </DataCard>
-
-                                        <DataCard title="Hora Inicio (H)">
-                                            {displayValue(horaInicioCm)}
-                                        </DataCard>
-                                        <DataCard title="Hora Fin (H)">
-                                            {displayValue(horaFinalCm)}
-                                        </DataCard>
-                                        <DataCard title="Tiempo total (H)">
-                                            {displayValue(tiempoTotalActividadCm)}
-                                        </DataCard>
-                                        <DataCard title="Combustible Gal/H">
-                                            {displayValue(consumoCombustibleCm)}
-                                        </DataCard>
-
-                                        <DataCard title="Calidad GPS">
-                                            {displayValue(calidadGpsCm)}
-                                        </DataCard>
-                                        <DataCard title="Eficiencia Ha/Hora">
-                                            {displayValue(eficienciaCm)}
-                                        </DataCard>
-                                        <DataCard title="Velocidad Km/H">
-                                            {displayValue(promedioVelocidadCm)}
-                                        </DataCard>
-                                        <DataCard title="RPM">
-                                            {displayValue(rpmCm)}
-                                        </DataCard>
-                                        <DataCard title="TCH">
-                                            {displayValue(tchCm)}
-                                        </DataCard>
-                                        <DataCard title="TAH">
-                                            {displayValue(tahCm)}
-                                        </DataCard>
-                                        <DataCard title="Presion Cortador Base (Bar)">
-                                            {displayValue(presionCortadorBase)}
-                                        </DataCard>
-
-                                        <DataCard title="Piloto Automático">
-                                            {displayValue(porcentajeAreaPilotoCm)}
-                                        </DataCard>
-                                        <DataCard title="Auto Tracket">
-                                            {displayValue(porcentajeAreaAutoTrackerCm)}
-                                        </DataCard>
-                                        <DataCard title="Corte Base">
-                                            {displayValue(porcentajeModoCortadorBaseCm)}
-                                        </DataCard>
-
-
+        {areaNetaCm && (
+            <DataCard title="Área Neta">
+                {displayValue(areaNetaCm)}
+            </DataCard>
+        )}
+        {diferenciaDeAreaCm && (
+            <DataCard title="Diferencia de Área">
+                {displayValue(diferenciaDeAreaCm)}
+            </DataCard>
+        )}
+        */}
+                                        {areaBrutaCm && (
+                                            <DataCard title="Área Bruta">
+                                                {displayValue(areaBrutaCm)}
+                                            </DataCard>
+                                        )}
+                                        {horaInicioCm && (
+                                            <DataCard title="Hora Inicio (H)">
+                                                {displayValue(horaInicioCm)}
+                                            </DataCard>
+                                        )}
+                                        {horaFinalCm && (
+                                            <DataCard title="Hora Fin (H)">
+                                                {displayValue(horaFinalCm)}
+                                            </DataCard>
+                                        )}
+                                        {tiempoTotalActividadCm && (
+                                            <DataCard title="Tiempo total (H)">
+                                                {displayValue(tiempoTotalActividadCm)}
+                                            </DataCard>
+                                        )}
+                                        {consumoCombustibleCm && (
+                                            <DataCard title="Combustible Gal/H">
+                                                {displayValue(consumoCombustibleCm)}
+                                            </DataCard>
+                                        )}
+                                        {calidadGpsCm && (
+                                            <DataCard title="Calidad GPS">
+                                                {displayValue(calidadGpsCm)}
+                                            </DataCard>
+                                        )}
+                                        {eficienciaCm && (
+                                            <DataCard title="Eficiencia Ha/Hora">
+                                                {displayValue(eficienciaCm)}
+                                            </DataCard>
+                                        )}
+                                        {promedioVelocidadCm && (
+                                            <DataCard title="Velocidad Km/H">
+                                                {displayValue(promedioVelocidadCm)}
+                                            </DataCard>
+                                        )}
+                                        {rpmCm && (
+                                            <DataCard title="RPM">
+                                                {displayValue(rpmCm)}
+                                            </DataCard>
+                                        )}
+                                        {tchCm && (
+                                            <DataCard title="TCH">
+                                                {displayValue(tchCm)}
+                                            </DataCard>
+                                        )}
+                                        {tahCm && (
+                                            <DataCard title="TAH">
+                                                {displayValue(tahCm)}
+                                            </DataCard>
+                                        )}
+                                        {presionCortadorBase && (
+                                            <DataCard title="Presion Cortador Base (Bar)">
+                                                {displayValue(presionCortadorBase)}
+                                            </DataCard>
+                                        )}
+                                        {porcentajeAreaPilotoCm && (
+                                            <DataCard title="Piloto Automático">
+                                                {displayValue(porcentajeAreaPilotoCm)}
+                                            </DataCard>
+                                        )}
+                                        {porcentajeAreaAutoTrackerCm && (
+                                            <DataCard title="Auto Tracket">
+                                                {displayValue(porcentajeAreaAutoTrackerCm)}
+                                            </DataCard>
+                                        )}
+                                        {porcentajeModoCortadorBaseCm && (
+                                            <DataCard title="Corte Base">
+                                                {displayValue(porcentajeModoCortadorBaseCm)}
+                                            </DataCard>
+                                        )}
                                     </>
                                 )
                             }

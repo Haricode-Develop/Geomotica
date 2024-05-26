@@ -33,6 +33,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
     const [formData, setFormData] = useState({ idAnalisis: idAnalisis, });
     const mapRef = useRef();
+    const [bufferedIntersections, setBufferedIntersections] = useState([]);
 
     useEffect(() => {
         const worker = new Worker('dataWorker.js');
@@ -333,6 +334,51 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     }, [lineas]);
 
+
+    useEffect(() => {
+        if (bufferedLines.length > 0) {
+            calculateBufferedIntersections(bufferedLines);
+            const correctedBufferedPolygons = bufferedLines.map(buffer => {
+                const coordinates = buffer.geometry.coordinates[0];
+                return coordinates.map(coord => [coord[0], coord[1]]);
+            });
+
+            const bufferedTurfPolygons = correctedBufferedPolygons.map(polygon => turfPolygon([polygon]));
+
+            let totalBufferedArea = 0;
+            bufferedTurfPolygons.forEach(polygon => {
+                totalBufferedArea += turfArea(polygon) / 10000;
+            });
+
+
+            if (onAreasCalculated) {
+                onAreasCalculated({
+                    areaSobreAplicada: 0,
+                    areaAplicada: totalBufferedArea.toFixed(3)
+                });
+            }
+        }
+    }, [bufferedLines]);
+
+    const calculateBufferedIntersections = (bufferedLines) => {
+        let intersections = [];
+        bufferedLines.forEach((buffer1, i) => {
+            bufferedLines.slice(i + 1).forEach(buffer2 => {
+                const intersection = turfIntersect(buffer1, buffer2);
+                if (intersection) {
+                    if (intersection.geometry.type === 'MultiPolygon') {
+                        intersection.geometry.coordinates.forEach(coords => {
+                            intersections.push(coords[0]);
+                        });
+                    } else if (intersection.geometry.type === 'Polygon') {
+                        intersections.push(intersection.geometry.coordinates[0]);
+                    }
+                }
+            });
+        });
+        setBufferedIntersections(intersections);
+    };
+
     const verificarYEnviarDatos = () => {
         if (Object.keys(formData).length > 0) {
             enviarDatosFormulario(formData).then(() => {
@@ -424,8 +470,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             weight={3}
                         />
                     ))}
+
                     {bufferedLines.map((bufferedLine, index) => (
                         <Polygon key={`buffered-${index}`} positions={bufferedLine.geometry.coordinates[0].map(coord => [coord[1], coord[0]])} color="purple" weight={3} />
+                    ))}
+                    {bufferedIntersections.map((intersection, index) => (
+                        <Polygon key={`buffered-intersection-${index}`} positions={intersection.map(coord => [coord[1], coord[0]])} color="blue" weight={3} />
                     ))}
                     {lineas.map((linea, index) => (
                         <Polyline key={`line-${index}`} positions={linea} color="red" />

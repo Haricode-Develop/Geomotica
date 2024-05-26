@@ -65,6 +65,7 @@ function extractCoordinates(feature) {
 }
 
 function processGeoJsonData(geojsonData) {
+    console.log("ESTO ES EL GEOJSON PURO: ", geojsonData);
     const validFeatures = geojsonData.features.filter(feature => {
         const hasCoordinates = feature.geometry && feature.geometry.coordinates;
         return hasCoordinates;
@@ -84,6 +85,7 @@ function processGeoJsonData(geojsonData) {
             outsidePolygonCoordinates = extractCoordinates(polygonFeatures[1]);
         }
     }
+
 
     return {
         points: validFeatures,
