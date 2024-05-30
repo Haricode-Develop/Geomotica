@@ -55,9 +55,10 @@ function extractCoordinates(feature) {
 
     return coordinates.map(ring =>
         ring.map(coord => {
-            if (coord.length >= 2) {
+            if (Array.isArray(coord) && coord.length >= 2 && typeof coord[0] === 'number' && typeof coord[1] === 'number') {
                 return [coord[1], coord[0]];
             } else {
+                console.error('Coordenada no válida encontrada:', coord);
                 return null;
             }
         }).filter(coord => coord != null)
@@ -65,14 +66,12 @@ function extractCoordinates(feature) {
 }
 
 function processGeoJsonData(geojsonData) {
-    console.log("ESTO ES EL GEOJSON PURO: ", geojsonData);
     const validFeatures = geojsonData.features.filter(feature => {
         const hasCoordinates = feature.geometry && feature.geometry.coordinates;
         return hasCoordinates;
     });
 
-    const polygonFeatures = geojsonData.features.filter(feature => feature.geometry.type === 'Polygon');
-
+    const polygonFeatures = geojsonData.features.filter(feature => feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon');
     let polygonCoordinates = [];
     let outsidePolygonCoordinates = [];
 
@@ -85,7 +84,6 @@ function processGeoJsonData(geojsonData) {
             outsidePolygonCoordinates = extractCoordinates(polygonFeatures[1]);
         }
     }
-
 
     return {
         points: validFeatures,
@@ -119,9 +117,10 @@ function processLineStringData(geojsonData) {
     return {
         lines: lineFeatures.map(feature => {
             const path = feature.geometry.coordinates.map(coord => {
-                if (coord.length >= 2) {
+                if (Array.isArray(coord) && coord.length >= 2 && typeof coord[0] === 'number' && typeof coord[1] === 'number') {
                     return [coord[1], coord[0]];
                 }
+                console.error('Coordenada no válida encontrada:', coord);
                 return null;
             }).filter(coord => coord != null);
             return {
@@ -132,6 +131,3 @@ function processLineStringData(geojsonData) {
         })
     };
 }
-
-
-

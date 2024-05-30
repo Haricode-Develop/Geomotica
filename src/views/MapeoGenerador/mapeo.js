@@ -10,6 +10,7 @@ import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
 import * as turf from '@turf/turf';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
+import {toast } from 'react-toastify';
 
 import Slider from '@mui/material/Slider';
 import Draggable from 'react-draggable';
@@ -81,6 +82,8 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
     const [isAreaDataCalculated, setIsAreaDataCalculated] = useState(false);
 
+    const [toastShown, setToastShown] = useState(false);
+
     const [areaData, setAreaData] = useState({
         polygonArea: null,
         outsidePolygonArea: null,
@@ -137,20 +140,29 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
     const [isMapButtonDisabled, setIsMapButtonDisabled] = useState(!progressFinish);
 
-    const MapEffect = () => {
+    const MapEffect = ({ onNoPoints }) => {
         const map = useMap();
 
         useEffect(() => {
             if (filteredPoints.length === 0) return;
 
             const latLngs = filteredPoints.map(point => {
-                const [longitude, latitude] = point.geometry.coordinates;
-                return L.latLng(latitude, longitude);
-            });
+                if(point.geometry.type !== 'MultiPolygon'){
+                    const [longitude, latitude] = point.geometry.coordinates;
+                    if (longitude && latitude) {
+                        return L.latLng(latitude, longitude);
+                    }
+                    return null;
+                }else{
+                    return null;
+                }
+            }).filter(latLng => latLng !== null);
 
             if (latLngs.length > 0) {
                 const bounds = L.latLngBounds(latLngs);
                 map.fitBounds(bounds, { padding: [50, 50] });
+            } else {
+                onNoPoints();
             }
         }, [filteredPoints, map]);
 
@@ -220,6 +232,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
     }, [idAnalisis]);
 
     useEffect(() => {
+        if (toastShown) {
+            toast.warn('No se encontraron puntos para el polígono brindado.');
+        }
+    }, [toastShown]);
+
+    useEffect(() => {
         // Inicializar el worker
         const worker = new Worker('dataWorker.js');
         workerRef.current = worker;
@@ -231,7 +249,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 setPoints(newPoints);
                 setPolygon(newPolygon);
                 setOutsidePolygon(newOutsidePolygon);
-                console.log("ESTOS SON LOS PUNTOS DEL WORKER: ", newPoints);
                 if (Array.isArray(newPolygon) && newPolygon.length > 0) {
                     const polygonLatLngs = newPolygon.map(([lng, lat]) => {
                         if (typeof lat === 'number' && typeof lng === 'number') {
@@ -818,7 +835,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             </div>
 
             <MapContainer key={mapKey} center={mapCenter} zoom={zoom} style={{ height: '100vh', width: '100%' }}>
-                <MapEffect />
+                <MapEffect onNoPoints={() => setToastShown(true)} />
                 <LayersControl position="topright">
                     <BaseLayer checked name="Satellite View">
                         <TileLayer
