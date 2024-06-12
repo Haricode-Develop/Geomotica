@@ -158,6 +158,7 @@ function Dashboard() {
     const [tchEstimado, setTchEstimadoAps] = useState(null);
     const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
     const [areaAplicada, setAreaAplicada] = useState(0);
+    const [porcentajeVariacion, setPorcentajeVariacion] = useState(0);
     const [areaNoAplicada, setAreaNoAplicada] = useState(0);
 
     const [promedioVelocidad, setPromedioVelocidad] = useState(0);
@@ -988,6 +989,7 @@ function Dashboard() {
     const handleAreasCalculated = (areas) => {
         setAreaSobreAplicada(areas.areaSobreAplicada);
         setAreaAplicada(areas.areaAplicada);
+        setPorcentajeVariacion(areas.porcentajeDeVariacion);
         setAreaNoAplicada(areas.nonAppliedArea);
     };
 
@@ -1123,6 +1125,12 @@ function Dashboard() {
                                             {displayValue(tchEstimado)}
                                         </DataCard>
                                     )}
+
+                                    {esValorValido(promedioAltura) && (
+                                        <DataCard title="Altura">
+                                            {displayValue(promedioAltura)}
+                                        </DataCard>
+                                    )}
                                     {esValorValido(areaSobreAplicada) && (
                                         <DataCard title="Área Sobre Aplicada">
                                             {displayValue(areaSobreAplicada)} ha
@@ -1133,19 +1141,19 @@ function Dashboard() {
                                             {displayValue(areaAplicada)} ha
                                         </DataCard>
                                     )}
-                                    {esValorValido(promedioVelocidad) && (
-                                        <DataCard title="Velocidad">
-                                            {displayValue(promedioVelocidad)}
-                                        </DataCard>
-                                    )}
-                                    {esValorValido(promedioAltura) && (
-                                        <DataCard title="Altura">
-                                            {displayValue(promedioAltura)}
+                                    {esValorValido(porcentajeVariacion) && (
+                                        <DataCard title="Porcentaje de Variación">
+                                            {displayValue(porcentajeVariacion)}
                                         </DataCard>
                                     )}
                                     {esValorValido(promedioDosisReal) && (
                                         <DataCard title="Dosis Real">
                                             {displayValue(promedioDosisReal)}
+                                        </DataCard>
+                                    )}
+                                    {esValorValido(promedioVelocidad) && (
+                                        <DataCard title="Velocidad">
+                                            {displayValue(promedioVelocidad)}
                                         </DataCard>
                                     )}
                                 </>

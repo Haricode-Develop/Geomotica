@@ -106,28 +106,77 @@ function processAplicacionesAreasData(geojsonData) {
     return { polygons: polygons };
 }
 
-
 function processLineStringData(geojsonData) {
-    let lineFeatures = geojsonData.features.filter(feature => feature.properties && feature.properties.type === 'KML');
-    lineFeatures.forEach(feature => {
-        if (feature.geometry.type !== 'LineString') {
-            feature.geometry.type = 'LineString';
+    console.log("ESTOS ES EL GEOJSON: ", geojsonData);
+
+    // Filtrar las características que tienen el tipo 'KML' en sus propiedades
+    let kmlFeatures = geojsonData.features.filter(feature => feature.properties && feature.properties.type === 'KML');
+    console.log("FEATURES: ", kmlFeatures);
+
+    let lineFeatures = [];
+    let polygonFeatures = [];
+
+    // Separar las características de líneas y polígonos
+    kmlFeatures.forEach(feature => {
+        if (feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString') {
+            lineFeatures.push(feature);
+        } else if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+            polygonFeatures.push(feature);
         }
     });
-    return {
-        lines: lineFeatures.map(feature => {
-            const path = feature.geometry.coordinates.map(coord => {
+
+    // Procesar las líneas y convertir las coordenadas
+    let lines = lineFeatures.map(feature => {
+        // Si la geometría es 'LineString', encapsular sus coordenadas en un array para tratarlo de manera uniforme
+        const coordinates = feature.geometry.type === 'LineString'
+            ? [feature.geometry.coordinates]
+            : feature.geometry.coordinates;
+
+        // Convertir las coordenadas y filtrar las inválidas
+        const paths = coordinates.map(line => {
+            return line.map(coord => {
                 if (Array.isArray(coord) && coord.length >= 2 && typeof coord[0] === 'number' && typeof coord[1] === 'number') {
-                    return [coord[1], coord[0]];
+                    return [coord[1], coord[0]]; // Invertir las coordenadas
                 }
                 console.error('Coordenada no válida encontrada:', coord);
                 return null;
-            }).filter(coord => coord != null);
-            return {
-                id: feature.id,
-                properties: feature.properties,
-                path: path
-            };
-        })
+            }).filter(coord => coord != null); // Filtrar coordenadas inválidas
+        });
+
+        return {
+            id: feature.id,
+            properties: feature.properties,
+            paths: paths
+        };
+    });
+
+    // Procesar los polígonos y convertir las coordenadas
+    let polygons = polygonFeatures.map(feature => {
+        const coordinates = feature.geometry.type === 'Polygon'
+            ? [feature.geometry.coordinates]
+            : feature.geometry.coordinates;
+
+        const rings = coordinates.map(polygon => {
+            return polygon.map(ring => {
+                return ring.map(coord => {
+                    if (Array.isArray(coord) && coord.length >= 2 && typeof coord[0] === 'number' && typeof coord[1] === 'number') {
+                        return [coord[1], coord[0]]; // Invertir las coordenadas
+                    }
+                    console.error('Coordenada no válida encontrada:', coord);
+                    return null;
+                }).filter(coord => coord != null); // Filtrar coordenadas inválidas
+            });
+        });
+
+        return {
+            id: feature.id,
+            properties: feature.properties,
+            rings: rings
+        };
+    });
+
+    return {
+        lines: lines,
+        polygons: polygons
     };
 }

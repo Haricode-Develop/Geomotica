@@ -34,6 +34,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [formData, setFormData] = useState({ idAnalisis: idAnalisis, });
     const mapRef = useRef();
     const [bufferedIntersections, setBufferedIntersections] = useState([]);
+    const [poligonosKML, setPoligonosKML] = useState([]);
 
     useEffect(() => {
         const worker = new Worker('dataWorker.js');
@@ -41,16 +42,22 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
         worker.onmessage = (e) => {
             if (e.data.action === 'geoJsonDataProcessed') {
-                if (e.data.data.polygons) {
+                if (!e.data.data.lines && e.data.data.polygons) {
                     const { polygons } = e.data.data;
                     const formattedPolygons = polygons.map(poly => formatPolygon(poly.polygon[0]));
                     setPoligonosPropiedades(polygons.map(poly => poly.properties));
                     setPoligonos(formattedPolygons);
                 }
-                if (e.data.data.lines) {
-                    const { lines } = e.data.data;
-                    const formattedLines = lines.map(line => line.path);
+                if (e.data.data.lines && e.data.data.polygons) {
+                    const { lines, polygons } = e.data.data;
+                    console.log("ESTAS SON LAS LINEAS: ", lines);
+                    console.log("ESTOS SON LOS POLIGONOS: ", polygons);
+
+                    const formattedLines = lines.map(line => line.paths);
                     setLineas(formattedLines);
+
+
+                    setPoligonosKML(polygons);
                 }
             }
         };
@@ -298,10 +305,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         setAreaAplicada(totalUnionArea.toFixed(3));
         setAreaSobreAplicada(totalIntersectedArea.toFixed(3));
 
+
         if (onAreasCalculated) {
             onAreasCalculated({
                 areaSobreAplicada: totalIntersectedArea.toFixed(3),
-                areaAplicada: (totalUnionArea.toFixed(3) - totalIntersectedArea.toFixed(3)).toFixed(3)
+                areaAplicada: (totalUnionArea.toFixed(3) - totalIntersectedArea.toFixed(3)).toFixed(3),
+                porcentajeDeVariacion: (((totalIntersectedArea.toFixed(3) / (totalUnionArea.toFixed(3) - totalIntersectedArea.toFixed(3)).toFixed(3))) * 100).toFixed(3)
             });
         }
 
@@ -327,12 +336,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     }, [poligonos, poligonosPropiedades, onPromediosCalculated]);
 
-    useEffect(() => {
-        if (lineas.length > 0) {
-            const buffered = lineas.map(line => addBufferToLine(line, 5));
-            setBufferedLines(buffered);
-        }
-    }, [lineas]);
 
 
     useEffect(() => {
@@ -482,6 +485,14 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     ))}
                     {showIntersections && areasSuperpuestas.map((area, index) => (
                         <Polygon key={`intersection-${index}-${intersectionsKey}`} positions={area} color="red" weight={3} />
+                    ))}
+
+                    {poligonosKML.map((polygon, index) => (
+                        polygon.rings && polygon.rings.length > 0 && polygon.rings[0].length > 0 && (
+                            polygon.rings.map((ring, ringIndex) => (
+                                <Polygon key={`kml-${index}-${ringIndex}`} positions={ring[0].map(coord => [coord[0], coord[1]])} color="green" weight={2} />
+                            ))
+                        )
                     ))}
 
                     {
