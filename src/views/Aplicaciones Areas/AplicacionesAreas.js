@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './AplicacionesAreasStyle.css';
-import { MapContainer, TileLayer, Polygon, LayersControl, useMap, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, LayersControl, useMap, Polyline, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '../../utils/config';
-import { points as turfPoints, polygon as turfPolygon, area as turfArea, convex as turfConvex, union as turfUnion, difference as turfDifference, intersect as turfIntersect, buffer as turfBuffer } from '@turf/turf';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip } from '@mui/material';
-import { FaMap } from "react-icons/fa";
+import { polygon as turfPolygon, area as turfArea, union as turfUnion, difference as turfDifference, intersect as turfIntersect, buffer as turfBuffer, lineSplit as turfLineSplit, lineString as turfLineString,  lineIntersect as turfLineIntersect, length as turfLength  } from '@turf/turf';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip, IconButton } from '@mui/material';
+import { FaMap, FaCut, FaDrawPolygon, FaTrash } from 'react-icons/fa';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
 
 const { BaseLayer } = LayersControl;
@@ -35,6 +35,13 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const mapRef = useRef();
     const [bufferedIntersections, setBufferedIntersections] = useState([]);
     const [poligonosKML, setPoligonosKML] = useState([]);
+    const [isKml, setIsKml] = useState(false);
+    const [isDrawingLine, setIsDrawingLine] = useState(false);
+    const [activeTool, setActiveTool] = useState(null);
+    const [selectedLine, setSelectedLine] = useState(null);
+    const [lineInfo, setLineInfo] = useState(null);
+    const [popupInfo, setPopupInfo] = useState(null);
+
 
     useEffect(() => {
         const worker = new Worker('dataWorker.js');
@@ -54,9 +61,18 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     console.log("ESTOS SON LOS POLIGONOS: ", polygons);
 
                     const formattedLines = lines.map(line => line.paths);
-                    setLineas(formattedLines);
 
+                    const linesWithEvents = formattedLines.map(line => {
+                        const polyline = L.polyline(line, { color: 'red' });
+                        polyline.on('mouseover', handleLineHover);
+                        polyline.on('mouseout', handleLineMouseOut);
+                        polyline.on('click', () => handleLineClick(line));
+                        return polyline;
+                    });
 
+                    setLineas(linesWithEvents);
+
+                    setIsKml(true);
                     setPoligonosKML(polygons);
                 }
             }
@@ -112,6 +128,51 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         ALTURA: { low: 0, medium: 0, high: 0 },
         DOSISREAL: { low: 0, medium: 0, high: 0 }
     });
+
+
+
+    /*===============Información de la linea================*/
+
+
+    const handleLineHover = (e) => {
+        console.log("ENTRE AL HOVER **************");
+        e.target.setStyle({
+            color: 'cyan',
+            weight: 5,
+        });
+    };
+
+    const handleLineMouseOut = (e) => {
+        console.log("SALIÓ DEL MOUSE OUT ***************");
+        e.target.setStyle({
+            color: 'red',
+            weight: 2,
+        });
+    };
+
+    const handleLineClick = (line, e) => {
+        console.log("ENTRE AL CLICK ***************");
+        const lineString = turfLineString(line.map(coord => [coord[1], coord[0]]));
+        const lengthKm = turfLength(lineString, { units: 'kilometers' });
+        const lengthMiles = turfLength(lineString, { units: 'miles' });
+        const lengthMeters = lengthKm * 1000;
+
+        setPopupInfo({
+            position: e.latlng,
+            content: `
+        Longitud de la línea:
+        <br>- ${lengthKm.toFixed(3)} km
+        <br>- ${lengthMiles.toFixed(3)} mi
+        <br>- ${lengthMeters.toFixed(3)} m
+        `
+        });
+    };
+
+
+    /*===============Información de la linea================*/
+
+
+
 
     useEffect(() => {
         if (activeFilter) {
@@ -438,6 +499,199 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
 
+    useEffect(() => {
+        if (isDrawingLine && mapRef.current) {
+            const map = mapRef.current;
+            const drawnLine = [];
+
+            const onClickMap = (e) => {
+                drawnLine.push([e.latlng.lat, e.latlng.lng]);
+                if (drawnLine.length > 1) {
+                    setLineas([...lineas, drawnLine]);
+                    setIsDrawingLine(false);
+                    map.off('click', onClickMap);
+                }
+            };
+
+            map.on('click', onClickMap);
+
+            return () => {
+                map.off('click', onClickMap);
+            };
+        }
+    }, [isDrawingLine, lineas]);
+
+
+    const handleCutLine = () => {
+        setActiveTool('cut');
+
+        if (mapRef.current && lineas.length > 0) {
+            const map = mapRef.current;
+            let previewLine = [];
+            let previewLayer;
+
+            const onMove = (e) => {
+                if (previewLine.length > 0) {
+                    previewLine[1] = [e.latlng.lat, e.latlng.lng];
+                    previewLayer.setLatLngs(previewLine);
+                }
+            };
+
+            const onCutClick = (e) => {
+                if (previewLine.length === 0) {
+                    previewLine.push([e.latlng.lat, e.latlng.lng]);
+                    previewLayer = L.polyline(previewLine, { color: 'blue', dashArray: '5, 10' }).addTo(map);
+                } else {
+                    previewLine.push([e.latlng.lat, e.latlng.lng]);
+                    previewLayer.setLatLngs(previewLine);
+
+                    const cutLineString = turfLineString(previewLine.map(coord => [coord[1], coord[0]]));
+                    const newLineas = [];
+                    let cutSuccessful = false;
+
+                    lineas.forEach((linea) => {
+                        const lineString = turfLineString(linea.map(coord => [coord[1], coord[0]]));
+                        const intersections = turfLineIntersect(lineString, cutLineString);
+
+                        if (intersections.features.length > 0) {
+                            cutSuccessful = true;
+                            const splitResult = turfLineSplit(lineString, cutLineString);
+
+                            if (splitResult.features.length > 1) {
+                                splitResult.features.forEach(f => {
+                                    const newLine = f.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                                    const polyline = L.polyline(newLine, { color: 'red' }).addTo(map);
+
+                                    // Agregar eventos a cada nueva línea
+                                    polyline.on('mouseover', handleLineHover);
+                                    polyline.on('mouseout', handleLineMouseOut);
+                                    polyline.on('click', (event) => handleLineClick(newLine, event));
+
+                                    newLineas.push(newLine);
+                                });
+                            } else {
+                                console.error("El corte de línea no produjo segmentos válidos");
+                            }
+                        } else {
+                            newLineas.push(linea); // Si no se corta, mantenemos la línea original
+                        }
+                    });
+
+                    if (cutSuccessful) {
+                        setLineas(newLineas);
+                    } else {
+                        console.error("No se encontraron intersecciones en las líneas seleccionadas para cortar.");
+                    }
+
+                    map.off('mousemove', onMove);
+                    map.off('click', onCutClick);
+                    map.removeLayer(previewLayer);
+                }
+            };
+
+            map.on('mousemove', onMove);
+            map.on('click', onCutClick);
+        }
+    };
+
+
+
+
+
+
+
+
+    const handleDrawLine = () => {
+        setActiveTool('draw');
+
+        if (mapRef.current) {
+            const map = mapRef.current;
+            let newLine = [];
+            let polyline = L.polyline([], { color: 'red' }).addTo(map);
+
+            const onMove = (e) => {
+                if (newLine.length > 0) {
+                    const currentLine = [...newLine, [e.latlng.lat, e.latlng.lng]];
+                    polyline.setLatLngs(currentLine);
+                }
+            };
+
+            const onClick = (e) => {
+                newLine.push([e.latlng.lat, e.latlng.lng]);
+                polyline.addLatLng(e.latlng);
+            };
+
+            const onRightClick = (e) => {
+                if (newLine.length < 2) {
+                    console.error("La línea debe tener al menos dos puntos");
+                    map.off('click', onClick);
+                    map.off('mousemove', onMove);
+                    map.off('contextmenu', onRightClick);
+                    map.removeLayer(polyline);
+                    return;
+                }
+
+                polyline.on('mouseover', handleLineHover);
+                polyline.on('mouseout', handleLineMouseOut);
+                polyline.on('click', (event) => handleLineClick(newLine, event));
+
+                setLineas([...lineas, newLine]);
+
+                map.off('click', onClick);
+                map.off('mousemove', onMove);
+                map.off('contextmenu', onRightClick);
+                map.removeLayer(polyline);
+            };
+
+            map.on('click', onClick);
+            map.on('mousemove', onMove);
+            map.once('contextmenu', onRightClick);
+        }
+    };
+
+
+
+
+
+
+    const handleDeleteLine = () => {
+        setActiveTool('delete');
+
+        if (mapRef.current) {
+            const map = mapRef.current;
+
+            const onLineClick = (e) => {
+                const clickedLine = e.target;
+
+                const lineLatLngs = clickedLine.getLatLngs().map(latlng => [latlng.lat, latlng.lng]);
+
+                setLineas(prevLineas => {
+                    const updatedLineas = prevLineas.filter(linea => JSON.stringify(linea) !== JSON.stringify(lineLatLngs));
+                    return updatedLineas;
+                });
+
+                map.removeLayer(clickedLine);
+                map.off('click', onLineClick);
+            };
+
+            // Limpiar eventos previos en las líneas
+            map.eachLayer(layer => {
+                if (layer instanceof L.Polyline) {
+                    layer.off('click', onLineClick);
+                }
+            });
+
+            // Agregar evento de clic a cada línea
+            lineas.forEach(line => {
+                const polyline = L.polyline(line, { color: 'red' }).addTo(map);
+                polyline.on('click', onLineClick);
+            });
+        }
+    };
+
+
+
+
     return (
         <>
             <div className="floating-filter-button">
@@ -448,7 +702,37 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 </Tooltip>
             </div>
 
+
             <MapContainer key={isMapaCreated} center={mapCenter} zoom={3} style={{ height: '100vh', width: '100%' }} whenReady={setMap} ref={mapRef}>
+                {isKml && (
+                    <div className="floating-buttons">
+                        <Tooltip title="Cortar línea">
+                            <IconButton
+                                onClick={handleCutLine}
+                                className={`icon-button ${activeTool === 'cut' ? 'active' : 'default'}`}
+                            >
+                                <FaCut />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Dibujar línea">
+                            <IconButton
+                                onClick={handleDrawLine}
+                                className={`icon-button ${activeTool === 'draw' ? 'active' : 'default'}`}
+                            >
+                                <FaDrawPolygon />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Borrar líneas">
+                            <IconButton
+                                onClick={handleDeleteLine}
+                                className={`icon-button ${activeTool === 'delete' ? 'active' : 'default'}`}
+                            >
+                                <FaTrash />
+                            </IconButton>
+                        </Tooltip>
+                    </div>
+                )}
+                
                 <LayersControl position="topright">
                     <BaseLayer checked name="Satellite View">
                         <TileLayer
@@ -497,8 +781,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
                     {
                         nonIntersectedAreas.map((nonIntersected, index) => {
-                            // Asumimos que cada área no intersectada ya está en formato de coordenadas de Leaflet
-                            const positions = nonIntersected.map(coords => [coords[1], coords[0]]); // Invierte las coordenadas para Leaflet
+                            const positions = nonIntersected.map(coords => [coords[1], coords[0]]);
                             return (
                                 <Polygon
                                     key={`nonIntersectedArea-${index}`}
@@ -509,6 +792,15 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             );
                         })
                     }
+
+                    {
+                        popupInfo && (
+                            <Popup position={popupInfo.position} onClose={() => setPopupInfo(null)}>
+                                <div dangerouslySetInnerHTML={{ __html: popupInfo.content }} />
+                            </Popup>
+                        )
+                    }
+
 
                 </LayersControl>
             </MapContainer>

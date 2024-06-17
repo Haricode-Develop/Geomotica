@@ -989,7 +989,7 @@ function Dashboard() {
     const handleAreasCalculated = (areas) => {
         setAreaSobreAplicada(areas.areaSobreAplicada);
         setAreaAplicada(areas.areaAplicada);
-        setPorcentajeVariacion(areas.porcentajeDeVariacion);
+        setPorcentajeVariacion(areas.porcentajeDeVariacion + '%');
         setAreaNoAplicada(areas.nonAppliedArea);
     };
 
