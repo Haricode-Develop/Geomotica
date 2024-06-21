@@ -1031,14 +1031,42 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             />
                         );
                     })}
-                    {poligonos.map((polygon, index) => (
-                        <Polygon
-                            key={`${activeFilter}-${index}-${filterValues[activeFilter]?.low}-${filterValues[activeFilter]?.medium}-${filterValues[activeFilter]?.high}`} // Cambia la clave para forzar la re-renderización
-                            positions={polygon}
-                            color={getPolygonColor(poligonosPropiedades[index])}
-                            weight={3}
-                        />
-                    ))}
+
+                    {poligonos.map((polygon, index) => {
+                        // Verificación de la estructura del polígono
+                        if (!Array.isArray(polygon) || polygon.length === 0) {
+                            console.error(`Polígono inválido en el índice ${index}:`, polygon);
+                            return null; // Saltar polígonos inválidos
+                        }
+
+                        // Verificación de las propiedades del polígono
+                        const propiedades = poligonosPropiedades[index];
+                        if (!propiedades) {
+                            console.error(`Propiedades faltantes para el polígono en el índice ${index}`);
+                            return null; // Saltar si faltan propiedades
+                        }
+                        
+
+                        // Configuración de los datos para el polígono
+                        const positions = polygon.map(coord => {
+                            if (Array.isArray(coord) && coord.length === 2) {
+                                return { lat: coord[1], lng: coord[0] }; // Asegura que los valores estén en el orden correcto
+                            }
+                            console.error(`Coordenada inválida en el polígono ${index}:`, coord);
+                            return null;
+                        }).filter(coord => coord !== null); // Filtra coordenadas inválidas
+
+                        return (
+                            <Polygon
+                                key={`${activeFilter}-${index}-${filterValues[activeFilter]?.low}-${filterValues[activeFilter]?.medium}-${filterValues[activeFilter]?.high}`} // Cambia la clave para forzar la re-renderización
+                                positions={positions}
+                                color={getPolygonColor(propiedades)}
+                                weight={3}
+                            />
+                        );
+                    })}
+
+
 
                     {bufferedLines.map((bufferedLine, index) => (
                         <Polygon key={`buffered-${index}`} positions={bufferedLine.geometry.coordinates[0].map(coord => [coord[1], coord[0]])} color="purple" weight={3} />
