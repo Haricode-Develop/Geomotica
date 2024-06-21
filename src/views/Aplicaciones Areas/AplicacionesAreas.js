@@ -4,14 +4,29 @@ import { MapContainer, TileLayer, Polygon, LayersControl, useMap, Polyline, Popu
 import L from 'leaflet';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '../../utils/config';
-import { polygon as turfPolygon, area as turfArea, union as turfUnion, difference as turfDifference, intersect as turfIntersect, buffer as turfBuffer, lineSplit as turfLineSplit, lineString as turfLineString,  lineIntersect as turfLineIntersect, length as turfLength  } from '@turf/turf';
+import {
+    polygon as turfPolygon,
+    area as turfArea,
+    union as turfUnion,
+    difference as turfDifference,
+    intersect as turfIntersect,
+    buffer as turfBuffer,
+    lineSplit as turfLineSplit,
+    lineString as turfLineString,
+    lineIntersect as turfLineIntersect,
+    length as turfLength,
+    nearestPointOnLine as turfNearestPointOnLine,
+    distance as turfDistance,
+    point as turfPoint
+} from '@turf/turf';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip, IconButton } from '@mui/material';
-import { FaMap, FaCut, FaDrawPolygon, FaTrash } from 'react-icons/fa';
+import { FaMap, FaCut, FaDrawPolygon, FaTrash, FaBuffer } from 'react-icons/fa';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
+import { v4 as uuidv4 } from 'uuid';
 
 const { BaseLayer } = LayersControl;
 
-const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPromediosCalculated }) => {
+const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPromediosCalculated, activarEdicionInteractiva  }) => {
     const [poligonos, setPoligonos] = useState([]);
     const [areasSuperpuestas, setAreasSuperpuestas] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
@@ -39,15 +54,21 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [isDrawingLine, setIsDrawingLine] = useState(false);
     const [activeTool, setActiveTool] = useState(null);
     const [selectedLine, setSelectedLine] = useState(null);
-    const [lineInfo, setLineInfo] = useState(null);
     const [popupInfo, setPopupInfo] = useState(null);
+    const [isPrimeraCarga, setIsPrimeraCarga] = useState(true);
+    const [isFiltrandoLineas, setIsFiltrandoLineas] = useState(true); // Nueva bandera
 
+    const DISTANCE_THRESHOLD = 0.01; // Puedes ajustar este valor según tus necesidades
+    const [bufferValue, setBufferValue] = useState(0);
+    const [isBufferActive, setIsBufferActive] = useState(false);
+
+    const workerRef = useRef(null); // useRef para mantener la referencia del worker
 
     useEffect(() => {
-        const worker = new Worker('dataWorker.js');
+        workerRef.current = new Worker('dataWorker.js');
         const socket = io(API_BASE_URL);
 
-        worker.onmessage = (e) => {
+        workerRef.current.onmessage = (e) => {
             if (e.data.action === 'geoJsonDataProcessed') {
                 if (!e.data.data.lines && e.data.data.polygons) {
                     const { polygons } = e.data.data;
@@ -56,59 +77,213 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     setPoligonos(formattedPolygons);
                 }
                 if (e.data.data.lines && e.data.data.polygons) {
+
                     const { lines, polygons } = e.data.data;
-                    console.log("ESTAS SON LAS LINEAS: ", lines);
-                    console.log("ESTOS SON LOS POLIGONOS: ", polygons);
-
                     const formattedLines = lines.map(line => line.paths);
+                    let unifiedLines;
 
-                    const linesWithEvents = formattedLines.map(line => {
-                        const polyline = L.polyline(line, { color: 'red' });
-                        polyline.on('mouseover', handleLineHover);
-                        polyline.on('mouseout', handleLineMouseOut);
-                        polyline.on('click', () => handleLineClick(line));
-                        return polyline;
+                    if (e.data.activarEdicionInteractiva) {
+                        unifiedLines = formattedLines;
+                    } else {
+                        unifiedLines = formattedLines;
+                    }
+
+                    const linesWithEvents = unifiedLines.flatMap(line => {
+                        const lineId = uuidv4();
+                        return line.map(segment => {
+                            const latLngArray = segment.map(coord => ({ lat: coord[0], lng: coord[1] }));
+                            const polyline = L.polyline(latLngArray, { color: 'red' });
+                            polyline.on('mouseover', (e) => handleLineHover(e, lineId));
+                            polyline.on('mouseout', (e) => handleLineMouseOut(e, lineId));
+                            polyline.on('click', (e) => handleLineClick(latLngArray, e));
+                            return { polyline, id: lineId };
+                        });
                     });
 
                     setLineas(linesWithEvents);
-
                     setIsKml(true);
                     setPoligonosKML(polygons);
+                    setIsFiltrandoLineas(true);
                 }
             }
         };
 
         socket.on('updateGeoJSONLayer', (geojsonData) => {
-            worker.postMessage({ action: 'processGeoJsonData', geojsonData, type: tipoAnalisis });
+            workerRef.current.postMessage({ action: 'processGeoJsonData', geojsonData, type: tipoAnalisis, activarEdicionInteractiva });
         });
 
         return () => {
-            worker.terminate();
+            workerRef.current.terminate();
             socket.off('updateGeoJSONLayer');
             socket.disconnect();
         };
     }, [tipoAnalisis]);
 
+    // Enviar valor de activarEdicionInteractiva al worker cada vez que cambie
+    useEffect(() => {
+        if (workerRef.current) {
+            workerRef.current.postMessage({ action: 'setActivarEdicionInteractiva', activarEdicionInteractiva });
+        }
+    }, [activarEdicionInteractiva]);
+
+
+    useEffect(() => {
+        if (isFiltrandoLineas && lineas.length > 0) {
+            const filteredLines = filterConsistentPatterns(lineas);
+            setLineas(filteredLines);
+            setIsFiltrandoLineas(false);
+        }
+    }, [isFiltrandoLineas, lineas]);
+
+    const calculateLineAngle = (coord1, coord2) => {
+        const dy = coord2.lat - coord1.lat;
+        const dx = coord2.lng - coord1.lng;
+        const radians = Math.atan2(dy, dx);
+        const degrees = radians * (180 / Math.PI);
+        return degrees < 0 ? degrees + 360 : degrees;
+    };
+
+    const clusterLinesByOrientation = (lines, angleThreshold = 10) => {
+        const clusters = [];
+
+        lines.forEach(line => {
+            const coords = line.polyline._latlngs;
+            if (coords.length < 2) return;
+
+            const angle = calculateLineAngle(coords[0], coords[coords.length - 1]);
+            let addedToCluster = false;
+
+            for (const cluster of clusters) {
+                const clusterAngle = cluster.averageAngle;
+                if (Math.abs(clusterAngle - angle) < angleThreshold) {
+                    cluster.lines.push(line);
+                    cluster.averageAngle = (cluster.averageAngle * cluster.lines.length + angle) / (cluster.lines.length + 1);
+                    addedToCluster = true;
+                    break;
+                }
+            }
+
+            if (!addedToCluster) {
+                clusters.push({
+                    lines: [line],
+                    averageAngle: angle
+                });
+            }
+        });
+
+        return clusters;
+    };
+
+    const filterLargestClusters = (clusters, numClusters = 2) => {
+        clusters.sort((a, b) => b.lines.length - a.lines.length);
+        return clusters.slice(0, numClusters).flatMap(cluster => cluster.lines);
+    };
+
+    const filterConsistentPatterns = (lines) => {
+        const clusters = clusterLinesByOrientation(lines);
+        return filterLargestClusters(clusters);
+    };
+
+
+    const addBufferToLine = (line, width) => {
+        const coordinates = line.map(coord => {
+            // Convertir a formato [lng, lat] asegurando la precisión de los números
+            if (coord.lat !== undefined && coord.lng !== undefined) {
+                return [coord.lng, coord.lat];
+            }
+            throw new Error("Invalid coordinates format in line data");
+        });
+
+        const lineString = {
+            type: "Feature",
+            geometry: {
+                type: "LineString",
+                coordinates: coordinates
+            }
+        };
+
+        return turfBuffer(lineString, width, { units: 'meters' });
+    };
+
+
+    const handleToggleBuffer = () => {
+        try {
+            if (isBufferActive) {
+                // Quitar el buffer
+                setBufferedLines([]);
+            } else {
+                // Aplicar el buffer
+                const newBufferedLines = lineas.map(linea => {
+                    if (linea.polyline && linea.polyline._latlngs) {
+                        return addBufferToLine(linea.polyline._latlngs, parseFloat(bufferValue));
+                    }
+                    throw new Error("Invalid line data: missing polyline or latlngs");
+                });
+                setBufferedLines(newBufferedLines);
+            }
+            setIsBufferActive(!isBufferActive);
+        } catch (error) {
+            console.error("Error applying buffer:", error);
+        }
+    };
+
+
+
+
+
+
     // Este useEffect se ejecutará cada vez que los polígonos cambien
     useEffect(() => {
-        if (mapRef.current != null && poligonos.length > 0) {
-            const map = mapRef.current;
-            const bounds = L.latLngBounds(poligonos.flat());
-            map.fitBounds(bounds);
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 100);
+        const adjustMapBounds = (entities, entityType) => {
+            if (mapRef.current != null && entities.length > 0) {
+                const map = mapRef.current;
+
+                // Aplanar los datos de `_latlngs` para calcular bounds
+                const validCoordinates = entities.flatMap(entity => {
+                    if (entity.polyline && Array.isArray(entity.polyline._latlngs)) {
+                        // Manejar LineString
+                        return entity.polyline._latlngs.flatMap(coord => {
+                            // Verifica si el objeto tiene las propiedades lat y lng
+                            if (coord.lat !== undefined && coord.lng !== undefined) {
+                                return [coord];
+                            }
+                            // Si coord es un array anidado, desanidar
+                            return Array.isArray(coord) ? coord : [];
+                        });
+                    }
+                    return [];
+                });
+
+
+                if (validCoordinates.length > 0) {
+                    const bounds = L.latLngBounds(validCoordinates);
+                    map.fitBounds(bounds);
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 100);
+                } else {
+                    console.log(`No se encontraron ${entityType.toLowerCase()} válidos.`);
+                }
+            }
+        };
+
+        if (lineas.length > 0 && !isFiltrandoLineas) {
+            lineas.forEach(linea => {
+                if (linea.polyline) {
+                    linea.polyline.off();
+                    linea.polyline.on('mouseover', (e) => handleLineHover(e, linea.id));
+                    linea.polyline.on('mouseout', (e) => handleLineMouseOut(e, linea.id));
+                    linea.polyline.on('click', (e) => handleLineClick(linea.polyline._latlngs, e));
+                }
+            });
         }
 
-        if (mapRef.current != null && lineas.length > 0) {
-            const map = mapRef.current;
-            const bounds = L.latLngBounds(lineas.flat());
-            map.fitBounds(bounds);
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 100);
+        if(isPrimeraCarga && !isFiltrandoLineas){
+
+            adjustMapBounds(poligonos, "POLIGONOS");
+            adjustMapBounds(lineas, "LINEAS");
         }
-    }, [poligonos, lineas]);
+    }, [poligonos, lineas, isFiltrandoLineas]);
 
     useEffect(() => {
         if (map && poligonos.length > 0) {
@@ -134,25 +309,25 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     /*===============Información de la linea================*/
 
 
-    const handleLineHover = (e) => {
-        console.log("ENTRE AL HOVER **************");
+    const handleLineHover = (e, lineId) => {
         e.target.setStyle({
             color: 'cyan',
             weight: 5,
         });
+        setSelectedLine(lineId);
     };
 
-    const handleLineMouseOut = (e) => {
-        console.log("SALIÓ DEL MOUSE OUT ***************");
+    const handleLineMouseOut = (e, lineId) => {
         e.target.setStyle({
             color: 'red',
             weight: 2,
         });
+        setSelectedLine(null);
     };
 
     const handleLineClick = (line, e) => {
-        console.log("ENTRE AL CLICK ***************");
-        const lineString = turfLineString(line.map(coord => [coord[1], coord[0]]));
+        const coordinates = line.map(coord => [coord.lng, coord.lat]);
+        const lineString = turfLineString(coordinates);
         const lengthKm = turfLength(lineString, { units: 'kilometers' });
         const lengthMiles = turfLength(lineString, { units: 'miles' });
         const lengthMeters = lengthKm * 1000;
@@ -160,17 +335,92 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         setPopupInfo({
             position: e.latlng,
             content: `
-        Longitud de la línea:
-        <br>- ${lengthKm.toFixed(3)} km
-        <br>- ${lengthMiles.toFixed(3)} mi
-        <br>- ${lengthMeters.toFixed(3)} m
-        `
+                Longitud de la línea:
+                <br>- ${lengthKm.toFixed(3)} km
+                <br>- ${lengthMiles.toFixed(3)} mi
+                <br>- ${lengthMeters.toFixed(3)} m
+            `
         });
     };
 
 
     /*===============Información de la linea================*/
 
+    function unifyLines(lines) {
+        if (lines.length === 0) return [];
+
+        console.log("ESTAS SON LAS LINEAS COMPLETAS: ", lines);
+
+        // Aplanar y validar las líneas de entrada
+        const validLines = lines.map(line =>
+            line.flat().filter(coord => isValidCoordinate(coord))
+        ).filter(line => line.length >= 2);
+
+        console.log("ESTAS SON LAS LINEAS VALIDAS: ", validLines);
+
+        if (validLines.length === 0) return [];
+
+        // Crear un arreglo para las nuevas líneas unificadas
+        let unifiedLines = [];
+
+        // Marcar líneas que ya han sido combinadas
+        let visited = new Array(validLines.length).fill(false);
+
+        for (let i = 0; i < validLines.length; i++) {
+            if (visited[i]) continue;
+
+            // Crear una nueva línea unificada inicializando con la línea actual
+            let unifiedLine = [...validLines[i]];
+            visited[i] = true;
+
+            for (let j = i + 1; j < validLines.length; j++) {
+                if (visited[j]) continue;
+
+
+                const lineA = turfLineString(validLines[i]);
+                const lineB = turfLineString(validLines[j]);
+
+                // Verificar si las líneas están cerca o son paralelas
+                if (areLinesClose(lineA, lineB)) {
+                    // Combinar las líneas
+                    unifiedLine = combineLines(unifiedLine, validLines[j]);
+                    visited[j] = true;
+                }
+            }
+
+            unifiedLines.push(unifiedLine);
+        }
+
+        return unifiedLines;
+    }
+
+    function areLinesClose(lineA, lineB) {
+        const options = { units: 'kilometers' };
+        for (const point of lineA.geometry.coordinates) {
+            const nearest = turfNearestPointOnLine(lineB, turfPoint(point));
+            const distance = turfDistance(turfPoint(point), nearest, options);
+            if (distance < DISTANCE_THRESHOLD) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function combineLines(line1, line2) {
+        // Combinar las coordenadas de ambas líneas y remover duplicados
+        const combined = [...line1, ...line2].filter(
+            (value, index, self) => index === self.findIndex((t) => (
+                t[0] === value[0] && t[1] === value[1]
+            ))
+        );
+        return combined;
+    }
+
+    function isValidCoordinate(coord) {
+        return Array.isArray(coord) && coord.length === 2 &&
+            typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
+            !isNaN(coord[0]) && !isNaN(coord[1]);
+    }
 
 
 
@@ -196,16 +446,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             });
     }, [idAnalisis]);
 
-    const addBufferToLine = (line, width) => {
-        const lineString = {
-            type: "Feature",
-            geometry: {
-                type: "LineString",
-                coordinates: line.map(coord => [coord[1], coord[0]])
-            }
-        };
-        return turfBuffer(lineString, width, { units: 'meters' });
-    };
 
     const isClosedPolygon = (line) => {
         if (line.length < 4) {
@@ -219,22 +459,16 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         return result;
     };
 
-    const processLine = (line) => {
-        const result = isClosedPolygon(line);
-        if (result) {
-            console.log("Resultado verdadero: La línea es un polígono cerrado.", line);
-        } else {
-            console.log("Resultado falso: La línea no es un polígono cerrado.", line);
-        }
-        return result;
-    };
 
     const formatPolygon = (polygon) => {
-        if (polygon[0] !== polygon[polygon.length - 1]) {
-            polygon.push(polygon[0]);
+        if (polygon.length > 0) {
+            if (polygon[0][0] !== polygon[polygon.length - 1][0] || polygon[0][1] !== polygon[polygon.length - 1][1]) {
+                polygon.push([polygon[0][0], polygon[0][1]]);
+            }
         }
-        return polygon;
+        return polygon.map(coordPair => [coordPair[1], coordPair[0]]); // Asegúrate de que devuelva un array de pares (lat, lng)
     };
+
 
     const findIntersections = (polygons) => {
         let intersections = [];
@@ -507,6 +741,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             const onClickMap = (e) => {
                 drawnLine.push([e.latlng.lat, e.latlng.lng]);
                 if (drawnLine.length > 1) {
+                    setIsPrimeraCarga(false);
                     setLineas([...lineas, drawnLine]);
                     setIsDrawingLine(false);
                     map.off('click', onClickMap);
@@ -524,6 +759,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
     const handleCutLine = () => {
         setActiveTool('cut');
+        setIsPrimeraCarga(false);
 
         if (mapRef.current && lineas.length > 0) {
             const map = mapRef.current;
@@ -531,7 +767,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             let previewLayer;
 
             const onMove = (e) => {
-                if (previewLine.length > 0) {
+                if (previewLine.length === 1) {
                     previewLine[1] = [e.latlng.lat, e.latlng.lng];
                     previewLayer.setLatLngs(previewLine);
                 }
@@ -545,42 +781,49 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     previewLine.push([e.latlng.lat, e.latlng.lng]);
                     previewLayer.setLatLngs(previewLine);
 
+                    // Validar que previewLine tenga al menos dos puntos antes de crear un LineString
+                    if (previewLine.length < 2) {
+                        console.warn('Debe haber al menos dos puntos para crear un LineString');
+                        map.removeLayer(previewLayer);
+                        return;
+                    }
+
+                    // Crear el cutLineString si previewLine es válido
                     const cutLineString = turfLineString(previewLine.map(coord => [coord[1], coord[0]]));
                     const newLineas = [];
                     let cutSuccessful = false;
 
-                    lineas.forEach((linea) => {
-                        const lineString = turfLineString(linea.map(coord => [coord[1], coord[0]]));
+                    lineas.forEach(linea => {
+                        const latlngs = linea.polyline?._latlngs;
+                        if (!latlngs || latlngs.length < 2) {
+                            newLineas.push(linea);
+                            return;
+                        }
+
+                        const lineString = turfLineString(latlngs.map(coord => [coord.lng, coord.lat]));
                         const intersections = turfLineIntersect(lineString, cutLineString);
 
                         if (intersections.features.length > 0) {
                             cutSuccessful = true;
                             const splitResult = turfLineSplit(lineString, cutLineString);
 
-                            if (splitResult.features.length > 1) {
-                                splitResult.features.forEach(f => {
-                                    const newLine = f.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                                    const polyline = L.polyline(newLine, { color: 'red' }).addTo(map);
+                            splitResult.features.forEach(f => {
+                                const newLine = f.geometry.coordinates.map(coord => new L.LatLng(coord[1], coord[0])); // Convertir a L.LatLng
+                                const polyline = L.polyline(newLine, { color: 'red' }).addTo(map);
 
-                                    // Agregar eventos a cada nueva línea
-                                    polyline.on('mouseover', handleLineHover);
-                                    polyline.on('mouseout', handleLineMouseOut);
-                                    polyline.on('click', (event) => handleLineClick(newLine, event));
+                                polyline.on('mouseover', handleLineHover);
+                                polyline.on('mouseout', handleLineMouseOut);
+                                polyline.on('click', (event) => handleLineClick(newLine, event));
 
-                                    newLineas.push(newLine);
-                                });
-                            } else {
-                                console.error("El corte de línea no produjo segmentos válidos");
-                            }
+                                newLineas.push({ polyline, id: uuidv4() });
+                            });
                         } else {
-                            newLineas.push(linea); // Si no se corta, mantenemos la línea original
+                            newLineas.push(linea);
                         }
                     });
 
                     if (cutSuccessful) {
                         setLineas(newLineas);
-                    } else {
-                        console.error("No se encontraron intersecciones en las líneas seleccionadas para cortar.");
                     }
 
                     map.off('mousemove', onMove);
@@ -595,14 +838,9 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     };
 
 
-
-
-
-
-
-
     const handleDrawLine = () => {
         setActiveTool('draw');
+        setIsPrimeraCarga(false);
 
         if (mapRef.current) {
             const map = mapRef.current;
@@ -611,17 +849,17 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
             const onMove = (e) => {
                 if (newLine.length > 0) {
-                    const currentLine = [...newLine, [e.latlng.lat, e.latlng.lng]];
+                    const currentLine = [...newLine, { lat: e.latlng.lat, lng: e.latlng.lng }];
                     polyline.setLatLngs(currentLine);
                 }
             };
 
             const onClick = (e) => {
-                newLine.push([e.latlng.lat, e.latlng.lng]);
+                newLine.push({ lat: e.latlng.lat, lng: e.latlng.lng });
                 polyline.addLatLng(e.latlng);
             };
 
-            const onRightClick = (e) => {
+            const onRightClick = () => {
                 if (newLine.length < 2) {
                     console.error("La línea debe tener al menos dos puntos");
                     map.off('click', onClick);
@@ -635,12 +873,13 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 polyline.on('mouseout', handleLineMouseOut);
                 polyline.on('click', (event) => handleLineClick(newLine, event));
 
-                setLineas([...lineas, newLine]);
+                const lineId = uuidv4(); // Generar identificador único
+
+                setLineas([...lineas, { _latlngs: newLine, id: lineId }]); // Añadir identificador único a la línea
 
                 map.off('click', onClick);
                 map.off('mousemove', onMove);
                 map.off('contextmenu', onRightClick);
-                map.removeLayer(polyline);
             };
 
             map.on('click', onClick);
@@ -651,26 +890,35 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
 
 
-
-
-
     const handleDeleteLine = () => {
         setActiveTool('delete');
+        setIsPrimeraCarga(false);
 
         if (mapRef.current) {
             const map = mapRef.current;
 
             const onLineClick = (e) => {
                 const clickedLine = e.target;
+                const clickedLatLngs = clickedLine.getLatLngs();
 
-                const lineLatLngs = clickedLine.getLatLngs().map(latlng => [latlng.lat, latlng.lng]);
-
-                setLineas(prevLineas => {
-                    const updatedLineas = prevLineas.filter(linea => JSON.stringify(linea) !== JSON.stringify(lineLatLngs));
-                    return updatedLineas;
+                // Encuentra la línea en el estado
+                const lineInState = lineas.find(linea => {
+                    if (!linea.polyline || !linea.polyline._latlngs) {
+                        return false;
+                    }
+                    const stateLatLngs = linea.polyline._latlngs;
+                    return clickedLatLngs.every((latLng, index) => {
+                        const coord = stateLatLngs[index];
+                        return coord && coord.lat === latLng.lat && coord.lng === latLng.lng;
+                    });
                 });
 
-                map.removeLayer(clickedLine);
+                if (lineInState) {
+                    // Elimina la línea del estado y del mapa
+                    setLineas(prevLineas => prevLineas.filter(linea => linea.id !== lineInState.id));
+                    map.removeLayer(clickedLine);
+                }
+
                 map.off('click', onLineClick);
             };
 
@@ -681,14 +929,15 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 }
             });
 
-            // Agregar evento de clic a cada línea
-            lineas.forEach(line => {
-                const polyline = L.polyline(line, { color: 'red' }).addTo(map);
-                polyline.on('click', onLineClick);
+            // Agregar evento de clic a cada línea en el mapa
+            lineas.forEach(linea => {
+                if (linea.polyline && linea.polyline._latlngs) {
+                    const polyline = L.polyline(linea.polyline._latlngs, { color: 'red' }).addTo(map);
+                    polyline.on('click', onLineClick);
+                }
             });
         }
     };
-
 
 
 
@@ -730,9 +979,30 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                                 <FaTrash />
                             </IconButton>
                         </Tooltip>
+                        <Tooltip title="Buffer de línea">
+                            <IconButton
+                                onClick={handleToggleBuffer}
+                                className={`icon-button ${isBufferActive ? 'active' : 'default'}`}
+                            >
+                                <FaBuffer />
+                            </IconButton>
+                        </Tooltip>
                     </div>
                 )}
-                
+
+                {isBufferActive && (
+                    <div className="buffer-input">
+                        <TextField
+                            label="Buffer en metros"
+                            type="number"
+                            value={bufferValue}
+                            onChange={(e) => setBufferValue(e.target.value)}
+                            variant="outlined"
+                            size="small"
+                            margin="normal"
+                        />
+                    </div>
+                )}
                 <LayersControl position="topright">
                     <BaseLayer checked name="Satellite View">
                         <TileLayer
@@ -748,7 +1018,19 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             maxZoom={19}
                         />
                     </BaseLayer>
-
+                    {lineas.map((linea, index) => {
+                        if (!linea.polyline || !Array.isArray(linea.polyline._latlngs)) {
+                            console.warn(`Línea en el índice ${index} no es válida.`);
+                            return null;
+                        }
+                        return (
+                            <Polyline
+                                key={`line-${index}`}
+                                positions={linea.polyline._latlngs}
+                                color="red"
+                            />
+                        );
+                    })}
                     {poligonos.map((polygon, index) => (
                         <Polygon
                             key={`${activeFilter}-${index}-${filterValues[activeFilter]?.low}-${filterValues[activeFilter]?.medium}-${filterValues[activeFilter]?.high}`} // Cambia la clave para forzar la re-renderización
@@ -764,20 +1046,14 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     {bufferedIntersections.map((intersection, index) => (
                         <Polygon key={`buffered-intersection-${index}`} positions={intersection.map(coord => [coord[1], coord[0]])} color="blue" weight={3} />
                     ))}
-                    {lineas.map((linea, index) => (
-                        <Polyline key={`line-${index}`} positions={linea} color="red" />
-                    ))}
+
+
+
                     {showIntersections && areasSuperpuestas.map((area, index) => (
                         <Polygon key={`intersection-${index}-${intersectionsKey}`} positions={area} color="red" weight={3} />
                     ))}
 
-                    {poligonosKML.map((polygon, index) => (
-                        polygon.rings && polygon.rings.length > 0 && polygon.rings[0].length > 0 && (
-                            polygon.rings.map((ring, ringIndex) => (
-                                <Polygon key={`kml-${index}-${ringIndex}`} positions={ring[0].map(coord => [coord[0], coord[1]])} color="green" weight={2} />
-                            ))
-                        )
-                    ))}
+
 
                     {
                         nonIntersectedAreas.map((nonIntersected, index) => {

@@ -16,9 +16,12 @@ import Tutorial from "../../components/Tutorial/Tutorial";
 import jsPDF from 'jspdf';
 import { Button, Snackbar, IconButton, Tooltip, Input, FormControl, InputLabel, MenuItem, Select, Link, Popover, Typography} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import AutoModeIcon from '@mui/icons-material/AutoMode';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import AplicacionesAreas from "../Aplicaciones Areas/AplicacionesAreas";
 import L from 'leaflet';
+import JSZip from 'jszip';
+
 import {
     //Cosecha mecánica
     obtenerRpmCm,
@@ -244,6 +247,8 @@ function Dashboard() {
 
     //===============================================================
     const [datosCosechaMecanica, setDatosCosechaMecanica] = useState({});
+    const [isKMLFile, setIsKMLFile] = useState(false);
+    const [activarEdicionInteractiva, setActivarEdicionInteractiva] = useState(false);
 
 
     // ============================ Use Effect para carga de indicadores
@@ -949,6 +954,7 @@ function Dashboard() {
                 formData.append('csv', selectedFile);
                 formData.append('polygon', selectedZipFile);
                 formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
+                formData.append('esKmlInteractivo', activarEdicionInteractiva ? 'true' : 'false');
 
                 const lines = content.split(/\r\n|\n/).length - 1;
                 let offset = 0;
@@ -974,12 +980,29 @@ function Dashboard() {
         setTutorialKey(prevKey => prevKey + 1);
     };
 
-    const manejarSubidaZip = (event) => {
+    const manejarSubidaZip = async (event) => {
         const file = event.target.files[0];
         setSelectedZipFile(file);
         if (file) {
             setUploadedZipFileName(file.name);
             setOpenSnackbar(true);
+
+            try {
+                const zip = new JSZip();
+                const zipContent = await zip.loadAsync(file);
+                let foundKML = false;
+
+                zipContent.forEach((relativePath, zipEntry) => {
+                    if (zipEntry.name.endsWith('.kml')) {
+                        foundKML = true;
+                    }
+                });
+
+                setIsKMLFile(foundKML);
+            } catch (error) {
+                console.error('Error al procesar el archivo ZIP:', error);
+                setIsKMLFile(false);
+            }
         }
     };
     const handleAnalysisTypeChange = (event) => {
@@ -997,11 +1020,15 @@ function Dashboard() {
         setPromedioVelocidad(promedios.promedioVelocidad);
         setPromedioAltura(promedios.promedioAltura);
         setDosisReal(promedios.promedioDosisReal);
-    }
+    };
 
     const esValorValido = (valor) => {
         return valor !== '' && valor !== 0 && valor !== null && valor !== undefined;
-    }
+    };
+
+    const toggleEdicionInteractiva = () => {
+        setActivarEdicionInteractiva(prev => !prev);
+    };
 
 
     return (
@@ -1035,6 +1062,7 @@ function Dashboard() {
                                 tipoAnalisis={nombreAnalisis(idAnalisisBash)}
                                 onAreasCalculated={handleAreasCalculated}
                                 onPromediosCalculated={handlePromediosCalculados}
+                                activarEdicionInteractiva={activarEdicionInteractiva}
                             />
 
                             }
@@ -1436,6 +1464,7 @@ function Dashboard() {
                                     </Button>
                                 </Tooltip>
 
+
                                 <Snackbar
                                     open={openSnackbar}
                                     autoHideDuration={6000}
@@ -1466,6 +1495,18 @@ function Dashboard() {
                                 </Button>
                             </Link>
                             </Tooltip>
+
+                            {isKMLFile && (
+                                <Tooltip title={activarEdicionInteractiva ? "Desactivar Edición Interactiva" : "Activar Edición Interactiva"}>
+                                    <IconButton
+                                        color={activarEdicionInteractiva ? "primary" : "default"}
+                                        sx={{ margin: 1 }}
+                                        onClick={toggleEdicionInteractiva}
+                                    >
+                                        <AutoModeIcon />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
 
                             <FormControl variant="outlined" sx={{ m: 1, minWidth: 120 }}>
                                 <InputLabel id="analysis-type-selector-label">Tipo de Análisis</InputLabel>
