@@ -834,7 +834,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 </Tooltip>
             </div>
 
-            <MapContainer key={mapKey} center={mapCenter} zoom={zoom} style={{ height: '100vh', width: '100%' }}>
+            <MapContainer key={mapKey} center={mapCenter} zoom={zoom} style={{ height: '65vh', width: '100%' }}>
                 <MapEffect onNoPoints={() => setToastShown(true)} />
                 <LayersControl position="topright">
                     <BaseLayer checked name="Satellite View">

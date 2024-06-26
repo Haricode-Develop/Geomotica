@@ -1,90 +1,76 @@
-/* LayoutSideStyle.css */
+/* Sidebar general style */
 .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     width: 250px;
     height: 100vh;
-    background-color: #333;
-    color: white;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+    background-color: #fff;
+    color: #333;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: start;
     z-index: 1000;
-    transition: width 0.3s;
+    overflow-y: auto; /* Habilitar scroll vertical */
+    padding: 20px 0; /* Añadir espacio superior e inferior */
 }
-
-.profile-section {
+/* Logo section */
+.logo-section {
     width: 100%;
-    padding-top: 20px;
+    padding: 10px;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-}
-.profile-section, .menu-items {
-    transition: opacity 0.3s;
+    margin-bottom: 10px; /* Separar del menú */
 }
 
-.sidebar.closed .profile-section,
-.sidebar.closed .menu-items {
-    opacity: 0;
-    transition-delay: 0.3s;
+.logo-image {
+    width: 150px; /* Ajustar tamaño del logo */
+    height: auto;
 }
 
-/* Cuando el sidebar está abierto */
-.sidebar:not(.closed) .profile-section,
-.sidebar:not(.closed) .menu-items {
-    opacity: 1;
-    transition-delay: 0s;
-}
-.profile-image {
-    width: 100px;
-    height: 100px;
-    background-color: #777;
-    border-radius: 50%;
-    margin-bottom: 10px;
-}
-
-.profile-name {
-    font-size: 1.2em;
-    margin-bottom: 20px;
-}
-.profile-lastName {
-    font-size: 1.2em;
-    margin-bottom: 20px;
-}
+/* Menu items */
 .menu-items {
     width: 100%;
+    flex-grow: 1; /* Permitir que las opciones de menú ocupen el espacio restante */
 }
 
+/* Animación y estilos de los items del menú */
 .menu-item {
     width: 100%;
     padding: 15px 20px;
     font-size: 1.1em;
-    text-align: center;
+    display: flex;
+    align-items: center;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.3s;
+    transition: background-color 0.3s, transform 0.3s, border-left 0.3s;
+    color: #333; /* Color negro para las opciones no seleccionadas */
+    box-sizing: border-box;
 }
 
+.menu-icon {
+    margin-right: 10px;
+}
+
+.menu-icon svg {
+    font-size: 24px;
+}
+
+.menu-text {
+    flex-grow: 1;
+}
+
+.menu-item.active {
+    background-color: #e0f0ff;
+    color: #007bff;
+    border-left: 5px solid #007bff; /* Añadir línea en el borde izquierdo */
+    border-radius: 0 5px 5px 0; /* Bordes redondeados solo en la derecha */
+}
 .menu-item:hover {
-    background-color: #555;
-    transform: translateX(10px);
+    background-color: #f0f0f0;
 }
 
-
-.sidebar.closed {
-    width: 50px;
-}
-
-.menu-items.hide {
-    display: none;
-}
-
-
-.toggle-button {
-    position: absolute;
-    top: 10px;
-    right: -50px;
-    z-index: 1100;
+.menu-item.active:hover {
+    background-color: #d1e7ff; /* Color más oscuro cuando está seleccionado y en hover */
 }

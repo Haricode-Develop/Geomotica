@@ -44,5 +44,7 @@
     padding: 0;
     column-count: 1; /* Para forzar todo el contenido en una sola columna */
     page-break-inside: avoid; /* Para evitar cortes de página dentro de elementos */
+    background-color: #F5F6FA;
+
   }
 }

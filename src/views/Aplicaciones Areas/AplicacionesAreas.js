@@ -20,7 +20,7 @@ import {
     point as turfPoint
 } from '@turf/turf';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip, IconButton } from '@mui/material';
-import { FaMap, FaCut, FaDrawPolygon, FaTrash, FaBuffer } from 'react-icons/fa';
+import { FaMap, FaCut, FaDrawPolygon, FaTrash, FaBuffer, FaUndo } from 'react-icons/fa';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -57,8 +57,11 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [popupInfo, setPopupInfo] = useState(null);
     const [isPrimeraCarga, setIsPrimeraCarga] = useState(true);
     const [isFiltrandoLineas, setIsFiltrandoLineas] = useState(true); // Nueva bandera
+    const [actionHistory, setActionHistory] = useState([]);
 
-    const DISTANCE_THRESHOLD = 0.01; // Puedes ajustar este valor según tus necesidades
+    const DISTANCE_THRESHOLD = 0.005; // Puedes ajustar este valor según tus necesidades
+    const ANGLE_THRESHOLD = 1;
+
     const [bufferValue, setBufferValue] = useState(0);
     const [isBufferActive, setIsBufferActive] = useState(false);
 
@@ -75,6 +78,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     const formattedPolygons = polygons.map(poly => formatPolygon(poly.polygon[0]));
                     setPoligonosPropiedades(polygons.map(poly => poly.properties));
                     setPoligonos(formattedPolygons);
+                    setIsFiltrandoLineas(false);
                 }
                 if (e.data.data.lines && e.data.data.polygons) {
 
@@ -130,7 +134,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     useEffect(() => {
         if (isFiltrandoLineas && lineas.length > 0) {
             const filteredLines = filterConsistentPatterns(lineas);
-            setLineas(filteredLines);
+            const unifiedLines = unifyParallelLines(filteredLines, ANGLE_THRESHOLD, DISTANCE_THRESHOLD);
+            setLineas(unifiedLines);
             setIsFiltrandoLineas(false);
         }
     }, [isFiltrandoLineas, lineas]);
@@ -143,7 +148,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         return degrees < 0 ? degrees + 360 : degrees;
     };
 
-    const clusterLinesByOrientation = (lines, angleThreshold = 10) => {
+
+    const clusterLinesByOrientation = (lines, angleThreshold = 1) => {
         const clusters = [];
 
         lines.forEach(line => {
@@ -184,41 +190,63 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         return filterLargestClusters(clusters);
     };
 
-
-    const addBufferToLine = (line, width) => {
-        const coordinates = line.map(coord => {
-            // Convertir a formato [lng, lat] asegurando la precisión de los números
+    const normalizeCoordinates = (coordinates) => {
+        return coordinates.map(coord => {
             if (coord.lat !== undefined && coord.lng !== undefined) {
                 return [coord.lng, coord.lat];
             }
             throw new Error("Invalid coordinates format in line data");
         });
-
-        const lineString = {
-            type: "Feature",
-            geometry: {
-                type: "LineString",
-                coordinates: coordinates
-            }
-        };
-
-        return turfBuffer(lineString, width, { units: 'meters' });
     };
 
+    const addBufferToLine = (line, width) => {
+        try {
+            const coordinates = normalizeCoordinates(line);
+
+            const lineString = {
+                type: "Feature",
+                geometry: {
+                    type: "LineString",
+                    coordinates: coordinates
+                }
+            };
+
+            const bufferWidth = width > 0 ? width : 1; // Ajuste del ancho del buffer a un valor mínimo si es necesario
+
+            const bufferedLine = turfBuffer(lineString, bufferWidth, { units: 'meters' });
+
+            if (!bufferedLine || !bufferedLine.geometry || !Array.isArray(bufferedLine.geometry.coordinates) || bufferedLine.geometry.coordinates.length === 0) {
+                throw new Error("Buffer result is invalid.");
+            }
+
+            return bufferedLine;
+        } catch (error) {
+            console.error("Error in addBufferToLine:", error);
+            return null;
+        }
+    };
 
     const handleToggleBuffer = () => {
         try {
             if (isBufferActive) {
                 // Quitar el buffer
                 setBufferedLines([]);
+                setBufferedIntersections([]);
             } else {
                 // Aplicar el buffer
                 const newBufferedLines = lineas.map(linea => {
-                    if (linea.polyline && linea.polyline._latlngs) {
-                        return addBufferToLine(linea.polyline._latlngs, parseFloat(bufferValue));
+                    if (linea.polyline && Array.isArray(linea.polyline._latlngs) && linea.polyline._latlngs.length > 0) {
+                        const bufferedLine = addBufferToLine(linea.polyline._latlngs, parseFloat(bufferValue));
+                        if (bufferedLine) {
+                            return bufferedLine;
+                        } else {
+                            console.warn("Buffer result is invalid for line: ", linea);
+                            return null;
+                        }
                     }
-                    throw new Error("Invalid line data: missing polyline or latlngs");
-                });
+                    console.error("Invalid line data: missing or incorrect polyline or latlngs");
+                    return null;
+                }).filter(bufferedLine => bufferedLine !== null); // Filtrar buffers inválidos
                 setBufferedLines(newBufferedLines);
             }
             setIsBufferActive(!isBufferActive);
@@ -227,32 +255,41 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     };
 
-
-
-
-
-
     // Este useEffect se ejecutará cada vez que los polígonos cambien
     useEffect(() => {
         const adjustMapBounds = (entities, entityType) => {
             if (mapRef.current != null && entities.length > 0) {
                 const map = mapRef.current;
 
-                // Aplanar los datos de `_latlngs` para calcular bounds
-                const validCoordinates = entities.flatMap(entity => {
-                    if (entity.polyline && Array.isArray(entity.polyline._latlngs)) {
-                        // Manejar LineString
-                        return entity.polyline._latlngs.flatMap(coord => {
-                            // Verifica si el objeto tiene las propiedades lat y lng
-                            if (coord.lat !== undefined && coord.lng !== undefined) {
-                                return [coord];
-                            }
-                            // Si coord es un array anidado, desanidar
-                            return Array.isArray(coord) ? coord : [];
-                        });
-                    }
-                    return [];
-                });
+                let validCoordinates = [];
+                if (entityType === "POLIGONOS") {
+                    // Aplanar las coordenadas de los polígonos
+                    validCoordinates = entities.flatMap(polygon => {
+                        if (Array.isArray(polygon) && polygon.length > 0) {
+                            return polygon.map(coord => {
+                                if (Array.isArray(coord) && coord.length === 2) {
+                                    return L.latLng(coord[1], coord[0]);
+                                }
+                                console.error(`Coordenada inválida en polígono:`, coord);
+                                return null;
+                            }).filter(coord => coord !== null);
+                        }
+                        return [];
+                    });
+                } else {
+                    // Manejar otros tipos de entidades como LineString
+                    validCoordinates = entities.flatMap(entity => {
+                        if (entity.polyline && Array.isArray(entity.polyline._latlngs)) {
+                            return entity.polyline._latlngs.flatMap(coord => {
+                                if (coord.lat !== undefined && coord.lng !== undefined) {
+                                    return [coord];
+                                }
+                                return Array.isArray(coord) ? coord : [];
+                            });
+                        }
+                        return [];
+                    });
+                }
 
 
                 if (validCoordinates.length > 0) {
@@ -270,13 +307,14 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         if (lineas.length > 0 && !isFiltrandoLineas) {
             lineas.forEach(linea => {
                 if (linea.polyline) {
-                    linea.polyline.off();
+                    linea.polyline.off('mouseover mouseout click');
                     linea.polyline.on('mouseover', (e) => handleLineHover(e, linea.id));
                     linea.polyline.on('mouseout', (e) => handleLineMouseOut(e, linea.id));
                     linea.polyline.on('click', (e) => handleLineClick(linea.polyline._latlngs, e));
                 }
             });
         }
+
 
         if(isPrimeraCarga && !isFiltrandoLineas){
 
@@ -346,54 +384,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
     /*===============Información de la linea================*/
 
-    function unifyLines(lines) {
-        if (lines.length === 0) return [];
-
-        console.log("ESTAS SON LAS LINEAS COMPLETAS: ", lines);
-
-        // Aplanar y validar las líneas de entrada
-        const validLines = lines.map(line =>
-            line.flat().filter(coord => isValidCoordinate(coord))
-        ).filter(line => line.length >= 2);
-
-        console.log("ESTAS SON LAS LINEAS VALIDAS: ", validLines);
-
-        if (validLines.length === 0) return [];
-
-        // Crear un arreglo para las nuevas líneas unificadas
-        let unifiedLines = [];
-
-        // Marcar líneas que ya han sido combinadas
-        let visited = new Array(validLines.length).fill(false);
-
-        for (let i = 0; i < validLines.length; i++) {
-            if (visited[i]) continue;
-
-            // Crear una nueva línea unificada inicializando con la línea actual
-            let unifiedLine = [...validLines[i]];
-            visited[i] = true;
-
-            for (let j = i + 1; j < validLines.length; j++) {
-                if (visited[j]) continue;
-
-
-                const lineA = turfLineString(validLines[i]);
-                const lineB = turfLineString(validLines[j]);
-
-                // Verificar si las líneas están cerca o son paralelas
-                if (areLinesClose(lineA, lineB)) {
-                    // Combinar las líneas
-                    unifiedLine = combineLines(unifiedLine, validLines[j]);
-                    visited[j] = true;
-                }
-            }
-
-            unifiedLines.push(unifiedLine);
-        }
-
-        return unifiedLines;
-    }
-
     function areLinesClose(lineA, lineB) {
         const options = { units: 'kilometers' };
         for (const point of lineA.geometry.coordinates) {
@@ -415,6 +405,96 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         );
         return combined;
     }
+
+
+    const unifyParallelLines = (lines, angleThreshold, distanceThreshold) => {
+
+
+        const areLinesClose = (lineA, lineB, threshold) => {
+            for (const point of lineA.geometry.coordinates) {
+                const nearest = turfNearestPointOnLine(lineB, turfPoint(point));
+                const distance = turfDistance(turfPoint(point), nearest, { units: 'kilometers' });
+                if (distance < threshold) {
+
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const combineLines = (line1, line2) => {
+            const combined = [...line1, ...line2].filter(
+                (value, index, self) => index === self.findIndex((t) => (
+                    t.lat === value.lat && t.lng === value.lng
+                ))
+            );
+            return combined;
+        };
+
+        const clusters = lines.reduce((acc, line) => {
+            const coords = line.polyline._latlngs;
+            if (coords.length < 2) return acc;
+
+            const angle = calculateLineAngle(coords[0], coords[coords.length - 1]);
+            let addedToCluster = false;
+
+            for (const cluster of acc) {
+                const clusterAngle = cluster.averageAngle;
+                if (Math.abs(clusterAngle - angle) < angleThreshold) {
+                    cluster.lines.push(line);
+                    cluster.averageAngle = (cluster.averageAngle * cluster.lines.length + angle) / (cluster.lines.length + 1);
+                    addedToCluster = true;
+                    break;
+                }
+            }
+
+            if (!addedToCluster) {
+                acc.push({
+                    lines: [line],
+                    averageAngle: angle
+                });
+            }
+
+            return acc;
+        }, []);
+
+        const unifiedLines = clusters.flatMap(cluster => {
+            const lines = cluster.lines;
+            const validLines = lines.map(line => turfLineString(line.polyline._latlngs.map(coord => [coord.lng, coord.lat])));
+            const visited = new Array(validLines.length).fill(false);
+            let unifiedLines = [];
+
+            for (let i = 0; i < validLines.length; i++) {
+                if (visited[i]) continue;
+                let unifiedLine = [...lines[i].polyline._latlngs];
+                let maxLength = turfLength(validLines[i]);
+                visited[i] = true;
+
+                for (let j = i + 1; j < validLines.length; j++) {
+                    if (visited[j]) continue;
+                    if (areLinesClose(validLines[i], validLines[j], distanceThreshold)) {
+                        unifiedLine = combineLines(unifiedLine, lines[j].polyline._latlngs);
+                        const lineLength = turfLength(validLines[j]);
+                        if (lineLength > maxLength) {
+                            maxLength = lineLength;
+                        }
+                        visited[j] = true;
+                    }
+                }
+
+                const newPolyline = L.polyline(unifiedLine, { color: 'red' });
+                newPolyline.on('mouseover', (e) => handleLineHover(e, uuidv4()));
+                newPolyline.on('mouseout', (e) => handleLineMouseOut(e, uuidv4()));
+                newPolyline.on('click', (e) => handleLineClick(unifiedLine, e));
+                unifiedLines.push({ polyline: newPolyline, id: uuidv4(), length: maxLength });
+            }
+
+            return unifiedLines;
+        });
+
+        return unifiedLines;
+    };
+
 
     function isValidCoordinate(coord) {
         return Array.isArray(coord) && coord.length === 2 &&
@@ -674,7 +754,53 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 }
             });
         });
+
+        // Guardar las intersecciones en el estado
         setBufferedIntersections(intersections);
+
+        // Encontrar y eliminar las líneas más cortas que intersectan con los buffers
+        const linesToRemove = findLinesToRemove(bufferedLines, intersections);
+        setLineas(prevLineas => prevLineas.filter(linea => !linesToRemove.includes(linea.id)));
+    };
+
+    const findLinesToRemove = (bufferedLines, intersections) => {
+        let linesToRemove = [];
+
+        intersections.forEach(intersection => {
+            let intersectingLines = [];
+
+            bufferedLines.forEach(bufferedLine => {
+                const lineString = turfLineString(bufferedLine.geometry.coordinates[0]);
+                const intersectionPoints = turfLineIntersect(lineString, turfPolygon([intersection]));
+                if (intersectionPoints.features.length > 0) {
+                    // Encontrar la línea original correspondiente al buffer
+                    const originalLine = lineas.find(linea => {
+                        if (!linea.polyline) {
+                            console.error("Línea inválida encontrada", linea);
+                            return false;
+                        }
+                        const lineCoords = linea.polyline._latlngs.map(coord => [coord.lng, coord.lat]);
+                        return turfLineIntersect(turfLineString(lineCoords), lineString).features.length > 0;
+                    });
+
+                    if (originalLine) {
+                        intersectingLines.push(originalLine);
+                    }
+                }
+            });
+
+            if (intersectingLines.length > 1) {
+                // Ordenar las líneas por longitud y eliminar las más cortas
+                intersectingLines.sort((a, b) => turfLength(turfLineString(a.polyline._latlngs.map(coord => [coord.lng, coord.lat]))) -
+                    turfLength(turfLineString(b.polyline._latlngs.map(coord => [coord.lng, coord.lat]))));
+                // Eliminar todas menos la más larga
+                intersectingLines.slice(0, -1).forEach(line => {
+                    linesToRemove.push(line.id);
+                });
+            }
+        });
+
+        return linesToRemove;
     };
 
     const verificarYEnviarDatos = () => {
@@ -756,6 +882,33 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     }, [isDrawingLine, lineas]);
 
+    const handleUndo = () => {
+        if (actionHistory.length > 0) {
+            const lastAction = actionHistory[actionHistory.length - 1];
+            let newLineas = [...lineas];
+
+            switch (lastAction.type) {
+                case 'cut':
+                    // Revertir acción de cortar
+                    newLineas = lastAction.originalLines;
+                    break;
+                case 'draw':
+                    // Revertir acción de dibujar
+                    newLineas = newLineas.filter(line => line.id !== lastAction.line.id);
+                    break;
+                case 'delete':
+                    // Revertir acción de eliminar
+                    newLineas = [...newLineas, lastAction.line];
+                    break;
+                default:
+                    break;
+            }
+
+            setLineas(newLineas);
+            setActionHistory(actionHistory.slice(0, -1));
+        }
+    };
+
 
     const handleCutLine = () => {
         setActiveTool('cut');
@@ -781,17 +934,16 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     previewLine.push([e.latlng.lat, e.latlng.lng]);
                     previewLayer.setLatLngs(previewLine);
 
-                    // Validar que previewLine tenga al menos dos puntos antes de crear un LineString
                     if (previewLine.length < 2) {
                         console.warn('Debe haber al menos dos puntos para crear un LineString');
                         map.removeLayer(previewLayer);
                         return;
                     }
 
-                    // Crear el cutLineString si previewLine es válido
                     const cutLineString = turfLineString(previewLine.map(coord => [coord[1], coord[0]]));
                     const newLineas = [];
                     let cutSuccessful = false;
+                    const originalLines = [...lineas]; // Guardar las líneas originales
 
                     lineas.forEach(linea => {
                         const latlngs = linea.polyline?._latlngs;
@@ -808,7 +960,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             const splitResult = turfLineSplit(lineString, cutLineString);
 
                             splitResult.features.forEach(f => {
-                                const newLine = f.geometry.coordinates.map(coord => new L.LatLng(coord[1], coord[0])); // Convertir a L.LatLng
+                                const newLine = f.geometry.coordinates.map(coord => new L.LatLng(coord[1], coord[0]));
                                 const polyline = L.polyline(newLine, { color: 'red' }).addTo(map);
 
                                 polyline.on('mouseover', handleLineHover);
@@ -824,6 +976,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
                     if (cutSuccessful) {
                         setLineas(newLineas);
+                        setActionHistory([...actionHistory, { type: 'cut', originalLines }]);
                     }
 
                     map.off('mousemove', onMove);
@@ -836,7 +989,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             map.on('click', onCutClick);
         }
     };
-
 
     const handleDrawLine = () => {
         setActiveTool('draw');
@@ -873,9 +1025,10 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 polyline.on('mouseout', handleLineMouseOut);
                 polyline.on('click', (event) => handleLineClick(newLine, event));
 
-                const lineId = uuidv4(); // Generar identificador único
+                const lineId = uuidv4();
 
-                setLineas([...lineas, { _latlngs: newLine, id: lineId }]); // Añadir identificador único a la línea
+                setLineas([...lineas, { polyline: polyline, _latlngs: newLine, id: lineId }]);
+                setActionHistory([...actionHistory, { type: 'draw', line: { polyline: polyline, _latlngs: newLine, id: lineId } }]);
 
                 map.off('click', onClick);
                 map.off('mousemove', onMove);
@@ -888,8 +1041,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     };
 
-
-
     const handleDeleteLine = () => {
         setActiveTool('delete');
         setIsPrimeraCarga(false);
@@ -901,7 +1052,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 const clickedLine = e.target;
                 const clickedLatLngs = clickedLine.getLatLngs();
 
-                // Encuentra la línea en el estado
                 const lineInState = lineas.find(linea => {
                     if (!linea.polyline || !linea.polyline._latlngs) {
                         return false;
@@ -914,22 +1064,20 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 });
 
                 if (lineInState) {
-                    // Elimina la línea del estado y del mapa
                     setLineas(prevLineas => prevLineas.filter(linea => linea.id !== lineInState.id));
+                    setActionHistory([...actionHistory, { type: 'delete', line: lineInState }]);
                     map.removeLayer(clickedLine);
                 }
 
                 map.off('click', onLineClick);
             };
 
-            // Limpiar eventos previos en las líneas
             map.eachLayer(layer => {
                 if (layer instanceof L.Polyline) {
                     layer.off('click', onLineClick);
                 }
             });
 
-            // Agregar evento de clic a cada línea en el mapa
             lineas.forEach(linea => {
                 if (linea.polyline && linea.polyline._latlngs) {
                     const polyline = L.polyline(linea.polyline._latlngs, { color: 'red' }).addTo(map);
@@ -938,8 +1086,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             });
         }
     };
-
-
 
     return (
         <>
@@ -952,7 +1098,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             </div>
 
 
-            <MapContainer key={isMapaCreated} center={mapCenter} zoom={3} style={{ height: '100vh', width: '100%' }} whenReady={setMap} ref={mapRef}>
+            <MapContainer key={isMapaCreated} center={mapCenter} zoom={3} style={{ height: '65vh', width: '100%' }} whenReady={setMap} ref={mapRef}>
                 {isKml && (
                     <div className="floating-buttons">
                         <Tooltip title="Cortar línea">
@@ -987,22 +1133,29 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                                 <FaBuffer />
                             </IconButton>
                         </Tooltip>
+                        <Tooltip title="Deshacer">
+                            <IconButton
+                                onClick={handleUndo}
+                                className="icon-button"
+                            >
+                                <FaUndo />
+                            </IconButton>
+                        </Tooltip>
+                        {isBufferActive && (
+                            <TextField
+                                label="Buffer en metros"
+                                type="number"
+                                value={bufferValue}
+                                onChange={(e) => setBufferValue(e.target.value)}
+                                variant="outlined"
+                                size="small"
+                                margin="normal"
+                            />
+                        )}
                     </div>
                 )}
 
-                {isBufferActive && (
-                    <div className="buffer-input">
-                        <TextField
-                            label="Buffer en metros"
-                            type="number"
-                            value={bufferValue}
-                            onChange={(e) => setBufferValue(e.target.value)}
-                            variant="outlined"
-                            size="small"
-                            margin="normal"
-                        />
-                    </div>
-                )}
+
                 <LayersControl position="topright">
                     <BaseLayer checked name="Satellite View">
                         <TileLayer
@@ -1045,7 +1198,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             console.error(`Propiedades faltantes para el polígono en el índice ${index}`);
                             return null; // Saltar si faltan propiedades
                         }
-                        
+
 
                         // Configuración de los datos para el polígono
                         const positions = polygon.map(coord => {
@@ -1077,9 +1230,32 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
 
 
-                    {showIntersections && areasSuperpuestas.map((area, index) => (
-                        <Polygon key={`intersection-${index}-${intersectionsKey}`} positions={area} color="red" weight={3} />
-                    ))}
+                    {showIntersections && areasSuperpuestas.map((area, index) => {
+                        // Verificación de la estructura del área
+                        if (!Array.isArray(area) || area.length === 0) {
+                            console.error(`Área inválida en el índice ${index}:`, area);
+                            return null; // Saltar áreas inválidas
+                        }
+
+
+                        const positions = area.map(coord => {
+                            if (Array.isArray(coord) && coord.length === 2) {
+                                return { lat: coord[1], lng: coord[0] }; // Asegura que los valores estén en el orden correcto
+                            }
+                            console.error(`Coordenada inválida en el área ${index}:`, coord);
+                            return null;
+                        }).filter(coord => coord !== null); // Filtra coordenadas inválidas
+
+                        return (
+                            <Polygon
+                                key={`intersection-${index}-${intersectionsKey}`}
+                                positions={positions}
+                                color="red"
+                                weight={3}
+                            />
+                        );
+                    })}
+
 
 
 
