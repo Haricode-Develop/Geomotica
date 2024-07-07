@@ -32,9 +32,7 @@ self.onmessage = async function (e) {
                         processedData = processGeoJsonData(loadedGeoJson);
                     }else if(type === 'APLICACIONES_AEREAS'){
                         const isKMLType = loadedGeoJson.features.some(feature => feature.properties && feature.properties.type === 'KML');
-                        console.log("ES TIPO KML: ", isKMLType);
                         if (isKMLType) {
-                            console.log("ENTRE A ES TIPO DE KML");
                             processedData = processLineStringData(loadedGeoJson);
                         } else {
                             processedData = processAplicacionesAreasData(loadedGeoJson);
@@ -48,7 +46,6 @@ self.onmessage = async function (e) {
 
         case 'setActivarEdicionInteractiva':
             activarEdicionInteractiva = e.data.activarEdicionInteractiva;
-            console.log("activarEdicionInteractiva actualizado en el worker:", activarEdicionInteractiva);
             break;
 
         default:
@@ -96,6 +93,7 @@ function processGeoJsonData(geojsonData) {
         }
     }
 
+
     return {
         points: validFeatures,
         polygon: polygonCoordinates,
@@ -118,7 +116,6 @@ function processAplicacionesAreasData(geojsonData) {
 }
 
 function processLineStringData(geojsonData) {
-    console.log("GEOJSON:", geojsonData);
 
     let kmlFeatures = geojsonData.features.filter(feature => feature.properties && feature.properties.type === 'KML');
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './AplicacionesAreasStyle.css';
-import { MapContainer, TileLayer, Polygon, LayersControl, useMap, Polyline, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '../../utils/config';
@@ -23,14 +22,13 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, F
 import { FaMap, FaCut, FaDrawPolygon, FaTrash, FaBuffer, FaUndo } from 'react-icons/fa';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
 import { v4 as uuidv4 } from 'uuid';
+import CommonMap from '../../components/CommonMap/CommonMap';
 
-const { BaseLayer } = LayersControl;
-
-const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPromediosCalculated, activarEdicionInteractiva  }) => {
+const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPromediosCalculated, activarEdicionInteractiva }) => {
     const [poligonos, setPoligonos] = useState([]);
     const [areasSuperpuestas, setAreasSuperpuestas] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
-    const [map, setMap] = useState(null);
+    const [zoom, setZoom] = useState(3);
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState(null);
     const [velocidadFiltroActivado, setVelocidadFiltroActivado] = useState(false);
@@ -45,9 +43,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [areaAplicada, setAreaAplicada] = useState(0);
     const [lineas, setLineas] = useState([]);
     const [bufferedLines, setBufferedLines] = useState([]);
-
-    const [formData, setFormData] = useState({ idAnalisis: idAnalisis, });
-    const mapRef = useRef();
+    const [formData, setFormData] = useState({ idAnalisis });
+    const mapRef = useRef(null); // Inicializa mapRef correctamente
     const [bufferedIntersections, setBufferedIntersections] = useState([]);
     const [poligonosKML, setPoligonosKML] = useState([]);
     const [isKml, setIsKml] = useState(false);
@@ -56,16 +53,13 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [selectedLine, setSelectedLine] = useState(null);
     const [popupInfo, setPopupInfo] = useState(null);
     const [isPrimeraCarga, setIsPrimeraCarga] = useState(true);
-    const [isFiltrandoLineas, setIsFiltrandoLineas] = useState(true); // Nueva bandera
+    const [isFiltrandoLineas, setIsFiltrandoLineas] = useState(true);
     const [actionHistory, setActionHistory] = useState([]);
-
-    const DISTANCE_THRESHOLD = 0.005; // Puedes ajustar este valor según tus necesidades
+    const DISTANCE_THRESHOLD = 0.005;
     const ANGLE_THRESHOLD = 1;
-
     const [bufferValue, setBufferValue] = useState(0);
     const [isBufferActive, setIsBufferActive] = useState(false);
-
-    const workerRef = useRef(null); // useRef para mantener la referencia del worker
+    const workerRef = useRef(null);
 
     useEffect(() => {
         workerRef.current = new Worker('dataWorker.js');
@@ -81,7 +75,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     setIsFiltrandoLineas(false);
                 }
                 if (e.data.data.lines && e.data.data.polygons) {
-
                     const { lines, polygons } = e.data.data;
                     const formattedLines = lines.map(line => line.paths);
                     let unifiedLines;
@@ -123,13 +116,11 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         };
     }, [tipoAnalisis]);
 
-    // Enviar valor de activarEdicionInteractiva al worker cada vez que cambie
     useEffect(() => {
         if (workerRef.current) {
             workerRef.current.postMessage({ action: 'setActivarEdicionInteractiva', activarEdicionInteractiva });
         }
     }, [activarEdicionInteractiva]);
-
 
     useEffect(() => {
         if (isFiltrandoLineas && lineas.length > 0) {
@@ -147,7 +138,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         const degrees = radians * (180 / Math.PI);
         return degrees < 0 ? degrees + 360 : degrees;
     };
-
 
     const clusterLinesByOrientation = (lines, angleThreshold = 1) => {
         const clusters = [];
@@ -211,7 +201,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 }
             };
 
-            const bufferWidth = width > 0 ? width : 1; // Ajuste del ancho del buffer a un valor mínimo si es necesario
+            const bufferWidth = width > 0 ? width : 1;
 
             const bufferedLine = turfBuffer(lineString, bufferWidth, { units: 'meters' });
 
@@ -229,11 +219,9 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const handleToggleBuffer = () => {
         try {
             if (isBufferActive) {
-                // Quitar el buffer
                 setBufferedLines([]);
                 setBufferedIntersections([]);
             } else {
-                // Aplicar el buffer
                 const newBufferedLines = lineas.map(linea => {
                     if (linea.polyline && Array.isArray(linea.polyline._latlngs) && linea.polyline._latlngs.length > 0) {
                         const bufferedLine = addBufferToLine(linea.polyline._latlngs, parseFloat(bufferValue));
@@ -246,7 +234,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     }
                     console.error("Invalid line data: missing or incorrect polyline or latlngs");
                     return null;
-                }).filter(bufferedLine => bufferedLine !== null); // Filtrar buffers inválidos
+                }).filter(bufferedLine => bufferedLine !== null);
                 setBufferedLines(newBufferedLines);
             }
             setIsBufferActive(!isBufferActive);
@@ -255,7 +243,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     };
 
-    // Este useEffect se ejecutará cada vez que los polígonos cambien
     useEffect(() => {
         const adjustMapBounds = (entities, entityType) => {
             if (mapRef.current != null && entities.length > 0) {
@@ -263,7 +250,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
                 let validCoordinates = [];
                 if (entityType === "POLIGONOS") {
-                    // Aplanar las coordenadas de los polígonos
                     validCoordinates = entities.flatMap(polygon => {
                         if (Array.isArray(polygon) && polygon.length > 0) {
                             return polygon.map(coord => {
@@ -277,7 +263,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                         return [];
                     });
                 } else {
-                    // Manejar otros tipos de entidades como LineString
                     validCoordinates = entities.flatMap(entity => {
                         if (entity.polyline && Array.isArray(entity.polyline._latlngs)) {
                             return entity.polyline._latlngs.flatMap(coord => {
@@ -291,15 +276,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     });
                 }
 
-
                 if (validCoordinates.length > 0) {
                     const bounds = L.latLngBounds(validCoordinates);
                     map.fitBounds(bounds);
                     setTimeout(() => {
                         map.invalidateSize();
                     }, 100);
-                } else {
-                    console.log(`No se encontraron ${entityType.toLowerCase()} válidos.`);
                 }
             }
         };
@@ -315,37 +297,32 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             });
         }
 
-
-        if(isPrimeraCarga && !isFiltrandoLineas){
-
+        if (isPrimeraCarga && !isFiltrandoLineas) {
             adjustMapBounds(poligonos, "POLIGONOS");
             adjustMapBounds(lineas, "LINEAS");
         }
     }, [poligonos, lineas, isFiltrandoLineas]);
 
     useEffect(() => {
-        if (map && poligonos.length > 0) {
+
+        if (mapRef.current && poligonos.length > 0) {
             const latLngCoords = poligonos.flatMap(polygon =>
                 polygon.map(coordPair => [coordPair[1], coordPair[0]])
             );
             const mapBounds = L.latLngBounds(latLngCoords);
             if (mapBounds.isValid() || activeFilter) {
                 setIntersectionsKey(Date.now());
+
                 findIntersections(poligonos);
             }
         }
-    }, [map, poligonos, lineas, activeFilter]);
+    }, [poligonos, lineas, activeFilter]);
 
     const [filterValues, setFilterValues] = useState({
         VELOCIDAD: { low: 0, medium: 0, high: 0 },
         ALTURA: { low: 0, medium: 0, high: 0 },
         DOSISREAL: { low: 0, medium: 0, high: 0 }
     });
-
-
-
-    /*===============Información de la linea================*/
-
 
     const handleLineHover = (e, lineId) => {
         e.target.setStyle({
@@ -373,16 +350,13 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         setPopupInfo({
             position: e.latlng,
             content: `
-                Longitud de la línea:
-                <br>- ${lengthKm.toFixed(3)} km
-                <br>- ${lengthMiles.toFixed(3)} mi
-                <br>- ${lengthMeters.toFixed(3)} m
-            `
+        Longitud de la línea:
+        <br>- ${lengthKm.toFixed(3)} km
+        <br>- ${lengthMiles.toFixed(3)} mi
+        <br>- ${lengthMeters.toFixed(3)} m
+      `
         });
     };
-
-
-    /*===============Información de la linea================*/
 
     function areLinesClose(lineA, lineB) {
         const options = { units: 'kilometers' };
@@ -397,7 +371,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     }
 
     function combineLines(line1, line2) {
-        // Combinar las coordenadas de ambas líneas y remover duplicados
         const combined = [...line1, ...line2].filter(
             (value, index, self) => index === self.findIndex((t) => (
                 t[0] === value[0] && t[1] === value[1]
@@ -406,16 +379,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         return combined;
     }
 
-
     const unifyParallelLines = (lines, angleThreshold, distanceThreshold) => {
-
-
         const areLinesClose = (lineA, lineB, threshold) => {
             for (const point of lineA.geometry.coordinates) {
                 const nearest = turfNearestPointOnLine(lineB, turfPoint(point));
                 const distance = turfDistance(turfPoint(point), nearest, { units: 'kilometers' });
                 if (distance < threshold) {
-
                     return true;
                 }
             }
@@ -495,14 +464,11 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         return unifiedLines;
     };
 
-
     function isValidCoordinate(coord) {
         return Array.isArray(coord) && coord.length === 2 &&
             typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
             !isNaN(coord[0]) && !isNaN(coord[1]);
     }
-
-
 
     useEffect(() => {
         if (activeFilter) {
@@ -526,19 +492,14 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             });
     }, [idAnalisis]);
 
-
     const isClosedPolygon = (line) => {
         if (line.length < 4) {
             return false;
         }
         const firstPoint = line[0];
         const lastPoint = line[line.length - 1];
-
-        const result = firstPoint[0] === lastPoint[0] && firstPoint[1] === lastPoint[1];
-
-        return result;
+        return firstPoint[0] === lastPoint[0] && lastPoint[1] === firstPoint[1];
     };
-
 
     const formatPolygon = (polygon) => {
         if (polygon.length > 0) {
@@ -546,9 +507,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 polygon.push([polygon[0][0], polygon[0][1]]);
             }
         }
-        return polygon.map(coordPair => [coordPair[1], coordPair[0]]); // Asegúrate de que devuelva un array de pares (lat, lng)
+        return polygon.map(coordPair => [coordPair[1], coordPair[0]]);
     };
-
 
     const findIntersections = (polygons) => {
         let intersections = [];
@@ -561,6 +521,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                             intersections.push(coords[0]);
                         });
                     } else if (intersection.geometry.type === 'Polygon') {
+
                         intersections.push(intersection.geometry.coordinates[0]);
                     }
                 }
@@ -569,7 +530,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         setAreasSuperpuestas(intersections);
     };
 
-    // Calcular la unión de todos los polígonos menos el actual
     const calculateNonIntersectedAreas = (polygons) => {
         let nonIntersectedAreas = [];
 
@@ -585,7 +545,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 }
             });
         } else {
-            // Si sólo hay un polígono, no hay intersección que considerar
             nonIntersectedAreas.push(polygons[0]);
         }
 
@@ -593,7 +552,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     };
 
     useEffect(() => {
-        // Utiliza el useEffect para calcular las áreas no intersectadas y actualizar el estado
         if (poligonos.length > 0) {
             const newNonIntersectedAreas = calculateNonIntersectedAreas(poligonos);
             setNonIntersectedAreas(newNonIntersectedAreas);
@@ -624,7 +582,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         const value = properties[key];
 
         if (value === undefined) {
-            return 'transparent';  // Manejar caso donde la propiedad no existe
+            return 'transparent';
         }
 
         const { low, medium, high } = filterValues[activeFilter];
@@ -646,7 +604,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     useEffect(() => {
         if (poligonos.length === 0) return;
 
-        const correctPoligons = poligonos.map(polygon => {
+        const correctPolygons = poligonos.map(polygon => {
             const correctedPolygon = polygon.map(coord => [coord[1], coord[0]]);
             if (correctedPolygon[0] !== correctedPolygon[correctedPolygon.length - 1]) {
                 correctedPolygon.push(correctedPolygon[0]);
@@ -654,14 +612,13 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             return correctedPolygon;
         });
 
-        const turfPolygons = correctPoligons.map(polygon => turfPolygon([polygon]));
+        const turfPolygons = correctPolygons.map(polygon => turfPolygon([polygon]));
 
         let unionPolygons = turfPolygons[0];
         for (let i = 1; i < turfPolygons.length; i++) {
             unionPolygons = turfUnion(unionPolygons, turfPolygons[i]);
         }
 
-        // Área total de la unión de polígonos en hectáreas con factor de corrección
         const totalUnionArea = (turfArea(unionPolygons) / 10000) * correctionFactor;
 
         let totalIntersectedArea = 0;
@@ -680,7 +637,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         setAreaAplicada(totalUnionArea.toFixed(3));
         setAreaSobreAplicada(totalIntersectedArea.toFixed(3));
 
-
         if (onAreasCalculated) {
             onAreasCalculated({
                 areaSobreAplicada: totalIntersectedArea.toFixed(3),
@@ -692,7 +648,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     }, [poligonos, onAreasCalculated, areasSuperpuestas]);
 
     useEffect(() => {
-
         if (poligonos.length === 0 || poligonosPropiedades.length === 0) return;
         const totalVelocidad = poligonosPropiedades.reduce((acc, curr) => acc + (curr.VELOCIDAD || 0), 0);
         const totalAltura = poligonosPropiedades.reduce((acc, curr) => acc + (curr.ALTURA || 0), 0);
@@ -704,14 +659,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
         if (onPromediosCalculated) {
             onPromediosCalculated({
-                promedioVelocidad: promedioVelocidad,
-                promedioAltura: promedioAltura,
-                promedioDosisReal: promedioDosisReal
+                promedioVelocidad,
+                promedioAltura,
+                promedioDosisReal
             });
         }
     }, [poligonos, poligonosPropiedades, onPromediosCalculated]);
-
-
 
     useEffect(() => {
         if (bufferedLines.length > 0) {
@@ -727,7 +680,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             bufferedTurfPolygons.forEach(polygon => {
                 totalBufferedArea += turfArea(polygon) / 10000;
             });
-
 
             if (onAreasCalculated) {
                 onAreasCalculated({
@@ -755,12 +707,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             });
         });
 
-        // Guardar las intersecciones en el estado
         setBufferedIntersections(intersections);
 
-        // Encontrar y eliminar las líneas más cortas que intersectan con los buffers
-        const linesToRemove = findLinesToRemove(bufferedLines, intersections);
-        setLineas(prevLineas => prevLineas.filter(linea => !linesToRemove.includes(linea.id)));
+        if (bufferValue === 0) {
+            const linesToRemove = findLinesToRemove(bufferedLines, intersections);
+            setLineas(prevLineas => prevLineas.filter(linea => !linesToRemove.includes(linea.id)));
+        }
     };
 
     const findLinesToRemove = (bufferedLines, intersections) => {
@@ -773,7 +725,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 const lineString = turfLineString(bufferedLine.geometry.coordinates[0]);
                 const intersectionPoints = turfLineIntersect(lineString, turfPolygon([intersection]));
                 if (intersectionPoints.features.length > 0) {
-                    // Encontrar la línea original correspondiente al buffer
                     const originalLine = lineas.find(linea => {
                         if (!linea.polyline) {
                             console.error("Línea inválida encontrada", linea);
@@ -790,10 +741,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             });
 
             if (intersectingLines.length > 1) {
-                // Ordenar las líneas por longitud y eliminar las más cortas
                 intersectingLines.sort((a, b) => turfLength(turfLineString(a.polyline._latlngs.map(coord => [coord.lng, coord.lat]))) -
                     turfLength(turfLineString(b.polyline._latlngs.map(coord => [coord.lng, coord.lat]))));
-                // Eliminar todas menos la más larga
                 intersectingLines.slice(0, -1).forEach(line => {
                     linesToRemove.push(line.id);
                 });
@@ -806,7 +755,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const verificarYEnviarDatos = () => {
         if (Object.keys(formData).length > 0) {
             enviarDatosFormulario(formData).then(() => {
-                console.log("Datos enviados exitosamente");
             }).catch(error => {
                 console.error('Error al enviar datos', error);
             });
@@ -852,7 +800,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
     const normalizeLabel = (key) => {
         if (key === 'DOSISREAL') return 'Dosis real';
-
         return key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
     };
 
@@ -889,15 +836,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
             switch (lastAction.type) {
                 case 'cut':
-                    // Revertir acción de cortar
                     newLineas = lastAction.originalLines;
                     break;
                 case 'draw':
-                    // Revertir acción de dibujar
                     newLineas = newLineas.filter(line => line.id !== lastAction.line.id);
                     break;
                 case 'delete':
-                    // Revertir acción de eliminar
                     newLineas = [...newLineas, lastAction.line];
                     break;
                 default:
@@ -908,7 +852,6 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             setActionHistory(actionHistory.slice(0, -1));
         }
     };
-
 
     const handleCutLine = () => {
         setActiveTool('cut');
@@ -943,7 +886,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     const cutLineString = turfLineString(previewLine.map(coord => [coord[1], coord[0]]));
                     const newLineas = [];
                     let cutSuccessful = false;
-                    const originalLines = [...lineas]; // Guardar las líneas originales
+                    const originalLines = [...lineas];
 
                     lineas.forEach(linea => {
                         const latlngs = linea.polyline?._latlngs;
@@ -1097,193 +1040,82 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 </Tooltip>
             </div>
 
-
-            <MapContainer key={isMapaCreated} center={mapCenter} zoom={3} style={{ height: '65vh', width: '100%' }} whenReady={setMap} ref={mapRef}>
-                {isKml && (
-                    <div className="floating-buttons">
-                        <Tooltip title="Cortar línea">
-                            <IconButton
-                                onClick={handleCutLine}
-                                className={`icon-button ${activeTool === 'cut' ? 'active' : 'default'}`}
-                            >
-                                <FaCut />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Dibujar línea">
-                            <IconButton
-                                onClick={handleDrawLine}
-                                className={`icon-button ${activeTool === 'draw' ? 'active' : 'default'}`}
-                            >
-                                <FaDrawPolygon />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Borrar líneas">
-                            <IconButton
-                                onClick={handleDeleteLine}
-                                className={`icon-button ${activeTool === 'delete' ? 'active' : 'default'}`}
-                            >
-                                <FaTrash />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Buffer de línea">
-                            <IconButton
-                                onClick={handleToggleBuffer}
-                                className={`icon-button ${isBufferActive ? 'active' : 'default'}`}
-                            >
-                                <FaBuffer />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Deshacer">
-                            <IconButton
-                                onClick={handleUndo}
-                                className="icon-button"
-                            >
-                                <FaUndo />
-                            </IconButton>
-                        </Tooltip>
-                        {isBufferActive && (
-                            <TextField
-                                label="Buffer en metros"
-                                type="number"
-                                value={bufferValue}
-                                onChange={(e) => setBufferValue(e.target.value)}
-                                variant="outlined"
-                                size="small"
-                                margin="normal"
-                            />
-                        )}
-                    </div>
-                )}
-
-
-                <LayersControl position="topright">
-                    <BaseLayer checked name="Satellite View">
-                        <TileLayer
-                            url="https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-                            minZoom={3}
-                            maxZoom={20}
-                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+            <CommonMap
+                center={mapCenter}
+                zoom={zoom}
+                polygons={poligonos}
+                lines={lineas}
+                points={null}
+                hullPolygon={null}
+                areasSuperpuestas={areasSuperpuestas}
+                nonIntersectedAreas={nonIntersectedAreas}
+                bufferedLines={bufferedLines}
+                bufferedIntersections={bufferedIntersections}
+                onLineHover={handleLineHover}
+                onLineMouseOut={handleLineMouseOut}
+                onLineClick={handleLineClick}
+                activeFilter={activeFilter}
+                filterValues={filterValues}
+                polygonProperties={poligonosPropiedades}
+                popupInfo={popupInfo}
+                showIntersections={showIntersections}
+                mapRef={mapRef} // Pasa mapRef como prop
+            />
+            {isKml && (
+                <div className="floating-buttons">
+                    <Tooltip title="Cortar línea">
+                        <IconButton
+                            onClick={handleCutLine}
+                            className={`icon-button ${activeTool === 'cut' ? 'active' : 'default'}`}
+                        >
+                            <FaCut />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Dibujar línea">
+                        <IconButton
+                            onClick={handleDrawLine}
+                            className={`icon-button ${activeTool === 'draw' ? 'active' : 'default'}`}
+                        >
+                            <FaDrawPolygon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Borrar líneas">
+                        <IconButton
+                            onClick={handleDeleteLine}
+                            className={`icon-button ${activeTool === 'delete' ? 'active' : 'default'}`}
+                        >
+                            <FaTrash />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Buffer de línea">
+                        <IconButton
+                            onClick={handleToggleBuffer}
+                            className={`icon-button ${isBufferActive ? 'active' : 'default'}`}
+                        >
+                            <FaBuffer />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Deshacer">
+                        <IconButton
+                            onClick={handleUndo}
+                            className="icon-button"
+                        >
+                            <FaUndo />
+                        </IconButton>
+                    </Tooltip>
+                    {isBufferActive && (
+                        <TextField
+                            label="Buffer en metros"
+                            type="number"
+                            value={bufferValue}
+                            onChange={(e) => setBufferValue(e.target.value)}
+                            variant="outlined"
+                            size="small"
+                            margin="normal"
                         />
-                    </BaseLayer>
-                    <BaseLayer name="Street Map">
-                        <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            maxZoom={19}
-                        />
-                    </BaseLayer>
-                    {lineas.map((linea, index) => {
-                        if (!linea.polyline || !Array.isArray(linea.polyline._latlngs)) {
-                            console.warn(`Línea en el índice ${index} no es válida.`);
-                            return null;
-                        }
-                        return (
-                            <Polyline
-                                key={`line-${index}`}
-                                positions={linea.polyline._latlngs}
-                                color="red"
-                            />
-                        );
-                    })}
-
-                    {poligonos.map((polygon, index) => {
-                        // Verificación de la estructura del polígono
-                        if (!Array.isArray(polygon) || polygon.length === 0) {
-                            console.error(`Polígono inválido en el índice ${index}:`, polygon);
-                            return null; // Saltar polígonos inválidos
-                        }
-
-                        // Verificación de las propiedades del polígono
-                        const propiedades = poligonosPropiedades[index];
-                        if (!propiedades) {
-                            console.error(`Propiedades faltantes para el polígono en el índice ${index}`);
-                            return null; // Saltar si faltan propiedades
-                        }
-
-
-                        // Configuración de los datos para el polígono
-                        const positions = polygon.map(coord => {
-                            if (Array.isArray(coord) && coord.length === 2) {
-                                return { lat: coord[1], lng: coord[0] }; // Asegura que los valores estén en el orden correcto
-                            }
-                            console.error(`Coordenada inválida en el polígono ${index}:`, coord);
-                            return null;
-                        }).filter(coord => coord !== null); // Filtra coordenadas inválidas
-
-                        return (
-                            <Polygon
-                                key={`${activeFilter}-${index}-${filterValues[activeFilter]?.low}-${filterValues[activeFilter]?.medium}-${filterValues[activeFilter]?.high}`} // Cambia la clave para forzar la re-renderización
-                                positions={positions}
-                                color={getPolygonColor(propiedades)}
-                                weight={3}
-                            />
-                        );
-                    })}
-
-
-
-                    {bufferedLines.map((bufferedLine, index) => (
-                        <Polygon key={`buffered-${index}`} positions={bufferedLine.geometry.coordinates[0].map(coord => [coord[1], coord[0]])} color="purple" weight={3} />
-                    ))}
-                    {bufferedIntersections.map((intersection, index) => (
-                        <Polygon key={`buffered-intersection-${index}`} positions={intersection.map(coord => [coord[1], coord[0]])} color="blue" weight={3} />
-                    ))}
-
-
-
-                    {showIntersections && areasSuperpuestas.map((area, index) => {
-                        // Verificación de la estructura del área
-                        if (!Array.isArray(area) || area.length === 0) {
-                            console.error(`Área inválida en el índice ${index}:`, area);
-                            return null; // Saltar áreas inválidas
-                        }
-
-
-                        const positions = area.map(coord => {
-                            if (Array.isArray(coord) && coord.length === 2) {
-                                return { lat: coord[1], lng: coord[0] }; // Asegura que los valores estén en el orden correcto
-                            }
-                            console.error(`Coordenada inválida en el área ${index}:`, coord);
-                            return null;
-                        }).filter(coord => coord !== null); // Filtra coordenadas inválidas
-
-                        return (
-                            <Polygon
-                                key={`intersection-${index}-${intersectionsKey}`}
-                                positions={positions}
-                                color="red"
-                                weight={3}
-                            />
-                        );
-                    })}
-
-
-
-
-                    {
-                        nonIntersectedAreas.map((nonIntersected, index) => {
-                            const positions = nonIntersected.map(coords => [coords[1], coords[0]]);
-                            return (
-                                <Polygon
-                                    key={`nonIntersectedArea-${index}`}
-                                    positions={positions}
-                                    color="yellow"
-                                    weight={3}
-                                />
-                            );
-                        })
-                    }
-
-                    {
-                        popupInfo && (
-                            <Popup position={popupInfo.position} onClose={() => setPopupInfo(null)}>
-                                <div dangerouslySetInnerHTML={{ __html: popupInfo.content }} />
-                            </Popup>
-                        )
-                    }
-
-
-                </LayersControl>
-            </MapContainer>
+                    )}
+                </div>
+            )}
 
             {poligonos.length > 0 && lineas.length === 0 && (
                 <BarIndicator filterType={activeFilter ? activeFilter : "aplicacionesAreas"} isHistory={false} />

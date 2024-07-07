@@ -18,7 +18,7 @@ export const obtenerFechaInicioCosechaAps = async (idAnalisisAps, setFechaInicio
     try {
 
         const response = await axios.get(`${API_BASE_URL}dashboard/fechaInicioCosechaAps/${idAnalisisAps}`);
-        setFechaInicioCosechaAps(response.data[0]);
+        setFechaInicioCosechaAps(response.data);
     } catch (error) {
         console.error("Error en obtenerFechaInicioCosechaAps:", error);
     }
@@ -26,8 +26,9 @@ export const obtenerFechaInicioCosechaAps = async (idAnalisisAps, setFechaInicio
 
 export const obtenerTiempoTotalAps = async(idAnalisisAps, setTiempoTotalAps)  => {
     try{
-    const response = await axios.get(`${API_BASE_URL}dashboard/tiempoTotalAps/${idAnalisisAps}`);
-    setTiempoTotalAps(response.data[0]);
+
+        const response = await axios.get(`${API_BASE_URL}dashboard/tiempoTotalAps/${idAnalisisAps}`);
+    setTiempoTotalAps(response.data);
     }catch(error){
         console.error("Error en obtenerTiempoTotalAps:", error);
 
@@ -37,26 +38,18 @@ export const obtenerFechaFinCosechaAps = async (idAnalisisAps, setFechaFinCosech
     try {
 
         const response = await axios.get(`${API_BASE_URL}dashboard/fechaFinCosechaAps/${idAnalisisAps}`);
-        setFechaFinCosechaAps(response.data[0]);
+        setFechaFinCosechaAps(response.data);
     } catch (error) {
         console.error("Error en obtenerFechaFinCosechaAps:", error);
     }
 };
 
-export const obtenerNombreFincaAps = async (idAnalisisAps, setNombreFincaAps) => {
-    try {
-
-        const response = await axios.get(`${API_BASE_URL}dashboard/nombreFincaAps/${idAnalisisAps}`);
-        setNombreFincaAps(response.data[0]);
-    } catch (error) {
-        console.error("Error en obtenerNombreFincaAps:", error);
-    }
-};
 
 export const obtenerCodigoLotesAps = async (idAnalisisAps, setCodigoLotes) => {
     try{
+
         const response = await axios.get(`${API_BASE_URL}dashboard/codigoLotesAps/${idAnalisisAps}`);
-        setCodigoLotes(response.data[0]);
+        setCodigoLotes(response.data);
     } catch(error){
         console.error("Error en obtener Codigo Lotes:",error);
     }
@@ -64,6 +57,7 @@ export const obtenerCodigoLotesAps = async (idAnalisisAps, setCodigoLotes) => {
 
 export const obtenerDosisTeoricaAps = async (idAnalisisAps, setDosisTeorica)=> {
     try{
+
         const response = await axios.get(`${API_BASE_URL}dashboard/dosisTeoricaAps/${idAnalisisAps}`);
         setDosisTeorica(response.data);
     } catch (error){
@@ -73,6 +67,7 @@ export const obtenerDosisTeoricaAps = async (idAnalisisAps, setDosisTeorica)=> {
 
 export const obtenerHumedadDelCultivoAps = async (idAnalisisAps, setHumedadDelCultivo)=> {
     try{
+
         const response = await axios.get(`${API_BASE_URL}dashboard/humedadDelCultivo/${idAnalisisAps}`);
         setHumedadDelCultivo(response.data);
     }catch(error){
@@ -82,6 +77,7 @@ export const obtenerHumedadDelCultivoAps = async (idAnalisisAps, setHumedadDelCu
 
 export const obtenerTchEstimado = async (idAnalisisAps, setTchEstimado) => {
     try{
+
         const response = await axios.get(`${API_BASE_URL}dashboard/tchEstimado/${idAnalisisAps}`);
         setTchEstimado(response.data);
     }catch(error){
@@ -90,10 +86,20 @@ export const obtenerTchEstimado = async (idAnalisisAps, setTchEstimado) => {
 
 }
 
+export const obtenerNombreFincaAps = async (idAnalisisAps, setNombreFincaAps) => {
+    try {
+
+        const response = await axios.get(`${API_BASE_URL}dashboard/nombreFincaAps/${idAnalisisAps}`);
+        setNombreFincaAps(response.data);
+    } catch (error) {
+        console.error("Error en obtenerNombreFincaAps:", error);
+    }
+};
+
 export const obtenerProductoAps = async (idAnalisisAps, setProductoAps) => {
     try {
+
         const response = await axios.get(`${API_BASE_URL}dashboard/productoAps/${idAnalisisAps}`);
-        console.log("ESTA ES LA RESPUESTA DE PRODUCTOS APS: ", response.data);
         setProductoAps(response.data.resultado);
     } catch (error) {
         console.error("Error en obtener Producto APS:", error);
@@ -103,9 +109,8 @@ export const obtenerProductoAps = async (idAnalisisAps, setProductoAps) => {
 
 export const obtenerCodigoParcelasAps = async (idAnalisisAps, setCodigoParcelasAps) => {
     try {
-
         const response = await axios.get(`${API_BASE_URL}dashboard/codigoParcelasAps/${idAnalisisAps}`);
-        setCodigoParcelasAps(response.data[0]);
+        setCodigoParcelasAps(response.data);
     } catch (error) {
         console.error("Error en obtenerCodigoParcelasAps:", error);
     }
@@ -115,7 +120,7 @@ export const obtenerNombreOperadorAps = async (idAnalisisAps, setNombreOperadorA
     try {
 
         const response = await axios.get(`${API_BASE_URL}dashboard/nombreOperadorAps/${idAnalisisAps}`);
-        setNombreOperadorAps(response.data[0]);
+        setNombreOperadorAps(response.data);
     } catch (error) {
         console.error("Error en obtenerNombreOperadorAps:", error);
     }
@@ -123,9 +128,8 @@ export const obtenerNombreOperadorAps = async (idAnalisisAps, setNombreOperadorA
 
 export const obtenerEquipoAps = async (idAnalisisAps, setEquipoAps) => {
     try {
-
         const response = await axios.get(`${API_BASE_URL}dashboard/equipoAps/${idAnalisisAps}`);
-        setEquipoAps(response.data[0]);
+        setEquipoAps(response.data);
     } catch (error) {
         console.error("Error en obtenerEquipoAps:", error);
     }
@@ -134,7 +138,6 @@ export const obtenerEquipoAps = async (idAnalisisAps, setEquipoAps) => {
 
 export const obtenerHoraInicioAps = async (idAnalisisAps, setHoraInicioAps) => {
     try {
-
         const response = await axios.get(`${API_BASE_URL}dashboard/horaInicioAps/${idAnalisisAps}`);
         setHoraInicioAps(response.data);
     } catch (error) {
@@ -146,7 +149,7 @@ export const obtenerHoraFinalAps = async (idAnalisisAps, setHoraFinalAps) => {
     try {
 
         const response = await axios.get(`${API_BASE_URL}dashboard/horaFinalAps/${idAnalisisAps}`);
-        setHoraFinalAps(response.data[0]);
+        setHoraFinalAps(response.data);
     } catch (error) {
         console.error("Error en obtenerHoraFinalAps:", error);
     }
@@ -183,9 +186,9 @@ export const obtenerNombreResponsableCm = async (idAnalisisCosechaMecanica, setN
 export const obtenerFechaInicioCosechaCm = async (idAnalisisCosechaMecanica, setFechaInicioCosechaCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/fechaInicioCosechaCm/${idAnalisisCosechaMecanica}`);
-        setFechaInicioCosechaCm(response.data[0]);
+        setFechaInicioCosechaCm(response.data);
 
-        return response.data[0];
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerFechaInicioCosechaCm:", error);
     }
@@ -194,9 +197,9 @@ export const obtenerFechaInicioCosechaCm = async (idAnalisisCosechaMecanica, set
 export const obtenerFechaFinCosechaCm = async (idAnalisisCosechaMecanica, setFechaFinCosechaCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/fechaFinCosechaCm/${idAnalisisCosechaMecanica}`);
-        setFechaFinCosechaCm(response.data[0]);
+        setFechaFinCosechaCm(response.data);
 
-        return response.data[0];
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerFechaFinCosechaCm:", error);
     }
@@ -240,8 +243,7 @@ export const obtenerPresionCortadorBaseCm = async (idAnalisisCosechaMecanica, se
 export const obtenerConsumoCombustibleCm = async(idAnalisisCosechaMecanica, setConsumoCombustibleCm) =>{
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/consumoCombustibleCm/${idAnalisisCosechaMecanica}`);
-        setConsumoCombustibleCm(response.data);
-
+        setConsumoCombustibleCm(parseFloat(response.data).toFixed(3));
         return response.data;
     } catch(error){
         console.error("Error en obtenerConsumo COmbusitebleCm:", error);
@@ -251,7 +253,7 @@ export const obtenerConsumoCombustibleCm = async(idAnalisisCosechaMecanica, setC
 export const obtenerCalidadGpsCm = async(idAnalisisCosechaMecanica, setCalidadGpsCm) =>{
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/calidadGpsCm/${idAnalisisCosechaMecanica}`);
-        setCalidadGpsCm(response.data);
+        setCalidadGpsCm(parseFloat(response.data).toFixed(3));
 
         return response.data;
     }catch(error){
@@ -306,9 +308,9 @@ export const obtenerRpmCm = async (idAnalisisCosechaMecanica, setRpmCm) =>{
 export const obtenerTchCm = async(idAnalisisCosechaMecanica, setTchCm) => {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/tchCm/${idAnalisisCosechaMecanica}`);
-        setTchCm(response.data);
+        setTchCm(parseFloat(response.data).toFixed(3));
 
-        return response.data;
+        return parseFloat(response.data).toFixed(3);
     }  catch(error){
         console.error("Error en obtenerRpmCm:", error);
     }
@@ -328,9 +330,9 @@ export const obtenerTahCm = async(idAnalisisCosechaMecanica, setTahCm) => {
 export const obtenerHoraInicioCm = async (idAnalisisCosechaMecanica, setHoraInicioCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/horaInicioCm/${idAnalisisCosechaMecanica}`);
-        setHoraInicioCm(response.data[0]);
+        setHoraInicioCm(response.data);
 
-        return response.data[0];
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerHoraInicioCm:", error);
     }
@@ -339,9 +341,9 @@ export const obtenerHoraInicioCm = async (idAnalisisCosechaMecanica, setHoraInic
 export const obtenerHoraFinalCm = async (idAnalisisCosechaMecanica, setHoraFinalCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/horaFinalCm/${idAnalisisCosechaMecanica}`);
-        setHoraFinalCm(response.data[0]);
+        setHoraFinalCm(response.data);
 
-        return response.data[0];
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerHoraFinalCm:", error);
     }
@@ -350,9 +352,9 @@ export const obtenerHoraFinalCm = async (idAnalisisCosechaMecanica, setHoraFinal
 export const obtenerTiempoTotalActividadCm = async (idAnalisisCosechaMecanica, setTiempoTotalActividadCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/tiempoTotalActividadCm/${idAnalisisCosechaMecanica}`);
-        setTiempoTotalActividadCm(response.data[0]);
+        setTiempoTotalActividadCm(response.data);
 
-        return response.data[0];
+        return response.data;
     } catch (error) {
         console.error("Error en obtenerTiempoTotalActividadCm:", error);
     }
@@ -363,8 +365,7 @@ export const obtenerTiempoTotalActividadCm = async (idAnalisisCosechaMecanica, s
 export const obtenerPromedioVelocidadCm = async (idAnalisisCosechaMecanica, setPromedioVelocidadCm) => {
     try {
         const response = await axios.get(`${API_BASE_URL}dashboard/promedioVelocidadCm/${idAnalisisCosechaMecanica}`);
-        setPromedioVelocidadCm(`${response.data} Km/H`);
-
+        setPromedioVelocidadCm(`${parseFloat(response.data).toFixed(3)} Km/H`);
         return `${response.data} Km/H`;
     } catch (error) {
         console.error("Error en obtenerPromedioVelocidadCm:", error);
@@ -665,7 +666,7 @@ export const obtenerPromedioVelocidadHerbicidas = async (idAnalisisHerbicidas, s
 // Función para parsear valores
 export function displayValue(value) {
     if (value === undefined || value === null) {
-        return 'N/A';
+        return '-';
     } else if (Array.isArray(value) && value.length > 1) {
         return (
             <div style={{ overflowY: 'auto', maxHeight: '100px', listStyle: 'none'}}>

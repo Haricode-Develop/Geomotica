@@ -1,0 +1,38 @@
+.slide-background {
+    background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    height: 300px;
+}
+
+.slide-background::before, .slide-background::after {
+    content: '';
+    position: absolute;
+    width: 300%;
+    height: 300%;
+    top: -100%;
+    left: -100%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: rotate 15s linear infinite;
+}
+
+.slide-background::after {
+    animation-delay: -7.5s;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.slide-content {
+    position: relative;
+    z-index: 2;
+}

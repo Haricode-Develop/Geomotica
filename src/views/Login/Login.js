@@ -17,7 +17,7 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/mapeo");
+      navigate("/");
     }
   }, [isAuthenticated, navigate]);
 
@@ -30,7 +30,7 @@ const Login = () => {
       });
       if (response.data) {
         login(response.data);
-        navigate("/mapeo");
+        navigate("/");
       } else {
         setError("Error en el inicio de sesión. Por favor, intenta de nuevo.");
       }

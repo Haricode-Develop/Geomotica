@@ -1,3 +1,5 @@
+/* navbar.css */
+
 .navbar {
     display: flex;
     justify-content: flex-end;
@@ -7,10 +9,18 @@
     background-color: #fff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     position: fixed;
-    width: calc(100% - 250px); /* Ajustar para que no se solape con el sidebar */
     right: 0;
     top: 0;
     z-index: 999;
+    transition: width 0.5s ease;
+}
+
+.navbar.open {
+    width: calc(100% - 250px); /* Ajustar para que no se solape con el sidebar */
+}
+
+.navbar.closed {
+    width: calc(100% - 60px); /* Ajustar cuando el sidebar está cerrado */
 }
 
 .navbar-section {
@@ -20,11 +30,69 @@
     cursor: pointer;
 }
 
-.navbar-section span {
+.language-selector {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.language-selector:hover {
+    background-color: #f0f0f0;
+}
+
+.language-selector span {
+    margin-left: 5px;
+    font-size: 0.9em; /* Reducir el tamaño de la fuente */
+}
+
+.flag-icon {
+    width: 20px;
+    height: auto;
+    margin-right: 5px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     margin-left: 10px;
-    font-size: 1em;
+}
+
+.user-info span:first-child {
+    font-weight: bold;
+}
+
+.user-info span:last-child {
+    font-size: 0.9em;
+    color: #555;
 }
 
 .navbar-section:last-child {
+    display: flex;
+    align-items: center;
+    margin-right: 20px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-left: 10px;
+}
+
+.user-info span:first-child {
+    font-weight: bold;
+}
+
+.user-info span:last-child {
+    font-size: 0.9em;
+    color: #555;
+}
+
+.navbar-section:last-child {
+    display: flex;
+    align-items: center;
     margin-right: 20px;
 }

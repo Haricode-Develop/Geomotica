@@ -17,8 +17,8 @@ const BarIndicator = ({ filterType, isHistory }) => {
             break;
         case "autoPilot":
             title = "Piloto Automatico";
-            indicadorIzquierda = "Automático";
-            indicadorDerecha = "Manual";
+            indicadorIzquierda = "Enganchado";
+            indicadorDerecha = "Desenganchado";
             break;
         case "cutterBase":
             title = "Presion Cortador Base";

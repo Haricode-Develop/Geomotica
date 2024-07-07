@@ -1,6 +1,6 @@
 .floating-buttons {
     position: absolute;
-    top: 10px;
+    top: 290px;
     right: 150px;
     z-index: 1000;
     display: flex;

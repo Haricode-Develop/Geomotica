@@ -1,3 +1,5 @@
+/* DashboardStyle.css */
+
 .dashboard {
     display: flex;
 }
@@ -29,6 +31,7 @@
     margin: 0 auto;
     margin-bottom: 10px;
 }
+
 .help-button {
     position: fixed;
     bottom: 20px;
@@ -51,6 +54,7 @@
 .help-button i {
     pointer-events: none;
 }
+
 .user-name {
     text-align: center;
     color: white;
@@ -84,27 +88,45 @@
 }
 
 .main-content {
-    margin-left: 50px;
-    width: calc(100% - 250px);
+    margin-left: 110px;
+    margin-top: 30px;
     flex: 1;
     padding: 20px;
+    transition: margin-left 0.5s, width 0.5s;
 }
+
 .main-content.expand {
-    margin-left: 50px;
-    width: calc(100% - 50px);
+    margin-left: 0px;
+    width: calc(100% - 30px);
 }
+
+.dashboard-main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .dashboard-title {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #4A4A4A;
-    text-transform: uppercase;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: bold;
 }
 
 .data-section {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
+}
+
+.dashboard-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .data-card {
@@ -143,14 +165,6 @@
     border-radius: 5px;
 }
 
-.analysis-controls {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    margin-top: 20px;
-    flex-wrap: wrap;
-}
-
 .custom-file-upload {
     margin: 10px;
     padding: 10px 15px;
@@ -161,20 +175,19 @@
     text-align: center;
     display: inline-block;
 }
+
 .custom-file-upload input[type="file"] {
     display: none;
 }
 
-.download-template {
-    margin: 10px;
-    padding: 10px 15px;
-    background-color: #4CAF50;
-    color: white;
-    border-radius: 5px;
-    text-decoration: none;
-    text-align: center;
-    display: inline-block;
+.map-section {
+    margin-top: 20px;
 }
+
+.seccion-analisis {
+    margin-top: 20px;
+}
+
 .action-button {
     margin: 10px;
     padding: 10px 15px;
@@ -184,22 +197,50 @@
     color: white;
     cursor: pointer;
 }
+
 .action-button:hover {
     background-color: #0b7dda;
 }
 
 .type-selector {
-    margin: 10px;
-    padding: 10px 15px;
-    border: 1px solid #ccc;
+    width: 200px;
+    background-color: #f0f0f0;
+    padding: 10px;
     border-radius: 5px;
-    background-color: #fff;
+    display: flex;
+    align-items: center;
 }
+
+.type-selector select {
+    flex: 1;
+    border: none;
+    background: none;
+    font-size: 16px;
+    color: #333;
+    padding: 5px;
+}
+
+.upload-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.download-template {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
 #file-upload {
     display: none;
 }
-
-
 
 .toggle-button {
     position: absolute;
@@ -211,9 +252,8 @@
     color: white;
 }
 
-
 .sidebar.closed {
-    width: 50px;
+    width: 60px;
 }
 
 .profile-section {
@@ -242,7 +282,6 @@
     }
 }
 
-
 .details-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -269,51 +308,46 @@
 }
 
 .map-container {
-    height: 400px; /* ajusta según tus necesidades */
+    height: 400px;
     margin-top: 16px;
-}
-
-.analysis-controls {
-    /* ... otros estilos ... */
 }
 
 .file-upload-group {
     position: relative;
-    margin-right: 15px; /* ajustar según sea necesario */
+    margin-right: 15px;
 }
 
 .custom-file-upload {
-    /* estilos existentes... */
     cursor: pointer;
     display: inline-block;
-    margin-right: 10px; /* para que el mensaje no quede pegado al botón */
+    margin-right: 10px;
 }
 
 .file-info {
     display: inline-flex;
     align-items: center;
     padding: 5px 10px;
-    background-color: #f4f4f4; /* color de fondo suave */
-    border: 1px solid #dcdcdc; /* borde sutil */
-    border-radius: 15px; /* bordes redondeados */
+    background-color: #f4f4f4;
+    border: 1px solid #dcdcdc;
+    border-radius: 15px;
     margin-left: 10px;
-    transition: all 0.3s ease; /* transición suave para la aparición */
+    transition: all 0.3s ease;
 }
 
 .file-name {
     font-size: 0.9em;
-    color: #333; /* color de texto */
+    color: #333;
     margin-right: 5px;
-    font-weight: bold; /* nombre del archivo en negrita */
+    font-weight: bold;
 }
 
 .file-size {
     font-size: 0.8em;
-    color: #666; /* color de texto más suave */
+    color: #666;
 }
 
 .file-upload-group:hover .file-info {
-    background-color: #e8e8e8; /* color de fondo al pasar el ratón por encima */
+    background-color: #e8e8e8;
 }
 
 /* Estilos para animar la entrada del mensaje */
@@ -321,17 +355,24 @@
     opacity: 0;
     transform: translateY(-20%);
 }
+
 .file-info-enter-active {
     opacity: 1;
     transform: translateY(0);
     transition: opacity 300ms, transform 300ms;
 }
+
 .file-info-exit {
     opacity: 1;
     transform: translateY(0%);
 }
+
 .file-info-exit-active {
     opacity: 0;
     transform: translateY(-20%);
     transition: opacity 300ms, transform 300ms;
+}
+
+analysis-type-selector-label {
+    width: 100px;
 }

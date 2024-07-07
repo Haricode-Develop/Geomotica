@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, CircleMarker, LayersControl, Polygon, useMap } from 'react-leaflet';
-
+import { useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import io from 'socket.io-client';
@@ -10,56 +9,44 @@ import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
 import * as turf from '@turf/turf';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
-import {toast } from 'react-toastify';
-
+import { toast } from 'react-toastify';
 import Slider from '@mui/material/Slider';
 import Draggable from 'react-draggable';
+import CommonMap from '../../components/CommonMap/CommonMap';
 
-const { BaseLayer } = LayersControl;
-
-const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot, progressFinish, idAnalisis, tipoAnalisis }) => {
-    const [hullPolygon, setHullPolygon] = useState(null); // Estado para almacenar el polígono convex hull
-
+const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnalisis, tipoAnalisis }) => {
+    const [hullPolygon, setHullPolygon] = useState(null);
     const [pilotAutoPercentage, setPilotAutoPercentage] = useState(0);
-
     const [autoTracketPercentage, setAutoTracketPercentage] = useState(0);
     const [activeFilter, setActiveFilter] = useState(null);
-
     const [points, setPoints] = useState([]);
     const [filteredPoints, setFilteredPoints] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
     const [filterAutoPilot, setFilterAutoPilot] = useState(false);
     const [filterAutoTracket, setFilterAutoTracket] = useState(false);
+    const [mapBounds, setMapBounds] = useState(null);
 
-    // Filtros de velocidad
     const [lowSpeed, setLowSpeed] = useState(0);
     const [medSpeed, setMedSpeed] = useState(0);
     const [highSpeed, setHighSpeed] = useState(0);
 
-    // Filtros de calidad de GPS
     const [lowGpsQuality, setLowGpsQuality] = useState(0);
     const [medGpsQuality, setMedGpsQuality] = useState(0);
     const [highGpsQuality, setHighGpsQuality] = useState(0);
 
-    // Filtros de combustible
     const [lowFuel, setLowFuel] = useState(0);
     const [medFuel, setMedFuel] = useState(0);
     const [highFuel, setHighFuel] = useState(0);
 
-    // Filtros de RPM
     const [lowRpm, setLowRpm] = useState(0);
     const [medRpm, setMedRpm] = useState(0);
     const [highRpm, setHighRpm] = useState(0);
-
-    // Filtros de CutterBase
 
     const [lowCutterBase, setLowCutterBase] = useState(0);
     const [medCutterBase, setMedCutterBase] = useState(0);
     const [highCutterBase, setHighCutterBase] = useState(0);
 
-
     const [zoom, setZoom] = useState(3);
-
 
     const [filterSpeed, setFilterSpeed] = useState(false);
     const [filterGpsQuality, setFilterGpsQuality] = useState(false);
@@ -67,29 +54,22 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
     const [filterRpm, setFilterRpm] = useState(false);
     const [filterCutterBase, setFilterCutterBase] = useState(false);
     const [filterModeCutterBase, setFilterModeCutterBase] = useState(false);
-
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-
     const [mapKey, setMapKey] = useState(Date.now());
     const workerRef = useRef(null);
+    const mapRef = useRef(null);
 
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
-
     const [polygon, setPolygon] = useState([]);
-
     const [outsidePolygon, setOutsidePolygon] = useState([]);
-
     const [isAreaDataCalculated, setIsAreaDataCalculated] = useState(false);
-
     const [toastShown, setToastShown] = useState(false);
-
     const [areaData, setAreaData] = useState({
         polygonArea: null,
         outsidePolygonArea: null,
         areaDifference: null
     });
-
     const [formData, setFormData] = useState({
         filterAutoPilot: false,
         filterAutoTracket: false,
@@ -116,13 +96,11 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         highCutterBase: 0,
         idAnalisis: 0
     });
-
     const [percentage, setPercentage] = useState({
         autoTracket: null,
         autoPilot: null,
         totalEfficiency: null
     });
-
     const [availableFilters, setAvailableFilters] = useState({
         speed: false,
         gpsQuality: false,
@@ -134,26 +112,24 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         modeCutterBase: false,
     });
 
-    const changeActiveFilter = (newFilter) => {
-        setActiveFilter(newFilter);
-    };
+
 
     const [isMapButtonDisabled, setIsMapButtonDisabled] = useState(!progressFinish);
 
-    const MapEffect = ({ onNoPoints }) => {
+    const MapBounds = ({ onNoPoints }) => {
         const map = useMap();
 
         useEffect(() => {
             if (filteredPoints.length === 0) return;
 
             const latLngs = filteredPoints.map(point => {
-                if(point.geometry.type !== 'MultiPolygon'){
+                if (point.geometry.type !== 'MultiPolygon') {
                     const [longitude, latitude] = point.geometry.coordinates;
                     if (longitude && latitude) {
                         return L.latLng(latitude, longitude);
                     }
                     return null;
-                }else{
+                } else {
                     return null;
                 }
             }).filter(latLng => latLng !== null);
@@ -161,6 +137,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             if (latLngs.length > 0) {
                 const bounds = L.latLngBounds(latLngs);
                 map.fitBounds(bounds, { padding: [50, 50] });
+                setMapBounds(bounds);
             } else {
                 onNoPoints();
             }
@@ -175,7 +152,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 console.error("Polygon must have at least 4 positions.");
                 return 0;
             }
-            // Asegurarse de que el primer y último punto sean iguales
             const firstPoint = polygonCoords[0];
             const lastPoint = polygonCoords[polygonCoords.length - 1];
             if (firstPoint[0] !== lastPoint[0] || firstPoint[1] !== lastPoint[1]) {
@@ -208,11 +184,9 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
     }, [polygon, outsidePolygon, onAreaCalculated]);
 
     const manejarEnvioAlSalir = (e) => {
-
         const datosFormulario = JSON.parse(localStorage.getItem('formData'));
         if (datosFormulario) {
-            enviarDatosFormulario(datosFormulario).then(() => {
-            }).catch(error => {
+            enviarDatosFormulario(datosFormulario).then(() => {}).catch(error => {
                 console.error('Error al enviar datos al salir', error);
             });
         }
@@ -238,7 +212,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
     }, [toastShown]);
 
     useEffect(() => {
-        // Inicializar el worker
         const worker = new Worker('dataWorker.js');
         workerRef.current = worker;
 
@@ -278,7 +251,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             }
         };
 
-        // Inicializar el socket
         const socket = io(API_BASE_URL);
 
         socket.on('updateGeoJSONLayer', (geojsonData) => {
@@ -298,7 +270,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         localStorage.setItem('formData', JSON.stringify(formData));
     }, [formData, filterSpeed, filterGpsQuality, filterFuel, filterRpm, filterCutterBase, filterAutoPilot]);
 
-
     useEffect(() => {
         const verificarYEnviarDatos = () => {
             if (
@@ -316,7 +287,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         verificarYEnviarDatos();
     }, [filterSpeed, lowSpeed, medSpeed, highSpeed, filterGpsQuality, lowGpsQuality, medGpsQuality, highGpsQuality, filterFuel, lowFuel, medFuel, highFuel, filterRpm, lowRpm, medRpm, highRpm, filterCutterBase, lowCutterBase, medCutterBase, highCutterBase, filterAutoPilot, filterAutoTracket, filterModeCutterBase]);
 
-
     const transformPolygonCoords = (polygon) => {
         return polygon.map(ring => {
             if (Array.isArray(ring) && ring.every(coords => Array.isArray(coords) && coords.length === 2 && coords.every(coord => typeof coord === 'number'))) {
@@ -327,6 +297,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             }
         });
     };
+
     const enviarDatosFormulario = async (datosFormulario) => {
         try {
             const response = await fetch(`${API_BASE_URL}dashboard/ultimosDatosIngresados`, {
@@ -347,9 +318,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         }
     };
 
-
-
-
     const convertTimeToDecimalHours = (time) => {
         const parts = time.split(' ');
         let days = 0;
@@ -360,13 +328,11 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             timePart = parts[2];
         }
 
-        // Separar horas, minutos y segundos
         const timeParts = timePart.split(':');
         const hours = parseInt(timeParts[0], 10);
         const minutes = timeParts[1] ? parseInt(timeParts[1], 10) / 60 : 0;
         const seconds = timeParts[2] ? parseInt(timeParts[2], 10) / 3600 : 0;
 
-        // Sumar los días convertidos a horas, más las horas, minutos y segundos
         return days * 24 + hours + minutes + seconds;
     };
 
@@ -377,7 +343,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
         const pilotAutoPoints = pointsData.filter(point =>
             point.properties.PILOTO_AUTOMATICO &&
-            point.properties.PILOTO_AUTOMATICO.trim().toLowerCase() === 'automatic'
+            point.properties.PILOTO_AUTOMATICO.trim().toLowerCase() === 'engaged'
         ).length;
 
         const autoTracketPoints = pointsData.filter(point =>
@@ -390,7 +356,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             point.properties.MODO_CORTE_BASE.trim().toLowerCase() === 'automatic'
         ).length;
 
-
         const puntoEncontrado = pointsData.find(point => point.properties.TIEMPO_TOTAL && point.properties.TIEMPO_TOTAL !== "");
 
         let tiempoTotal = "00:00:00";
@@ -399,7 +364,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             tiempoTotal = puntoEncontrado.properties.TIEMPO_TOTAL;
         }
 
-        let totalEfficiency = areaData.outsidePolygonArea / convertTimeToDecimalHours(tiempoTotal) ;
+        let totalEfficiency = areaData.outsidePolygonArea / convertTimeToDecimalHours(tiempoTotal);
 
         const calculatedPilotAutoPercentaje = totalPoints > 0 ? (pilotAutoPoints / totalPoints) * 100 : 0;
         const calculatedAutoTracketPercentaje = totalPoints > 0 ? (autoTracketPoints / totalPoints) * 100 : 0;
@@ -414,17 +379,14 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         });
 
         if (percentageAutoPilot) {
-            percentageAutoPilot(calculatedAutoTracketPercentaje, calculatedPilotAutoPercentaje, calculatedModoCortadorBasePercentaje,totalEfficiency);
+            percentageAutoPilot(calculatedAutoTracketPercentaje, calculatedPilotAutoPercentaje, calculatedModoCortadorBasePercentaje, totalEfficiency);
         }
 
-
     }, [points, isAreaDataCalculated]);
-
 
     useEffect(() => {
         setIsMapButtonDisabled(!progressFinish);
     }, [progressFinish]);
-
 
     const toggleFilter = () => {
         setFilterRpm(false);
@@ -435,8 +397,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterModeCutterBase(false);
         setFilterAutoTracket(false);
 
-        setFilterAutoPilot(current => !current);
-        setFormData(prev => ({...prev, filterAutoPilot: !prev.filterAutoPilot}));
+        setFilterAutoPilot(current => {
+            const newValue = !current;
+            setActiveFilter(newValue ? 'PILOTO_AUTOMATICO' : null);
+            return newValue;
+        });
+        setFormData(prev => ({ ...prev, filterAutoPilot: !prev.filterAutoPilot }));
         setZoom(7);
         setMapKey(Date.now());
     };
@@ -450,12 +416,15 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterModeCutterBase(false);
         setFilterAutoPilot(false);
 
-        setFilterAutoTracket(current => !current);
-        setFormData(prev => ({...prev, filterAutoTracket: !prev.filterAutoTracket}));
+        setFilterAutoTracket(current => {
+            const newValue = !current;
+            setActiveFilter(newValue ? 'AUTO_TRACKET' : null);
+            return newValue;
+        });
+        setFormData(prev => ({ ...prev, filterAutoTracket: !prev.filterAutoTracket }));
         setZoom(7);
         setMapKey(Date.now());
     };
-
 
     const toggleFilterModeCutterBase = () => {
         setFilterRpm(false);
@@ -466,8 +435,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterAutoPilot(false);
         setFilterAutoTracket(false);
 
-        setFilterModeCutterBase(current => !current);
-        setFormData(prev => ({...prev, filterModeCutterBase: !prev.filterModeCutterBase}));
+        setFilterModeCutterBase(current => {
+            const newValue = !current;
+            setActiveFilter(newValue ? 'MODO_CORTE_BASE' : null);
+            return newValue;
+        });
+        setFormData(prev => ({ ...prev, filterModeCutterBase: !prev.filterModeCutterBase }));
         setZoom(7);
         setMapKey(Date.now());
     };
@@ -481,8 +454,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterModeCutterBase(false);
         setFilterAutoTracket(false);
 
-        if(lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1){
-            setFilterSpeed(current => !current);
+        if (lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1) {
+            setFilterSpeed(current => {
+                const newValue = !current;
+                setActiveFilter(newValue ? 'VELOCIDAD_Km_H' : null);
+                return newValue;
+            });
             setFormData(prev => ({
                 ...prev,
                 filterSpeed: !prev.filterSpeed,
@@ -495,7 +472,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         }
     };
 
-
     const toggleFilterGpsQuality = () => {
         setFilterRpm(false);
         setFilterFuel(false);
@@ -505,8 +481,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterAutoTracket(false);
         setFilterSpeed(false);
 
-        if(lowGpsQuality !== -1 && medGpsQuality !== -1 && highGpsQuality !== -1){
-            setFilterGpsQuality(current => !current);
+        if (lowGpsQuality !== -1 && medGpsQuality !== -1 && highGpsQuality !== -1) {
+            setFilterGpsQuality(current => {
+                const newValue = !current;
+                setActiveFilter(newValue ? 'CALIDAD_DE_SENAL' : null);
+                return newValue;
+            });
             setFormData(prev => ({
                 ...prev,
                 filterGpsQuality: !prev.filterGpsQuality,
@@ -528,8 +508,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterSpeed(false);
         setFilterGpsQuality(false);
 
-        if(lowFuel !== -1 && medFuel !== -1 && highFuel !== -1){
-            setFilterFuel(current => !current);
+        if (lowFuel !== -1 && medFuel !== -1 && highFuel !== -1) {
+            setFilterFuel(current => {
+                const newValue = !current;
+                setActiveFilter(newValue ? 'CONSUMOS_DE_COMBUSTIBLE' : null);
+                return newValue;
+            });
             setFormData(prev => ({
                 ...prev,
                 filterFuel: !prev.filterFuel,
@@ -551,8 +535,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterGpsQuality(false);
         setFilterFuel(false);
 
-        if(lowRpm !== -1 && medRpm !== -1 && highRpm !== -1){
-            setFilterRpm(current => !current);
+        if (lowRpm !== -1 && medRpm !== -1 && highRpm !== -1) {
+            setFilterRpm(current => {
+                const newValue = !current;
+                setActiveFilter(newValue ? 'RPM' : null);
+                return newValue;
+            });
             setFormData(prev => ({
                 ...prev,
                 filterRpm: !prev.filterRpm,
@@ -565,7 +553,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         }
     };
 
-
     const toggleFilterCutterBase = () => {
         setFilterAutoPilot(false);
         setFilterAutoTracket(false);
@@ -575,8 +562,12 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         setFilterFuel(false);
         setFilterRpm(false);
 
-        if(lowCutterBase !== -1 && medCutterBase !== -1 && highCutterBase !== -1){
-            setFilterCutterBase(current => !current);
+        if (lowCutterBase !== -1 && medCutterBase !== -1 && highCutterBase !== -1) {
+            setFilterCutterBase(current => {
+                const newValue = !current;
+                setActiveFilter(newValue ? 'PRESION_DE_CORTADOR_BASE' : null);
+                return newValue;
+            });
             setFormData(prev => ({
                 ...prev,
                 filterCutterBase: !prev.filterCutterBase,
@@ -588,101 +579,41 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
             setMapKey(Date.now());
         }
     };
-    // ========= Filtros de velocidad
-    useEffect(() => {
-        if (filterSpeed) {
-            // Aplicar el filtro de velocidad cuando esté activo
-            setFilteredPoints(points.filter(point => {
-                const speed = point.properties.VELOCIDAD_Km_H;
-                return speed >= lowSpeed && speed <= highSpeed;
-            }));
-        } else {
-            // Sin filtro de velocidad, mostrar todos los puntos
-            setFilteredPoints(points);
-        }
-    }, [filterSpeed, lowSpeed, medSpeed, highSpeed, points]);
-
-    // ========= Filtro de calidad de GPS
-    useEffect(() => {
-        if (filterGpsQuality) {
-            setFilteredPoints(points.filter(point => {
-                const quality = point.properties.CALIDAD_DE_SENAL;
-                return quality >= lowGpsQuality && quality <= highGpsQuality;
-            }));
-        } else {
-            setFilteredPoints(points);
-        }
-    }, [filterGpsQuality, lowGpsQuality, medGpsQuality, highGpsQuality, points]);
-
-
-    // ========= Filtro de combustible
 
     useEffect(() => {
-        if (filterFuel) {
-            setFilteredPoints(points.filter(point => {
-                const fuel = point.properties.CONSUMOS_DE_COMBUSTIBLE;
-                return fuel >= lowFuel && fuel <= highFuel;
-            }));
-        } else {
-            setFilteredPoints(points);
-        }
-    }, [filterFuel, lowFuel, medFuel, highFuel, points]);
+        const applyFilter = () => {
+            if (filterSpeed) {
+                setFilteredPoints(points.filter(point => {
+                    const speed = point.properties.VELOCIDAD_Km_H;
+                    return speed >= lowSpeed && speed <= highSpeed;
+                }));
+            } else if (filterGpsQuality) {
+                setFilteredPoints(points.filter(point => {
+                    const quality = point.properties.CALIDAD_DE_SENAL;
+                    return quality >= lowGpsQuality && quality <= highGpsQuality;
+                }));
+            } else if (filterFuel) {
+                setFilteredPoints(points.filter(point => {
+                    const fuel = point.properties.CONSUMOS_DE_COMBUSTIBLE;
+                    return fuel >= lowFuel && fuel <= highFuel;
+                }));
+            } else if (filterRpm) {
+                setFilteredPoints(points.filter(point => {
+                    const rpm = point.properties.RPM;
+                    return rpm >= lowRpm && rpm <= highRpm;
+                }));
+            } else if (filterCutterBase) {
+                setFilteredPoints(points.filter(point => {
+                    const cutterBase = point.properties.PRESION_DE_CORTADOR_BASE;
+                    return cutterBase >= lowCutterBase && cutterBase <= highCutterBase;
+                }));
+            } else {
+                setFilteredPoints(points);
+            }
+        };
 
-    // ========= Filtro de RPM
-
-    useEffect(() => {
-        if (filterRpm) {
-            setFilteredPoints(points.filter(point => {
-                const rpm = point.properties.RPM;
-                return rpm >= lowRpm && rpm <= highRpm;
-            }));
-        } else {
-            setFilteredPoints(points);
-        }
-    } , [filterRpm, lowRpm, medRpm, highRpm, points]);
-
-
-    // ========= Filtro de CutterBase
-
-    useEffect(() => {
-        if (filterCutterBase) {
-            setFilteredPoints(points.filter(point => {
-                const cutterBase = point.properties.PRESION_DE_CORTADOR_BASE;
-                return cutterBase >= lowCutterBase && cutterBase <= highCutterBase;
-            }));
-        } else {
-            setFilteredPoints(points);
-        }
-    }, [filterCutterBase, lowCutterBase, medCutterBase, highCutterBase, points]);
-
-
-     // ========= Filtro de Piloto Automático
-    useEffect(() => {
-        if (filterAutoPilot) {
-            setFilteredPoints(points);
-        } else {
-            setFilteredPoints(points);
-        }
-    }, [filterAutoPilot, points]);
-
-
-    useEffect(() => {
-        if (filterAutoTracket) {
-            setFilteredPoints(points);
-        } else {
-            setFilteredPoints(points);
-        }
-    }, [filterAutoTracket, points]);
-
-
-
-    useEffect(() => {
-        if (filterModeCutterBase) {
-            setFilteredPoints(points);
-        } else {
-            setFilteredPoints(points);
-        }
-    }, [filterModeCutterBase, points]);
+        applyFilter();
+    }, [filterAutoPilot, filterAutoTracket, filterSpeed, filterGpsQuality, filterFuel, filterRpm, filterCutterBase, filterModeCutterBase, points]);
 
     useEffect(() => {
         if (filteredPoints.length > 0) {
@@ -694,17 +625,13 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
             if (validPoints.length > 0) {
                 const pointsForHull = turf.points(validPoints.map(point => point.geometry.coordinates));
-
                 const hull = turf.convex(pointsForHull);
                 if (hull) {
                     setHullPolygon(hull.geometry.coordinates[0].map(coord => [coord[1], coord[0]]));
                 }
-
             }
         }
     }, [filteredPoints]);
-
-
 
     const PaperComponent = (props) => {
         return (
@@ -714,40 +641,31 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
         );
     };
 
-
-
-
-    function chooseColor(val, filter){
+    function chooseColor(val, filter) {
         const ranges = {
             speed: [lowSpeed, medSpeed],
             gpsQuality: [lowGpsQuality, medGpsQuality],
             fuel: [lowFuel, medFuel],
             rpm: [lowRpm, medRpm],
             cutterBase: [lowCutterBase, medCutterBase],
-
         };
-        if(filter === "autoTracket"){
-            if(val !== '0' && val !== '1'){
 
+        if (filter === "autoTracket") {
+            if (val !== '0' && val !== '1') {
                 return val.toLowerCase().trim() === 'engaged' ? "green" : "blue";
-            }else{
+            } else {
                 return val === '0' ? "blue" : "red";
-
             }
         }
-        if(filter === "autoPilot" || filter === "modeCutterBase"){
-            if(val !== '0' && val !== '1'){
+        if (filter === "autoPilot" || filter === "modeCutterBase") {
+            if (val !== '0' && val !== '1') {
                 return val.toLowerCase().trim() === 'automatic' ? "green" : "blue";
-
-            }else{
+            } else {
                 return val === '1' ? "red" : "blue";
             }
-
         }
 
-
         if (ranges[filter]) {
-
             return getColorFromRange(val, ranges[filter]);
         }
 
@@ -789,8 +707,6 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
 
         checkAvailableFilters();
     }, [points]);
-
-
 
     return (
         <>
@@ -834,94 +750,36 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 </Tooltip>
             </div>
 
-            <MapContainer key={mapKey} center={mapCenter} zoom={zoom} style={{ height: '65vh', width: '100%' }}>
-                <MapEffect onNoPoints={() => setToastShown(true)} />
-                <LayersControl position="topright">
-                    <BaseLayer checked name="Satellite View">
-                        <TileLayer
-                            url="https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-                            minZoom={3}
-                            maxZoom={20}
-                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
-                        />
-                    </BaseLayer>
-                    <BaseLayer name="Street Map">
-                        <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}&y}.png"
-                            maxZoom={19}
-                        />
-                    </BaseLayer>
-                    {filteredPoints.map((point, idx) => {
-                        const coordinates = point.geometry.coordinates;
+            <CommonMap
+                key={mapKey}
+                center={mapCenter}
+                zoom={zoom}
+                polygons={[polygon]}
+                points={filteredPoints}
+                hullPolygon={hullPolygon}
+                areasSuperpuestas={[]}
+                nonIntersectedAreas={[]}
+                bufferedLines={[]}
+                bufferedIntersections={[]}
+                activeFilter={activeFilter}
+                filterValues={{
+                    PILOTO_AUTOMATICO: { low: 0, medium: 0, high: 1 },
+                    AUTO_TRACKET: { low: 0, medium: 0, high: 1 },
+                    MODO_CORTE_BASE: { low: 0, medium: 0, high: 1 },
+                    VELOCIDAD_Km_H: { low: lowSpeed, medium: medSpeed, high: highSpeed },
+                    CALIDAD_DE_SENAL: { low: lowGpsQuality, medium: medGpsQuality, highGpsQuality },
+                    CONSUMOS_DE_COMBUSTIBLE: { low: lowFuel, medium: medFuel, high: highFuel },
+                    RPM: { low: lowRpm, medium: medRpm, high: highRpm },
+                    PRESION_DE_CORTADOR_BASE: { low: lowCutterBase, medium: medCutterBase, high: highCutterBase }
+                }}
+                polygonProperties={[]}
+                showIntersections={false}
+                onLineHover={() => { }}
+                onLineMouseOut={() => { }}
+                onLineClick={() => { }}
+                mapRef={mapRef}
+            />
 
-
-                        if (Array.isArray(coordinates) && coordinates.length === 2 && coordinates.every(coord => typeof coord === 'number')) {
-
-                        let fillColor;
-                        if(filterAutoPilot){
-                            fillColor = chooseColor(point.properties.PILOTO_AUTOMATICO, "autoPilot");
-                        }else if(filterAutoTracket){
-                            fillColor = chooseColor(point.properties.AUTO_TRACKET, "autoTracket");
-
-                        }else if(filterSpeed){
-                            fillColor = chooseColor(point.properties.VELOCIDAD_Km_H, "speed");
-                        }else if(filterGpsQuality){
-                            fillColor = chooseColor(point.properties.CALIDAD_DE_SENAL, "gpsQuality");
-                        }else if(filterFuel){
-                            fillColor = chooseColor(point.properties.CONSUMOS_DE_COMBUSTIBLE, "fuel");
-                        }else if (filterRpm) {
-                            fillColor = chooseColor(point.properties.RPM, "rpm");
-                        }else if (filterCutterBase) {
-                            fillColor = chooseColor(point.properties.PRESION_DE_CORTADOR_BASE, "cutterBase");
-
-                        }else if(filterModeCutterBase){
-                            fillColor = chooseColor(point.properties.MODO_CORTE_BASE, "modeCutterBase");
-                        }
-                        else{
-                            fillColor = "blue";
-                        }
-                        if (coordinates.length >= 2) {
-
-                        return (
-                            <CircleMarker
-                                key={idx}
-                                center={[coordinates[1],coordinates[0]]}
-                                radius={5}
-                                fillColor={fillColor}
-                                color={fillColor}
-                                weight={0.2}
-                                opacity={1}
-                                fillOpacity={1}
-                            />
-                        );
-                        }
-
-                        } else {
-                            return null;
-                        }
-                    })}
-
-                    {polygon.length > 0 && (
-                        <Polygon
-                            positions={transformPolygonCoords(polygon)}
-                            color="black"
-                        />
-                    )}
-                    {/*
-   {outsidePolygon.length > 0 && (
-                        <Polygon
-                            positions={transformPolygonCoords(outsidePolygon)}
-                            color="red"
-                        />
-                    )}
-
-*/}
-
-
-                </LayersControl>
-
-
-            </MapContainer>
             <Dialog
                 open={isFilterDialogOpen}
                 onClose={closeFilterDialog}
@@ -935,6 +793,7 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                         resize: 'both',
                     }
                 }}
+                PaperComponent={PaperComponent}
             >
                 <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
                     Generar Mapas
@@ -942,330 +801,301 @@ const MapComponent = ({ csvData, zipFile, onAreaCalculated, percentageAutoPilot,
                 <DialogContent>
                     <FormGroup>
                         {availableFilters.autoPilot && (
-                            <>
-                        <FormControlLabel
-                            control={<Switch checked={filterAutoPilot} onChange={toggleFilter} />}
-                            label="Piloto Automático"
-                        />
-                            </>
+                            <FormControlLabel
+                                control={<Switch checked={filterAutoPilot} onChange={toggleFilter} />}
+                                label="Piloto Automático"
+                            />
                         )}
-
-
                         {availableFilters.autoTracket && (
-                            <>
                             <FormControlLabel
-                            control={<Switch checked={filterAutoTracket} onChange={toggleFilterAutoTracket} />}
-                            label="Auto Tracket"
-                        />
-                            </>
+                                control={<Switch checked={filterAutoTracket} onChange={toggleFilterAutoTracket} />}
+                                label="Auto Tracket"
+                            />
                         )}
-
                         {availableFilters.modeCutterBase && (
+                            <FormControlLabel
+                                control={<Switch checked={filterModeCutterBase} onChange={toggleFilterModeCutterBase} />}
+                                label="Modo corte base"
+                            />
+                        )}
+                        {availableFilters.speed && (
                             <>
-                        <FormControlLabel
-                            control={<Switch checked={filterModeCutterBase} onChange={toggleFilterModeCutterBase} />}
-                            label="Modo corte base"
-                        />
+                                <FormControlLabel
+                                    control={<Switch checked={filterSpeed} onChange={toggleFilterSpeed} />}
+                                    label="Velocidad (Km/H)"
+                                />
+                                <TextField
+                                    label="Bajo"
+                                    variant="outlined"
+                                    type="number"
+                                    name="low"
+                                    value={lowSpeed}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setLowSpeed(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setLowSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Medio"
+                                    variant="outlined"
+                                    type="number"
+                                    name="medium"
+                                    value={medSpeed}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setMedSpeed(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setMedSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Alto"
+                                    variant="outlined"
+                                    type="number"
+                                    name="high"
+                                    value={highSpeed}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setHighSpeed(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setHighSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
                             </>
                         )}
-
-                        {availableFilters.speed && (
-
-                            <>
-                            <FormControlLabel
-                            control={<Switch checked={filterSpeed} onChange={toggleFilterSpeed} />}
-                            label="Velocidad (Km/H)"
-                        />
-
-
-                        <TextField
-                            label="Bajo"
-                            variant="outlined"
-                            type="number"
-                            name="low"
-                            value={lowSpeed}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setLowSpeed(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setLowSpeed(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Medio"
-                            variant="outlined"
-                            type="number"
-                            name="medium"
-                            value={medSpeed}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setMedSpeed(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setMedSpeed(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Alto"
-                            variant="outlined"
-                            type="number"
-                            name="high"
-                            value={highSpeed}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setHighSpeed(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setHighSpeed(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                            </>
-                    )}
-
                         {availableFilters.gpsQuality && (
                             <>
-                        <FormControlLabel
-                            control={<Switch checked={filterGpsQuality} onChange={toggleFilterGpsQuality} />}
-                            label="Calidad Gps"
-                        />
-
-                        <TextField
-                            label="Bajo"
-                            variant="outlined"
-                            type="number"
-                            name="lowGps"
-                            value={lowGpsQuality}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setLowGpsQuality(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setLowGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Medio"
-                            variant="outlined"
-                            type="number"
-                            name="mediumGps"
-                                value={medGpsQuality}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setMedGpsQuality(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setMedGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Alto"
-                            variant="outlined"
-                            type="number"
-                            name="highGps"
-                            value={highGpsQuality}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setHighGpsQuality(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setHighGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-
+                                <FormControlLabel
+                                    control={<Switch checked={filterGpsQuality} onChange={toggleFilterGpsQuality} />}
+                                    label="Calidad Gps"
+                                />
+                                <TextField
+                                    label="Bajo"
+                                    variant="outlined"
+                                    type="number"
+                                    name="lowGps"
+                                    value={lowGpsQuality}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setLowGpsQuality(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setLowGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Medio"
+                                    variant="outlined"
+                                    type="number"
+                                    name="mediumGps"
+                                    value={medGpsQuality}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setMedGpsQuality(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setMedGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Alto"
+                                    variant="outlined"
+                                    type="number"
+                                    name="highGps"
+                                    value={highGpsQuality}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setHighGpsQuality(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setHighGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
                             </>
                         )}
-
                         {availableFilters.fuel && (
                             <>
-                        <FormControlLabel
-                            control={<Switch checked={filterFuel} onChange={toggleFilterFuel} />}
-                            label="Combustible"
-                        />
-
-
-                        <TextField
-                            label="Bajo"
-                            variant="outlined"
-                            type="number"
-                            name="lowFuel"
-                            value={lowFuel}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setLowFuel(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setLowFuel(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Medio"
-                            variant="outlined"
-                            type="number"
-                            name="mediumFuel"
-                            value={medFuel}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setMedFuel(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setMedFuel(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Alto"
-                            variant="outlined"
-                            type="number"
-                            name="highFuel"
-                            value={highFuel}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setHighFuel(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setHighFuel(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
+                                <FormControlLabel
+                                    control={<Switch checked={filterFuel} onChange={toggleFilterFuel} />}
+                                    label="Combustible"
+                                />
+                                <TextField
+                                    label="Bajo"
+                                    variant="outlined"
+                                    type="number"
+                                    name="lowFuel"
+                                    value={lowFuel}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setLowFuel(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setLowFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Medio"
+                                    variant="outlined"
+                                    type="number"
+                                    name="mediumFuel"
+                                    value={medFuel}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setMedFuel(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setMedFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Alto"
+                                    variant="outlined"
+                                    type="number"
+                                    name="highFuel"
+                                    value={highFuel}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setHighFuel(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setHighFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
                             </>
                         )}
-
-
-
                         {availableFilters.rpm && (
                             <>
-                        <FormControlLabel
-                            control={<Switch checked={filterRpm} onChange={toggleFilterRpm} />}
-                            label="RPM"
-                        />
-
-
-                        <TextField
-                            label="Bajo"
-                            variant="outlined"
-                            type="number"
-                            name="lowRPM"
-                            value={lowRpm}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setLowRpm(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setLowRpm(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Medio"
-                            variant="outlined"
-                            type="number"
-                            name="mediumRPM"
-                            value={medRpm}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setMedRpm(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setMedRpm(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Alto"
-                            variant="outlined"
-                            type="number"
-                            name="highRPM"
-                            value={highRpm}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setHighRpm(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setHighRpm(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
+                                <FormControlLabel
+                                    control={<Switch checked={filterRpm} onChange={toggleFilterRpm} />}
+                                    label="RPM"
+                                />
+                                <TextField
+                                    label="Bajo"
+                                    variant="outlined"
+                                    type="number"
+                                    name="lowRPM"
+                                    value={lowRpm}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setLowRpm(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setLowRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Medio"
+                                    variant="outlined"
+                                    type="number"
+                                    name="mediumRPM"
+                                    value={medRpm}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setMedRpm(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setMedRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Alto"
+                                    variant="outlined"
+                                    type="number"
+                                    name="highRPM"
+                                    value={highRpm}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setHighRpm(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setHighRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
                             </>
                         )}
-
-
                         {availableFilters.cutterBase && (
                             <>
-                        <FormControlLabel
-                            control={<Switch checked={filterCutterBase} onChange={toggleFilterCutterBase} />}
-                                label="Presión de cortador base (Bar)"
-                        />
-
-
-                        <TextField
-                            label="Bajo"
-                            variant="outlined"
-                            type="number"
-                            name="lowCutterBase"
-                            value={lowCutterBase}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setLowCutterBase(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setLowCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Medio"
-                            variant="outlined"
-                            type="number"
-                            name="mediumCutterBase"
-                            value={medCutterBase}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setMedCutterBase(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setMedCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Alto"
-                            variant="outlined"
-                            type="number"
-                            name="highCutterBase"
-                            value={highCutterBase}
-                            onChange={e => {
-                                const value = e.target.value;
-                                setHighCutterBase(value === '' ? '' : Number(value));
-                            }}
-                            onBlur={e => {
-                                const value = e.target.value;
-                                setHighCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
-                            }}
-                            margin="normal"
-                        />
+                                <FormControlLabel
+                                    control={<Switch checked={filterCutterBase} onChange={toggleFilterCutterBase} />}
+                                    label="Presión de cortador base (Bar)"
+                                />
+                                <TextField
+                                    label="Bajo"
+                                    variant="outlined"
+                                    type="number"
+                                    name="lowCutterBase"
+                                    value={lowCutterBase}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setLowCutterBase(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setLowCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Medio"
+                                    variant="outlined"
+                                    type="number"
+                                    name="mediumCutterBase"
+                                    value={medCutterBase}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setMedCutterBase(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setMedCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="Alto"
+                                    variant="outlined"
+                                    type="number"
+                                    name="highCutterBase"
+                                    value={highCutterBase}
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        setHighCutterBase(value === '' ? '' : Number(value));
+                                    }}
+                                    onBlur={e => {
+                                        const value = e.target.value;
+                                        setHighCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
+                                    }}
+                                    margin="normal"
+                                />
                             </>
                         )}
                     </FormGroup>

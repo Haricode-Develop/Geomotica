@@ -9,11 +9,9 @@ import PasswordConfirmation from './views/Confirmations/passwordConfirmation';
 import PasswordSender from './views/Confirmations/passwordSender';
 import RegisterConfirmation from './views/Confirmations/registerConfirmation';
 import RegisterSender from './views/Confirmations/registerSender';
-import HistorialView from './views/HistorialView/HistorialView';
-import DashboardIndicadores from "./views/DashboardIndicadores/DashboardIndicadores";
 import AdminPanel from './views/AdminPanel/AdminPanel';
-import NotFoundPage from "./views/NotFound/NotFound";
-import LayoutWithSidebar from "./context/LayoutWithSidebar/LayoutWithSidebar";
+import LayoutWithSidebar from "./components/LayoutWithSidebar/LayoutWithSidebar";
+import Publicidad from './views/Publicidad/publicidad';  // Importa el componente publicidad
 
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -21,7 +19,6 @@ const ProtectedRoute = ({ children }) => {
     const { isAuthenticated } = useContext(AuthContext);
     return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
-
 
 const MainRoutes = () => {
     return (
@@ -34,13 +31,11 @@ const MainRoutes = () => {
             <Route path="/registerSender/:recipient" element={<RegisterSender />} />
             <Route path="/registerConfirmation/:recipient" element={<RegisterConfirmation />} />
 
-            <Route path="/" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><LayoutWithSidebar><Publicidad /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/publicidad" element={<ProtectedRoute><LayoutWithSidebar><Publicidad /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
             <Route path="/mapeo" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
             <Route path="/adminPanel" element={<ProtectedRoute><LayoutWithSidebar><AdminPanel /></LayoutWithSidebar></ProtectedRoute>} />
-            <Route path="/historial" element={<ProtectedRoute><LayoutWithSidebar><HistorialView /></LayoutWithSidebar></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><LayoutWithSidebar><DashboardIndicadores /></LayoutWithSidebar></ProtectedRoute>} />
-
-            <Route path="*" element={<NotFoundPage />} />
         </Routes>
     );
 };
