@@ -60,7 +60,7 @@ const BarIndicator = ({ filterType, isHistory }) => {
     if (filterType === 'autoPilot' || filterType === 'autoTracket' || filterType === 'modeCutterBase') {
         // Establecer el estilo de gradiente para Piloto Automático y Auto Tracker
         gradientStyle = { background: 'linear-gradient(to top, green 0%, blue 100%)' };
-        if (filterType === 'autoPilot' || filterType === 'modeCutterBase') {
+        if (filterType === 'modeCutterBase') {
             indicadorIzquierda = "Automático";
             indicadorDerecha = "Manual";
         } else
