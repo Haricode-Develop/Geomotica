@@ -16,11 +16,11 @@
 }
 
 .navbar.open {
-    width: calc(100% - 250px); /* Ajustar para que no se solape con el sidebar */
+    width: calc(100% - 250px);
 }
 
 .navbar.closed {
-    width: calc(100% - 60px); /* Ajustar cuando el sidebar está cerrado */
+    width: calc(100% - 60px);
 }
 
 .navbar-section {
@@ -44,7 +44,7 @@
 
 .language-selector span {
     margin-left: 5px;
-    font-size: 0.9em; /* Reducir el tamaño de la fuente */
+    font-size: 0.9em;
 }
 
 .flag-icon {

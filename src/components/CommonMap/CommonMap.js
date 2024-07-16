@@ -27,12 +27,16 @@ const CommonMap = ({
                    }) => {
     const localMapRef = useRef(null);
     const [popupInfo, setPopupInfo] = useState(null);
+    const [circleMarkers, setCircleMarkers] = useState([]);
+    const [mapCenter, setMapCenter] = useState(center);
+    const [mapZoom, setMapZoom] = useState(zoom);
+    const [initialBoundsSet, setInitialBoundsSet] = useState(false);
 
     useEffect(() => {
         if (localMapRef.current) {
             mapRef.current = localMapRef.current;
 
-            if (points && points.length > 0) {
+            if (points && points.length > 0 && !initialBoundsSet) {
                 const validLatLngs = points
                     .map(point => {
                         const coordinates = point.geometry.coordinates;
@@ -45,11 +49,63 @@ const CommonMap = ({
                 if (validLatLngs.length > 0) {
                     const bounds = L.latLngBounds(validLatLngs);
                     localMapRef.current.fitBounds(bounds);
+                    setInitialBoundsSet(true);
                 }
             }
+
+            localMapRef.current.on('zoomend', handleZoom);
+            localMapRef.current.on('moveend', handleMoveEnd);
         }
 
-    }, [localMapRef, mapRef, polygons, lines, points]);
+        return () => {
+            if (localMapRef.current) {
+                localMapRef.current.off('zoomend', handleZoom);
+                localMapRef.current.off('moveend', handleMoveEnd);
+            }
+        };
+    }, [localMapRef, mapRef, polygons, lines, points, initialBoundsSet]);
+
+    const handleZoom = () => {
+        if (localMapRef.current) {
+            const zoomLevel = localMapRef.current.getZoom();
+            setMapZoom(zoomLevel);
+            setCircleMarkers(createCircleMarkers(zoomLevel));
+        }
+    };
+
+    const handleMoveEnd = () => {
+        if (localMapRef.current) {
+            const center = localMapRef.current.getCenter();
+            setMapCenter([center.lat, center.lng]);
+        }
+    };
+
+    const createCircleMarkers = (zoomLevel) => {
+        if (!points) return [];
+        return points.map((point, idx) => {
+            const coordinates = point.geometry.coordinates;
+            let fillColor = "blue";
+            if (activeFilter) {
+                fillColor = getPolygonColor(point.properties);
+            }
+            if (coordinates.length >= 2) {
+                const radius = Math.max(1.5 * (zoomLevel / 20), 0.5);
+                return (
+                    <CircleMarker
+                        key={idx}
+                        center={[coordinates[1], coordinates[0]]}
+                        radius={radius}
+                        fillColor={fillColor}
+                        color={fillColor}
+                        weight={0.2}
+                        opacity={1}
+                        fillOpacity={1}
+                    />
+                );
+            }
+            return null;
+        });
+    };
 
     const getPolygonColor = (properties) => {
         if (!activeFilter || !properties || !filterValues[activeFilter]) {
@@ -59,16 +115,16 @@ const CommonMap = ({
         const key = activeFilter;
         const value = properties[key];
 
-        if(activeFilter === 'AUTO_TRACKET' || activeFilter === 'PILOTO_AUTOMATICO'){
-            if(value && value.toLowerCase() === 'engaged'){
+        if (activeFilter === 'AUTO_TRACKET' || activeFilter === 'PILOTO_AUTOMATICO') {
+            if (value && value.toLowerCase() === 'engaged') {
+                return 'green';
+            } else {
                 return 'blue';
-            }else{
-                return 'green';
             }
-        }else if(activeFilter === 'MODO_CORTE_BASE'){
-            if(value && value.toLowerCase() === 'automatic'){
+        } else if (activeFilter === 'MODO_CORTE_BASE') {
+            if (value && value.toLowerCase() === 'automatic') {
                 return 'green';
-            }else{
+            } else {
                 return 'blue';
             }
         }
@@ -78,14 +134,27 @@ const CommonMap = ({
         }
 
         const { low, medium, high } = filterValues[activeFilter];
+
         if (value < low) return 'green';
         if (value >= low && value < medium) return 'yellow';
         if (value >= medium && value <= high) return 'orange';
         return 'red';
     };
 
+    useEffect(() => {
+        if (localMapRef.current) {
+            const zoomLevel = localMapRef.current.getZoom();
+            setCircleMarkers(createCircleMarkers(zoomLevel));
+        }
+    }, [points, activeFilter, filterValues]);
+
     return (
-        <MapContainer center={center} zoom={zoom} style={{ height: '65vh', width: '100%', borderRadius: '20px' }} ref={localMapRef}>
+        <MapContainer
+            center={mapCenter}
+            zoom={mapZoom}
+            style={{ height: '65vh', width: '100%', borderRadius: '20px' }}
+            ref={localMapRef}
+        >
             <LayersControl position="topright">
                 <BaseLayer checked name="Satellite View">
                     <TileLayer
@@ -102,28 +171,7 @@ const CommonMap = ({
                     />
                 </BaseLayer>
 
-                {points && points.map((point, idx) => {
-                    const coordinates = point.geometry.coordinates;
-                    let fillColor = "blue";
-                    if (activeFilter) {
-                        fillColor = getPolygonColor(point.properties);
-                    }
-                    if (coordinates.length >= 2) {
-                        return (
-                            <CircleMarker
-                                key={idx}
-                                center={[coordinates[1], coordinates[0]]}
-                                radius={5}
-                                fillColor={fillColor}
-                                color={fillColor}
-                                weight={0.2}
-                                opacity={1}
-                                fillOpacity={1}
-                            />
-                        );
-                    }
-                    return null;
-                })}
+                {circleMarkers}
 
                 {polygons && polygons.map((polygon, index) => {
                     if (!Array.isArray(polygon) || polygon.length === 0) {
@@ -132,7 +180,6 @@ const CommonMap = ({
 
                     const propiedades = polygonProperties[index];
                     if (!propiedades) {
-                        console.error(`Propiedades faltantes para el polígono en el índice ${index}`);
                         return null;
                     }
 
@@ -140,7 +187,6 @@ const CommonMap = ({
                         if (Array.isArray(coord) && coord.length === 2) {
                             return { lat: coord[1], lng: coord[0] };
                         }
-                        console.error(`Coordenada inválida en el polígono ${index}:`, coord);
                         return null;
                     }).filter(coord => coord !== null);
 

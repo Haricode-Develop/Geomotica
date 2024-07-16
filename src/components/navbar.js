@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import './navbar.css'; // Estilo para el navbar
+import './navbar.css';
 import { Avatar, Badge, Menu, MenuItem, IconButton } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useAuth } from '../context/AuthContext';
-import profilePicture from '../assets/img/user.png'; // Ruta por defecto
+import profilePicture from '../assets/img/user.png';
 import { useNavigate } from 'react-router-dom';
 import Flag from 'react-world-flags';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';

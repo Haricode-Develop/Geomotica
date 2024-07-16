@@ -11,8 +11,8 @@ import RegisterConfirmation from './views/Confirmations/registerConfirmation';
 import RegisterSender from './views/Confirmations/registerSender';
 import AdminPanel from './views/AdminPanel/AdminPanel';
 import LayoutWithSidebar from "./components/LayoutWithSidebar/LayoutWithSidebar";
-import Publicidad from './views/Publicidad/publicidad';  // Importa el componente publicidad
-
+import Publicidad from './views/Publicidad/publicidad';
+import Configuracion from './views/Configuracion/configuracion';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -36,6 +36,7 @@ const MainRoutes = () => {
             <Route path="/dashboard" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
             <Route path="/mapeo" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
             <Route path="/adminPanel" element={<ProtectedRoute><LayoutWithSidebar><AdminPanel /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/configuracion" element={<ProtectedRoute><LayoutWithSidebar><Configuracion/></LayoutWithSidebar></ProtectedRoute>}/>
         </Routes>
     );
 };

@@ -59,6 +59,82 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
     const workerRef = useRef(null);
     const mapRef = useRef(null);
 
+    const lowSpeedRef = useRef(null);
+    const medSpeedRef = useRef(null);
+    const highSpeedRef = useRef(null);
+    const lowGpsQualityRef = useRef(null);
+    const medGpsQualityRef = useRef(null);
+    const highGpsQualityRef = useRef(null);
+    const lowFuelRef = useRef(null);
+    const medFuelRef = useRef(null);
+    const highFuelRef = useRef(null);
+    const lowRpmRef = useRef(null);
+    const medRpmRef = useRef(null);
+    const highRpmRef = useRef(null);
+    const lowCutterBaseRef = useRef(null);
+    const medCutterBaseRef = useRef(null);
+    const highCutterBaseRef = useRef(null);
+
+    useEffect(() => {
+        if (lowSpeedRef.current) lowSpeedRef.current.focus();
+    }, [lowSpeed]);
+
+    useEffect(() => {
+        if (medSpeedRef.current) medSpeedRef.current.focus();
+    }, [medSpeed]);
+
+    useEffect(() => {
+        if (highSpeedRef.current) highSpeedRef.current.focus();
+    }, [highSpeed]);
+
+    useEffect(() => {
+        if (lowGpsQualityRef.current) lowGpsQualityRef.current.focus();
+    }, [lowGpsQuality]);
+
+    useEffect(() => {
+        if (medGpsQualityRef.current) medGpsQualityRef.current.focus();
+    }, [medGpsQuality]);
+
+    useEffect(() => {
+        if (highGpsQualityRef.current) highGpsQualityRef.current.focus();
+    }, [highGpsQuality]);
+
+    useEffect(() => {
+        if (lowFuelRef.current) lowFuelRef.current.focus();
+    }, [lowFuel]);
+
+    useEffect(() => {
+        if (medFuelRef.current) medFuelRef.current.focus();
+    }, [medFuel]);
+
+    useEffect(() => {
+        if (highFuelRef.current) highFuelRef.current.focus();
+    }, [highFuel]);
+
+    useEffect(() => {
+        if (lowRpmRef.current) lowRpmRef.current.focus();
+    }, [lowRpm]);
+
+    useEffect(() => {
+        if (medRpmRef.current) medRpmRef.current.focus();
+    }, [medRpm]);
+
+    useEffect(() => {
+        if (highRpmRef.current) highRpmRef.current.focus();
+    }, [highRpm]);
+
+    useEffect(() => {
+        if (lowCutterBaseRef.current) lowCutterBaseRef.current.focus();
+    }, [lowCutterBase]);
+
+    useEffect(() => {
+        if (medCutterBaseRef.current) medCutterBaseRef.current.focus();
+    }, [medCutterBase]);
+
+    useEffect(() => {
+        if (highCutterBaseRef.current) highCutterBaseRef.current.focus();
+    }, [highCutterBase]);
+
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
     const [polygon, setPolygon] = useState([]);
@@ -111,8 +187,6 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
         autoTracket: false,
         modeCutterBase: false,
     });
-
-
 
     const [isMapButtonDisabled, setIsMapButtonDisabled] = useState(!progressFinish);
 
@@ -186,7 +260,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
     const manejarEnvioAlSalir = (e) => {
         const datosFormulario = JSON.parse(localStorage.getItem('formData'));
         if (datosFormulario) {
-            enviarDatosFormulario(datosFormulario).then(() => {}).catch(error => {
+            enviarDatosFormulario(datosFormulario).then(() => { }).catch(error => {
                 console.error('Error al enviar datos al salir', error);
             });
         }
@@ -375,13 +449,11 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
             calculatedPilotAutoPercentaje,
             calculatedModoCortadorBasePercentaje,
             totalEfficiency
-
         });
 
         if (percentageAutoPilot) {
             percentageAutoPilot(calculatedAutoTracketPercentaje, calculatedPilotAutoPercentaje, calculatedModoCortadorBasePercentaje, totalEfficiency);
         }
-
     }, [points, isAreaDataCalculated]);
 
     useEffect(() => {
@@ -684,14 +756,14 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
 
     useEffect(() => {
         const checkAvailableFilters = () => {
-            const hasSpeed = points.some(point => point.properties.VELOCIDAD_Km_H != null);
-            const hasGpsQuality = points.some(point => point.properties.CALIDAD_DE_SENAL != null);
-            const hasFuel = points.some(point => point.properties.CONSUMOS_DE_COMBUSTIBLE != null);
-            const hasRpm = points.some(point => point.properties.RPM != null);
-            const hasCutterBase = points.some(point => point.properties.PRESION_DE_CORTADOR_BASE != null);
-            const hasAutoPilot = points.some(point => point.properties.PILOTO_AUTOMATICO != null);
-            const hasAutoTracket = points.some(point => point.properties.AUTO_TRACKET != null);
-            const hasModeCutterBase = points.some(point => point.properties.MODO_CORTE_BASE != null);
+            const hasSpeed = points.some(point => point.properties.VELOCIDAD_Km_H != null && point.properties.VELOCIDAD_Km_H !== "");
+            const hasGpsQuality = points.some(point => point.properties.CALIDAD_DE_SENAL != null && point.properties.CALIDAD_DE_SENAL !== "");
+            const hasFuel = points.some(point => point.properties.CONSUMOS_DE_COMBUSTIBLE != null && point.properties.CONSUMOS_DE_COMBUSTIBLE !== "");
+            const hasRpm = points.some(point => point.properties.RPM != null && point.properties.RPM !== "");
+            const hasCutterBase = points.some(point => point.properties.PRESION_DE_CORTADOR_BASE != null && point.properties.PRESION_DE_CORTADOR_BASE !== "");
+            const hasAutoPilot = points.some(point => point.properties.PILOTO_AUTOMATICO != null && point.properties.PILOTO_AUTOMATICO !== "");
+            const hasAutoTracket = points.some(point => point.properties.AUTO_TRACKET != null && point.properties.AUTO_TRACKET !== "");
+            const hasModeCutterBase = points.some(point => point.properties.MODO_CORTE_BASE != null && point.properties.MODO_CORTE_BASE !== "");
 
             setAvailableFilters({
                 speed: hasSpeed,
@@ -830,6 +902,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="low"
                                     value={lowSpeed}
+                                    inputRef={lowSpeedRef}
                                     onChange={e => {
                                         const value = e.target.value;
                                         setLowSpeed(value === '' ? '' : Number(value));
@@ -846,13 +919,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="medium"
                                     value={medSpeed}
+                                    inputRef={medSpeedRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setMedSpeed(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setMedSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setMedSpeed(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -862,13 +932,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="high"
                                     value={highSpeed}
+                                    inputRef={highSpeedRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setHighSpeed(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setHighSpeed(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setHighSpeed(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -886,13 +953,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="lowGps"
                                     value={lowGpsQuality}
+                                    inputRef={lowGpsQualityRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setLowGpsQuality(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setLowGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setLowGpsQuality(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -902,13 +966,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="mediumGps"
                                     value={medGpsQuality}
+                                    inputRef={medGpsQualityRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setMedGpsQuality(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setMedGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setMedGpsQuality(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -918,13 +979,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="highGps"
                                     value={highGpsQuality}
+                                    inputRef={highGpsQualityRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setHighGpsQuality(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setHighGpsQuality(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setHighGpsQuality(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -942,13 +1000,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="lowFuel"
                                     value={lowFuel}
+                                    inputRef={lowFuelRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setLowFuel(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setLowFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setLowFuel(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -958,13 +1013,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="mediumFuel"
                                     value={medFuel}
+                                    inputRef={medFuelRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setMedFuel(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setMedFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setMedFuel(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -974,13 +1026,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="highFuel"
                                     value={highFuel}
+                                    inputRef={highFuelRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setHighFuel(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setHighFuel(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setHighFuel(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -998,13 +1047,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="lowRPM"
                                     value={lowRpm}
+                                    inputRef={lowRpmRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setLowRpm(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setLowRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setLowRpm(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -1014,13 +1060,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="mediumRPM"
                                     value={medRpm}
+                                    inputRef={medRpmRef}
                                     onChange={e => {
                                         const value = e.target.value;
-                                        setMedRpm(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setMedRpm(value === '' ? 0 : Math.max(0, Number(value)));
+                                        setMedRpm(value === '' ? '' : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -1030,13 +1073,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="highRPM"
                                     value={highRpm}
+                                    inputRef={highRpmRef}
                                     onChange={e => {
                                         const value = e.target.value;
                                         setHighRpm(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setHighRpm(value === '' ? 0 : Math.max(0, Number(value)));
                                     }}
                                     margin="normal"
                                 />
@@ -1054,6 +1094,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="lowCutterBase"
                                     value={lowCutterBase}
+                                    inputRef={lowCutterBaseRef}
                                     onChange={e => {
                                         const value = e.target.value;
                                         setLowCutterBase(value === '' ? '' : Number(value));
@@ -1070,6 +1111,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="mediumCutterBase"
                                     value={medCutterBase}
+                                    inputRef={medCutterBaseRef}
                                     onChange={e => {
                                         const value = e.target.value;
                                         setMedCutterBase(value === '' ? '' : Number(value));
@@ -1086,6 +1128,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                                     type="number"
                                     name="highCutterBase"
                                     value={highCutterBase}
+                                    inputRef={highCutterBaseRef}
                                     onChange={e => {
                                         const value = e.target.value;
                                         setHighCutterBase(value === '' ? '' : Number(value));

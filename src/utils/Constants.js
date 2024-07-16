@@ -230,9 +230,9 @@ export const obtenerCodigoParcelaResponsableCm = async (idAnalisisCosechaMecanic
 export const obtenerPresionCortadorBaseCm = async (idAnalisisCosechaMecanica, setPresionCortadorBase)  => {
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/presionCortadorBaseCm/${idAnalisisCosechaMecanica}`);
-        setPresionCortadorBase(response.data);
+        setPresionCortadorBase(parseFloat(response.data).toFixed(3));
 
-        return response.data;
+        return parseFloat(response.data).toFixed(3);
     }catch(error){
         console.error("Error en obtener Presion Cortador Base: ", error);
     }
@@ -296,9 +296,9 @@ export const obtenerActividadCm = async (idAnalisisCosechaMecanica, setActividad
 export const obtenerRpmCm = async (idAnalisisCosechaMecanica, setRpmCm) =>{
     try{
         const response = await axios.get(`${API_BASE_URL}dashboard/rpmCm/${idAnalisisCosechaMecanica}`);
-        setRpmCm(response.data);
+        setRpmCm(parseFloat(response.data).toFixed(3));
 
-        return response.data;
+        return parseFloat(response.data).toFixed(3);
     } catch(error){
         console.error("Error en obtenerRpmCm:", error);
 

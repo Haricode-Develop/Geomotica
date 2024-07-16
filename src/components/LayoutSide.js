@@ -148,7 +148,7 @@ const Sidebar = ({ onToggle }) => {
                 }
             ]
         },
-        { name: 'Ajustes', icon: <SettingsIcon />, path: '/ajustes', subcategories: [] }
+        { name: 'Configuración', icon: <SettingsIcon />, path: '/configuracion', subcategories: [] }
     ];
 
     const showTooltip = (content, event) => {

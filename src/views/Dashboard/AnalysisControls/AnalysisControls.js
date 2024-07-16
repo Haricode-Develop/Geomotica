@@ -38,6 +38,7 @@ const AnalysisControls = ({ selectedAnalysisType, handleAnalysisTypeChange }) =>
                 <MenuItem value="COSECHA_MECANICA">Cosecha Mecánica</MenuItem>
                 <MenuItem value="FERTILIZACION">Fertilización</MenuItem>
                 <MenuItem value="HERBICIDAS">Herbicidas</MenuItem>
+                <MenuItem value="APS">APS</MenuItem>
             </Select>
         </StyledFormControl>
     </div>
