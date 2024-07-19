@@ -15,6 +15,8 @@ import Draggable from 'react-draggable';
 import CommonMap from '../../components/CommonMap/CommonMap';
 
 const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnalisis, tipoAnalisis }) => {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+
     const [hullPolygon, setHullPolygon] = useState(null);
     const [pilotAutoPercentage, setPilotAutoPercentage] = useState(0);
     const [autoTracketPercentage, setAutoTracketPercentage] = useState(0);
@@ -850,6 +852,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                 onLineMouseOut={() => { }}
                 onLineClick={() => { }}
                 mapRef={mapRef}
+                userId={userData.ID_USUARIO}
             />
 
             <Dialog

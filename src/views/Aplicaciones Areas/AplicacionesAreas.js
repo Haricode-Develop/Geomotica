@@ -25,6 +25,8 @@ import { v4 as uuidv4 } from 'uuid';
 import CommonMap from '../../components/CommonMap/CommonMap';
 
 const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPromediosCalculated, activarEdicionInteractiva }) => {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+
     const [poligonos, setPoligonos] = useState([]);
     const [areasSuperpuestas, setAreasSuperpuestas] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
@@ -1059,7 +1061,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 polygonProperties={poligonosPropiedades}
                 popupInfo={popupInfo}
                 showIntersections={showIntersections}
-                mapRef={mapRef} // Pasa mapRef como prop
+                mapRef={mapRef}
+                userId={userData.ID_USUARIO}
             />
             {isKml && (
                 <div className="floating-buttons">

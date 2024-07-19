@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import MapComponent from "../../MapeoGenerador/mapeo";
 import AplicacionesAreas from "../../Aplicaciones Areas/AplicacionesAreas";
+import CommonMap from "../../../components/CommonMap/CommonMap";
 
 const MapSection = ({
                         selectedFile,
@@ -26,8 +27,10 @@ const MapSection = ({
                         setPromedioVelocidad,
                         setPromedioAltura,
                         setDosisReal,
-                        limpiarMapa
+                        limpiarMapa,
+                        userId
                     }) => {
+    const mapRef = useRef(null);
 
     const handleAreaCalculation = (polygonArea, outsidePolygonArea, areaDifference, pilotAutoPercentage, autoTracketPercentage) => {
         setAreaNetaCm(`${outsidePolygonArea.toFixed(2)} H`);
@@ -57,7 +60,7 @@ const MapSection = ({
 
     return (
         <section className="map-section">
-            {selectedFile && selectedAnalysisType === 'COSECHA_MECANICA' &&
+            {selectedFile && selectedAnalysisType === 'COSECHA_MECANICA' ? (
                 <MapComponent
                     csvData={datosMapeo}
                     zipFile={selectedZipFile}
@@ -68,8 +71,7 @@ const MapSection = ({
                     percentageAutoPilot={handlePercentageCalculation}
                     limpiarMapa={limpiarMapa}
                 />
-            }
-            {selectedZipFile && selectedFile && selectedAnalysisType === 'APLICACIONES_AEREAS' &&
+            ) : selectedZipFile && selectedFile && selectedAnalysisType === 'APLICACIONES_AEREAS' ? (
                 <AplicacionesAreas
                     csvData={datosMapeo}
                     zipFile={selectedZipFile}
@@ -81,7 +83,9 @@ const MapSection = ({
                     activarEdicionInteractiva={activarEdicionInteractiva}
                     limpiarMapa={limpiarMapa}
                 />
-            }
+            ) : (
+                <CommonMap userId={userId} mapRef={mapRef} />
+            )}
         </section>
     );
 };

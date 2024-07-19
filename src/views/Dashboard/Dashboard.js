@@ -733,6 +733,7 @@ function Dashboard({ isSidebarOpen }) {
         if (socket) {
             socket.emit('progressUpdate', { progress: 0, message: "Iniciando proceso" });
         }
+        console.log("ESTE ES EL ID DEL ANALISIS: ", idAnalisisBash);
         if (!idAnalisisBash) {
             toast.error('Debe seleccionar un análisis antes de continuar', {
                 position: toast.POSITION.TOP_RIGHT,
@@ -754,6 +755,7 @@ function Dashboard({ isSidebarOpen }) {
                     formData.append('csv', selectedFile);
                     formData.append('polygon', selectedZipFile);
                     formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
+
                     try {
                         const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}/${lines}`, formData, {
                             headers: {
@@ -837,7 +839,7 @@ function Dashboard({ isSidebarOpen }) {
                 <div className="dashboard-main">
                     <div className="dashboard-controls">
                         <h1 className="dashboard-title">Mapeo de maquinaria</h1>
-                        <div  style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <AnalysisControls
                                 selectedAnalysisType={selectedAnalysisType}
                                 handleAnalysisTypeChange={handleAnalysisTypeChange}
@@ -918,7 +920,7 @@ function Dashboard({ isSidebarOpen }) {
                         setPromedioAltura={setPromedioAltura}
                         setDosisReal={setDosisReal}
                         limpiarMapa={limpiarMapa}
-
+                        userId={userData.ID_USUARIO}
                     />
                     <div className="seccion-analisis" ref={dashboardRef}>
                         <DataSection
@@ -1010,6 +1012,6 @@ function Dashboard({ isSidebarOpen }) {
             </main>
         </div>
     );
-}
+};
 
 export default Dashboard;

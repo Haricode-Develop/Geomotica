@@ -42,22 +42,6 @@ const UploadButtons = ({ selectedAnalysisType, manejarSubidaArchivo, manejarSubi
                 />
             </StyledButton>
         </Tooltip>
-
-        <Tooltip title={!selectedAnalysisType ? "Selecciona un análisis antes de comenzar" : uploadedZipFileName || 'No se ha seleccionado ningún archivo'}>
-            <StyledButton
-                variant="contained"
-                component="label"
-                disabled={!selectedAnalysisType}
-            >
-                Subir Shapefile
-                <Input
-                    type="file"
-                    hidden
-                    onChange={manejarSubidaZip}
-                    accept=".zip"
-                />
-            </StyledButton>
-        </Tooltip>
     </div>
 );
 
