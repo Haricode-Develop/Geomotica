@@ -33,12 +33,14 @@ const MapSection = ({
     const mapRef = useRef(null);
 
     const handleAreaCalculation = (polygonArea, outsidePolygonArea, areaDifference, pilotAutoPercentage, autoTracketPercentage) => {
+
         setAreaNetaCm(`${outsidePolygonArea.toFixed(2)} H`);
         setAreaBrutaCm(`${polygonArea.toFixed(2)} H`);
         setDiferenciaDeAreaCm(`${areaDifference.toFixed(2)} H`);
     };
 
     const handlePercentageCalculation = (autoTracket, autoPilot, modoCorteBase, totalEfficiency) => {
+
         setPorcentajeAreaPilotoCm(`${autoPilot.toFixed(2)}%`);
         setPorcentajeAreaAutoTrackerCm(`${autoTracket.toFixed(2)}%`);
         setPorcentajeModoCortadorBaseCm(`${modoCorteBase.toFixed(2)}%`);
@@ -82,6 +84,7 @@ const MapSection = ({
                     onPromediosCalculated={handlePromediosCalculados}
                     activarEdicionInteractiva={activarEdicionInteractiva}
                     limpiarMapa={limpiarMapa}
+
                 />
             ) : (
                 <CommonMap userId={userId} mapRef={mapRef} />

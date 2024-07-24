@@ -3,20 +3,23 @@ import { FormControl, InputLabel, MenuItem, Select, OutlinedInput } from '@mui/m
 import { styled } from '@mui/system';
 
 const StyledFormControl = styled(FormControl)(({ theme }) => ({
-    m: 1,
-    minWidth: 190,
-    width: '100%',
-    padding: 0,
+    margin: theme.spacing(2),  // Increased margin for better separation
+    minWidth: 200,
+    borderRadius: '25px',
+    padding: '5px 2px',
     '& .MuiOutlinedInput-root': {
         borderRadius: 25,
-        padding: '5px 14px', // Ajusta el padding interno
+        padding: '5px 14px',
+        backgroundColor: '#fff',
+        color: '#000',  // Changed to black for better readability
     },
     '& .MuiInputLabel-root': {
-        left: '3px',
-        top: '-6px',
+        left: '10px',
+        top: '-10px',
+        color: '#fff',
     },
     '& .MuiSelect-select': {
-        padding: '5px 14px', // Ajusta el padding del select
+        padding: '10px 10px', // Increased padding for better UX
     },
 }));
 

@@ -9,18 +9,13 @@ import axios from "axios";
 import { API_BASE_URL } from "../../utils/config";
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import MapSection from './MapSection/MapSection';
 import DataSection from './DataSection/DataSection';
-import UploadButtons from './UploadButtons/UploadButtons';
-import AnalysisControls from './AnalysisControls/AnalysisControls';
 import Tutorial from '../../components/Tutorial/Tutorial';
 import { Link, Button, Tooltip, IconButton } from '@mui/material';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
-import GetAppIcon from '@mui/icons-material/GetApp';
 import JSZip from 'jszip';
-
+import ToolbarComponent from "../../components/ToolbarComponent/ToolbarComponent";
 import {
     // Cosecha mecánica
     obtenerRpmCm,
@@ -215,7 +210,7 @@ function Dashboard({ isSidebarOpen }) {
     const [promedioVelocidadHerbicidas, setPromedioVelocidadHerbicidas] = useState(null);
     const [datosCosechaMecanica, setDatosCosechaMecanica] = useState({});
     const [isKMLFile, setIsKMLFile] = useState(false);
-    const [activarEdicionInteractiva, setActivarEdicionInteractiva] = useState(false);
+    const [activarEdicionInteractiva, setActivarEdicionInteractiva] = useState(true);
     const [selectedAnalysisType, setSelectedAnalysisType] = useState('');
     const [datosCargadosAps, setDatosCargadosAps] = useState(false);
     const [datosCargadosCosechaMecanica, setDatosCargadosCosechaMecanica] = useState(false);
@@ -226,6 +221,7 @@ function Dashboard({ isSidebarOpen }) {
     const [uploadedCsvFileName, setUploadedCsvFileName] = useState('');
     const [uploadedZipFileName, setUploadedZipFileName] = useState('');
     const [limpiarMapa, setLimpiarMapa] = useState(false);
+    const [execBashEnabled, setExecBashEnabled] = useState(false);
 
     const analysisTemplates = {
         APLICACIONES_AEREAS: "/templates/APLICACIONES_AEREAS.csv",
@@ -465,6 +461,20 @@ function Dashboard({ isSidebarOpen }) {
             };
         }
     }, [socket]);
+
+    useEffect(() => {
+        const shouldEnableExecBash = () => {
+            if (selectedAnalysisType === 'COSECHA_MECANICA' && selectedFile) {
+                return true;
+            }
+            if (selectedAnalysisType === 'APLICACIONES_AEREAS' && selectedZipFile) {
+                return true;
+            }
+            return false;
+        };
+        setExecBashEnabled(shouldEnableExecBash());
+    }, [selectedAnalysisType, selectedFile, selectedZipFile]);
+
 
     const cargaDatosHerbicidas = async () => {
         if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
@@ -733,7 +743,6 @@ function Dashboard({ isSidebarOpen }) {
         if (socket) {
             socket.emit('progressUpdate', { progress: 0, message: "Iniciando proceso" });
         }
-        console.log("ESTE ES EL ID DEL ANALISIS: ", idAnalisisBash);
         if (!idAnalisisBash) {
             toast.error('Debe seleccionar un análisis antes de continuar', {
                 position: toast.POSITION.TOP_RIGHT,
@@ -839,61 +848,20 @@ function Dashboard({ isSidebarOpen }) {
                 <div className="dashboard-main">
                     <div className="dashboard-controls">
                         <h1 className="dashboard-title">Mapeo de maquinaria</h1>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <AnalysisControls
-                                selectedAnalysisType={selectedAnalysisType}
-                                handleAnalysisTypeChange={handleAnalysisTypeChange}
-                                execBash={execBash}
-                                analysisTemplates={analysisTemplates}
-                                activarEdicionInteractiva={activarEdicionInteractiva}
-                                toggleEdicionInteractiva={toggleEdicionInteractiva}
-                                isKMLFile={isKMLFile}
-                                setRunTutorial={setRunTutorial}
-                            />
-                            <Tooltip title={!selectedAnalysisType ? "Selecciona un análisis antes de comenzar" : 'Selecciona tu CSV'}>
-                                <Link
-                                    href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"}
-                                    download
-                                    underline="none"
-                                >
-                                    <StyledButton
-                                        variant="contained"
-                                        disabled={!selectedAnalysisType}
-                                        startIcon={<GetAppIcon />}
-                                    >
-                                        Descargar Plantilla
-                                    </StyledButton>
-                                </Link>
-                            </Tooltip>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <UploadButtons
-                                selectedAnalysisType={selectedAnalysisType}
-                                manejarSubidaArchivo={manejarSubidaArchivo}
-                                manejarSubidaZip={manejarSubidaZip}
-                                uploadedCsvFileName={uploadedCsvFileName}
-                                uploadedZipFileName={uploadedZipFileName}
-                            />
-
-                            {isKMLFile && (
-                                <Tooltip title={activarEdicionInteractiva ? "Desactivar Edición Interactiva" : "Activar Edición Interactiva"}>
-                                    <IconButton
-                                        color={activarEdicionInteractiva ? "primary" : "default"}
-                                        sx={{ margin: 1, padding: 0 }}
-                                        onClick={toggleEdicionInteractiva}
-                                    >
-                                        <AutoModeIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
-
-                            <StyledButtonRealizarAnalisis
-                                variant="contained"
-                                onClick={execBash}
-                            >
-                                Realizar Análisis
-                            </StyledButtonRealizarAnalisis>
-                        </div>
+                        <ToolbarComponent
+                            selectedAnalysisType={selectedAnalysisType}
+                            handleAnalysisTypeChange={handleAnalysisTypeChange}
+                            manejarSubidaArchivo={manejarSubidaArchivo}
+                            manejarSubidaZip={manejarSubidaZip}
+                            uploadedCsvFileName={uploadedCsvFileName}
+                            uploadedZipFileName={uploadedZipFileName}
+                            execBash={execBash}
+                            analysisTemplates={analysisTemplates}
+                            activarEdicionInteractiva={activarEdicionInteractiva}
+                            setActivarEdicionInteractiva={setActivarEdicionInteractiva}
+                            isKMLFile={isKMLFile}
+                            execBashEnabled={execBashEnabled}
+                        />
                     </div>
                     <MapSection
                         selectedFile={selectedFile}

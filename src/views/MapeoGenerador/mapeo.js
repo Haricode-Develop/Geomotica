@@ -3,16 +3,14 @@ import { useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import io from 'socket.io-client';
-import { FaMap } from 'react-icons/fa';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip } from '@mui/material';
+import { Button, Tooltip } from '@mui/material';
 import './mapeoStyle.css';
 import { API_BASE_URL } from "../../utils/config";
 import * as turf from '@turf/turf';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
 import { toast } from 'react-toastify';
-import Slider from '@mui/material/Slider';
-import Draggable from 'react-draggable';
 import CommonMap from '../../components/CommonMap/CommonMap';
+import MapDialog from '../../components/MapDialog/MapDialog';
 
 const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnalisis, tipoAnalisis }) => {
     const userData = JSON.parse(localStorage.getItem("userData"));
@@ -27,6 +25,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
     const [filterAutoPilot, setFilterAutoPilot] = useState(false);
     const [filterAutoTracket, setFilterAutoTracket] = useState(false);
     const [mapBounds, setMapBounds] = useState(null);
+    const [openIndicator, setOpenIndicator] = useState(null); // Estado para controlar el indicador abierto
 
     const [lowSpeed, setLowSpeed] = useState(0);
     const [medSpeed, setMedSpeed] = useState(0);
@@ -56,89 +55,11 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
     const [filterRpm, setFilterRpm] = useState(false);
     const [filterCutterBase, setFilterCutterBase] = useState(false);
     const [filterModeCutterBase, setFilterModeCutterBase] = useState(false);
-    const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+    const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
     const [mapKey, setMapKey] = useState(Date.now());
     const workerRef = useRef(null);
     const mapRef = useRef(null);
 
-    const lowSpeedRef = useRef(null);
-    const medSpeedRef = useRef(null);
-    const highSpeedRef = useRef(null);
-    const lowGpsQualityRef = useRef(null);
-    const medGpsQualityRef = useRef(null);
-    const highGpsQualityRef = useRef(null);
-    const lowFuelRef = useRef(null);
-    const medFuelRef = useRef(null);
-    const highFuelRef = useRef(null);
-    const lowRpmRef = useRef(null);
-    const medRpmRef = useRef(null);
-    const highRpmRef = useRef(null);
-    const lowCutterBaseRef = useRef(null);
-    const medCutterBaseRef = useRef(null);
-    const highCutterBaseRef = useRef(null);
-
-    useEffect(() => {
-        if (lowSpeedRef.current) lowSpeedRef.current.focus();
-    }, [lowSpeed]);
-
-    useEffect(() => {
-        if (medSpeedRef.current) medSpeedRef.current.focus();
-    }, [medSpeed]);
-
-    useEffect(() => {
-        if (highSpeedRef.current) highSpeedRef.current.focus();
-    }, [highSpeed]);
-
-    useEffect(() => {
-        if (lowGpsQualityRef.current) lowGpsQualityRef.current.focus();
-    }, [lowGpsQuality]);
-
-    useEffect(() => {
-        if (medGpsQualityRef.current) medGpsQualityRef.current.focus();
-    }, [medGpsQuality]);
-
-    useEffect(() => {
-        if (highGpsQualityRef.current) highGpsQualityRef.current.focus();
-    }, [highGpsQuality]);
-
-    useEffect(() => {
-        if (lowFuelRef.current) lowFuelRef.current.focus();
-    }, [lowFuel]);
-
-    useEffect(() => {
-        if (medFuelRef.current) medFuelRef.current.focus();
-    }, [medFuel]);
-
-    useEffect(() => {
-        if (highFuelRef.current) highFuelRef.current.focus();
-    }, [highFuel]);
-
-    useEffect(() => {
-        if (lowRpmRef.current) lowRpmRef.current.focus();
-    }, [lowRpm]);
-
-    useEffect(() => {
-        if (medRpmRef.current) medRpmRef.current.focus();
-    }, [medRpm]);
-
-    useEffect(() => {
-        if (highRpmRef.current) highRpmRef.current.focus();
-    }, [highRpm]);
-
-    useEffect(() => {
-        if (lowCutterBaseRef.current) lowCutterBaseRef.current.focus();
-    }, [lowCutterBase]);
-
-    useEffect(() => {
-        if (medCutterBaseRef.current) medCutterBaseRef.current.focus();
-    }, [medCutterBase]);
-
-    useEffect(() => {
-        if (highCutterBaseRef.current) highCutterBaseRef.current.focus();
-    }, [highCutterBase]);
-
-    const openFilterDialog = () => setIsFilterDialogOpen(true);
-    const closeFilterDialog = () => setIsFilterDialogOpen(false);
     const [polygon, setPolygon] = useState([]);
     const [outsidePolygon, setOutsidePolygon] = useState([]);
     const [isAreaDataCalculated, setIsAreaDataCalculated] = useState(false);
@@ -191,6 +112,8 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
     });
 
     const [isMapButtonDisabled, setIsMapButtonDisabled] = useState(!progressFinish);
+    const [originalPoints, setOriginalPoints] = useState([]);
+
 
     const MapBounds = ({ onNoPoints }) => {
         const map = useMap();
@@ -259,14 +182,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
         }
     }, [polygon, outsidePolygon, onAreaCalculated]);
 
-    const manejarEnvioAlSalir = (e) => {
-        const datosFormulario = JSON.parse(localStorage.getItem('formData'));
-        if (datosFormulario) {
-            enviarDatosFormulario(datosFormulario).then(() => { }).catch(error => {
-                console.error('Error al enviar datos al salir', error);
-            });
-        }
-    };
+
 
     useEffect(() => {
         if (idAnalisis && typeof idAnalisis.then === 'function') {
@@ -296,8 +212,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                 const { points: newPoints, polygon: newPolygon, outsidePolygon: newOutsidePolygon } = e.data.data;
 
                 setPoints(newPoints);
+                setOriginalPoints(newPoints);
                 setPolygon(newPolygon);
                 setOutsidePolygon(newOutsidePolygon);
+
                 if (Array.isArray(newPolygon) && newPolygon.length > 0) {
                     const polygonLatLngs = newPolygon.map(([lng, lat]) => {
                         if (typeof lat === 'number' && typeof lng === 'number') {
@@ -324,6 +242,9 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                         }
                     }
                 }
+
+                // Filtrar puntos aquí
+                applyFilters(newPoints);
             }
         };
 
@@ -346,22 +267,6 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
         localStorage.setItem('formData', JSON.stringify(formData));
     }, [formData, filterSpeed, filterGpsQuality, filterFuel, filterRpm, filterCutterBase, filterAutoPilot]);
 
-    useEffect(() => {
-        const verificarYEnviarDatos = () => {
-            if (
-                (filterSpeed && lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1) ||
-                (filterGpsQuality && lowGpsQuality !== -1 && medGpsQuality !== -1 && highGpsQuality !== -1) ||
-                (filterFuel && lowFuel !== -1 && medFuel !== -1 && highFuel !== -1) ||
-                (filterRpm && lowRpm !== -1 && medRpm !== -1 && highRpm !== -1) ||
-                (filterCutterBase && lowCutterBase !== -1 && medCutterBase !== -1 && highCutterBase !== -1) ||
-                filterAutoPilot || filterAutoTracket || filterModeCutterBase
-            ) {
-                manejarEnvioAlSalir();
-            }
-        };
-
-        verificarYEnviarDatos();
-    }, [filterSpeed, lowSpeed, medSpeed, highSpeed, filterGpsQuality, lowGpsQuality, medGpsQuality, highGpsQuality, filterFuel, lowFuel, medFuel, highFuel, filterRpm, lowRpm, medRpm, highRpm, filterCutterBase, lowCutterBase, medCutterBase, highCutterBase, filterAutoPilot, filterAutoTracket, filterModeCutterBase]);
 
     const transformPolygonCoords = (polygon) => {
         return polygon.map(ring => {
@@ -374,25 +279,6 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
         });
     };
 
-    const enviarDatosFormulario = async (datosFormulario) => {
-        try {
-            const response = await fetch(`${API_BASE_URL}dashboard/ultimosDatosIngresados`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(datosFormulario),
-            });
-
-            if (!response.ok) {
-                throw new Error('Error al enviar los datos');
-            }
-
-            const resultado = await response.json();
-        } catch (error) {
-            console.error('Error al enviar el formulario:', error);
-        }
-    };
 
     const convertTimeToDecimalHours = (time) => {
         const parts = time.split(' ');
@@ -413,15 +299,13 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
     };
 
     useEffect(() => {
-        if (!isAreaDataCalculated) return;
+
         const pointsData = points;
         const totalPoints = pointsData.length;
-
         const pilotAutoPoints = pointsData.filter(point =>
             point.properties.PILOTO_AUTOMATICO &&
             point.properties.PILOTO_AUTOMATICO.trim().toLowerCase() === 'engaged'
         ).length;
-
         const autoTracketPoints = pointsData.filter(point =>
             point.properties.AUTO_TRACKET &&
             point.properties.AUTO_TRACKET.trim().toLowerCase() === 'engaged'
@@ -433,7 +317,6 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
         ).length;
 
         const puntoEncontrado = pointsData.find(point => point.properties.TIEMPO_TOTAL && point.properties.TIEMPO_TOTAL !== "");
-
         let tiempoTotal = "00:00:00";
 
         if (puntoEncontrado) {
@@ -441,7 +324,6 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
         }
 
         let totalEfficiency = areaData.outsidePolygonArea / convertTimeToDecimalHours(tiempoTotal);
-
         const calculatedPilotAutoPercentaje = totalPoints > 0 ? (pilotAutoPoints / totalPoints) * 100 : 0;
         const calculatedAutoTracketPercentaje = totalPoints > 0 ? (autoTracketPoints / totalPoints) * 100 : 0;
         const calculatedModoCortadorBasePercentaje = totalPoints > 0 ? (modoCorteBase / totalPoints) * 100 : 0;
@@ -453,6 +335,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
             totalEfficiency
         });
 
+
         if (percentageAutoPilot) {
             percentageAutoPilot(calculatedAutoTracketPercentaje, calculatedPilotAutoPercentaje, calculatedModoCortadorBasePercentaje, totalEfficiency);
         }
@@ -461,300 +344,6 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
     useEffect(() => {
         setIsMapButtonDisabled(!progressFinish);
     }, [progressFinish]);
-
-    const toggleFilter = () => {
-        setFilterRpm(false);
-        setFilterFuel(false);
-        setFilterSpeed(false);
-        setFilterCutterBase(false);
-        setFilterGpsQuality(false);
-        setFilterModeCutterBase(false);
-        setFilterAutoTracket(false);
-
-        setFilterAutoPilot(current => {
-            const newValue = !current;
-            setActiveFilter(newValue ? 'PILOTO_AUTOMATICO' : null);
-            return newValue;
-        });
-        setFormData(prev => ({ ...prev, filterAutoPilot: !prev.filterAutoPilot }));
-        setZoom(7);
-        setMapKey(Date.now());
-    };
-
-    const toggleFilterAutoTracket = () => {
-        setFilterRpm(false);
-        setFilterFuel(false);
-        setFilterSpeed(false);
-        setFilterCutterBase(false);
-        setFilterGpsQuality(false);
-        setFilterModeCutterBase(false);
-        setFilterAutoPilot(false);
-
-        setFilterAutoTracket(current => {
-            const newValue = !current;
-            setActiveFilter(newValue ? 'AUTO_TRACKET' : null);
-            return newValue;
-        });
-        setFormData(prev => ({ ...prev, filterAutoTracket: !prev.filterAutoTracket }));
-        setZoom(7);
-        setMapKey(Date.now());
-    };
-
-    const toggleFilterModeCutterBase = () => {
-        setFilterRpm(false);
-        setFilterFuel(false);
-        setFilterSpeed(false);
-        setFilterCutterBase(false);
-        setFilterGpsQuality(false);
-        setFilterAutoPilot(false);
-        setFilterAutoTracket(false);
-
-        setFilterModeCutterBase(current => {
-            const newValue = !current;
-            setActiveFilter(newValue ? 'MODO_CORTE_BASE' : null);
-            return newValue;
-        });
-        setFormData(prev => ({ ...prev, filterModeCutterBase: !prev.filterModeCutterBase }));
-        setZoom(7);
-        setMapKey(Date.now());
-    };
-
-    const toggleFilterSpeed = () => {
-        setFilterRpm(false);
-        setFilterFuel(false);
-        setFilterCutterBase(false);
-        setFilterGpsQuality(false);
-        setFilterAutoPilot(false);
-        setFilterModeCutterBase(false);
-        setFilterAutoTracket(false);
-
-        if (lowSpeed !== -1 && medSpeed !== -1 && highSpeed !== -1) {
-            setFilterSpeed(current => {
-                const newValue = !current;
-                setActiveFilter(newValue ? 'VELOCIDAD_Km_H' : null);
-                return newValue;
-            });
-            setFormData(prev => ({
-                ...prev,
-                filterSpeed: !prev.filterSpeed,
-                lowSpeed: lowSpeed,
-                medSpeed: medSpeed,
-                highSpeed: highSpeed
-            }));
-            setZoom(7);
-            setMapKey(Date.now());
-        }
-    };
-
-    const toggleFilterGpsQuality = () => {
-        setFilterRpm(false);
-        setFilterFuel(false);
-        setFilterCutterBase(false);
-        setFilterAutoPilot(false);
-        setFilterModeCutterBase(false);
-        setFilterAutoTracket(false);
-        setFilterSpeed(false);
-
-        if (lowGpsQuality !== -1 && medGpsQuality !== -1 && highGpsQuality !== -1) {
-            setFilterGpsQuality(current => {
-                const newValue = !current;
-                setActiveFilter(newValue ? 'CALIDAD_DE_SENAL' : null);
-                return newValue;
-            });
-            setFormData(prev => ({
-                ...prev,
-                filterGpsQuality: !prev.filterGpsQuality,
-                lowGpsQuality: lowGpsQuality,
-                medGpsQuality: medGpsQuality,
-                highGpsQuality: highGpsQuality
-            }));
-            setZoom(7);
-            setMapKey(Date.now());
-        }
-    };
-
-    const toggleFilterFuel = () => {
-        setFilterRpm(false);
-        setFilterCutterBase(false);
-        setFilterAutoPilot(false);
-        setFilterAutoTracket(false);
-        setFilterModeCutterBase(false);
-        setFilterSpeed(false);
-        setFilterGpsQuality(false);
-
-        if (lowFuel !== -1 && medFuel !== -1 && highFuel !== -1) {
-            setFilterFuel(current => {
-                const newValue = !current;
-                setActiveFilter(newValue ? 'CONSUMOS_DE_COMBUSTIBLE' : null);
-                return newValue;
-            });
-            setFormData(prev => ({
-                ...prev,
-                filterFuel: !prev.filterFuel,
-                lowFuel: lowFuel,
-                medFuel: medFuel,
-                highFuel: highFuel
-            }));
-            setZoom(7);
-            setMapKey(Date.now());
-        }
-    };
-
-    const toggleFilterRpm = () => {
-        setFilterCutterBase(false);
-        setFilterAutoPilot(false);
-        setFilterAutoTracket(false);
-        setFilterSpeed(false);
-        setFilterModeCutterBase(false);
-        setFilterGpsQuality(false);
-        setFilterFuel(false);
-
-        if (lowRpm !== -1 && medRpm !== -1 && highRpm !== -1) {
-            setFilterRpm(current => {
-                const newValue = !current;
-                setActiveFilter(newValue ? 'RPM' : null);
-                return newValue;
-            });
-            setFormData(prev => ({
-                ...prev,
-                filterRpm: !prev.filterRpm,
-                lowRpm: lowRpm,
-                medRpm: medRpm,
-                highRpm: highRpm
-            }));
-            setZoom(7);
-            setMapKey(Date.now());
-        }
-    };
-
-    const toggleFilterCutterBase = () => {
-        setFilterAutoPilot(false);
-        setFilterAutoTracket(false);
-        setFilterSpeed(false);
-        setFilterModeCutterBase(false);
-        setFilterGpsQuality(false);
-        setFilterFuel(false);
-        setFilterRpm(false);
-
-        if (lowCutterBase !== -1 && medCutterBase !== -1 && highCutterBase !== -1) {
-            setFilterCutterBase(current => {
-                const newValue = !current;
-                setActiveFilter(newValue ? 'PRESION_DE_CORTADOR_BASE' : null);
-                return newValue;
-            });
-            setFormData(prev => ({
-                ...prev,
-                filterCutterBase: !prev.filterCutterBase,
-                lowCutterBase: lowCutterBase,
-                medCutterBase: medCutterBase,
-                highCutterBase: highCutterBase
-            }));
-            setZoom(7);
-            setMapKey(Date.now());
-        }
-    };
-
-    useEffect(() => {
-        const applyFilter = () => {
-            if (filterSpeed) {
-                setFilteredPoints(points.filter(point => {
-                    const speed = point.properties.VELOCIDAD_Km_H;
-                    return speed >= lowSpeed && speed <= highSpeed;
-                }));
-            } else if (filterGpsQuality) {
-                setFilteredPoints(points.filter(point => {
-                    const quality = point.properties.CALIDAD_DE_SENAL;
-                    return quality >= lowGpsQuality && quality <= highGpsQuality;
-                }));
-            } else if (filterFuel) {
-                setFilteredPoints(points.filter(point => {
-                    const fuel = point.properties.CONSUMOS_DE_COMBUSTIBLE;
-                    return fuel >= lowFuel && fuel <= highFuel;
-                }));
-            } else if (filterRpm) {
-                setFilteredPoints(points.filter(point => {
-                    const rpm = point.properties.RPM;
-                    return rpm >= lowRpm && rpm <= highRpm;
-                }));
-            } else if (filterCutterBase) {
-                setFilteredPoints(points.filter(point => {
-                    const cutterBase = point.properties.PRESION_DE_CORTADOR_BASE;
-                    return cutterBase >= lowCutterBase && cutterBase <= highCutterBase;
-                }));
-            } else {
-                setFilteredPoints(points);
-            }
-        };
-
-        applyFilter();
-    }, [filterAutoPilot, filterAutoTracket, filterSpeed, filterGpsQuality, filterFuel, filterRpm, filterCutterBase, filterModeCutterBase, points]);
-
-    useEffect(() => {
-        if (filteredPoints.length > 0) {
-            const validPoints = filteredPoints.filter(point =>
-                Array.isArray(point.geometry.coordinates) &&
-                point.geometry.coordinates.length === 2 &&
-                point.geometry.coordinates.every(coord => typeof coord === 'number')
-            );
-
-            if (validPoints.length > 0) {
-                const pointsForHull = turf.points(validPoints.map(point => point.geometry.coordinates));
-                const hull = turf.convex(pointsForHull);
-                if (hull) {
-                    setHullPolygon(hull.geometry.coordinates[0].map(coord => [coord[1], coord[0]]));
-                }
-            }
-        }
-    }, [filteredPoints]);
-
-    const PaperComponent = (props) => {
-        return (
-            <Draggable handle="#draggable-dialog-title" cancel={'[class*="MuiDialogContent-root"]'}>
-                <div {...props} />
-            </Draggable>
-        );
-    };
-
-    function chooseColor(val, filter) {
-        const ranges = {
-            speed: [lowSpeed, medSpeed],
-            gpsQuality: [lowGpsQuality, medGpsQuality],
-            fuel: [lowFuel, medFuel],
-            rpm: [lowRpm, medRpm],
-            cutterBase: [lowCutterBase, medCutterBase],
-        };
-
-        if (filter === "autoTracket") {
-            if (val !== '0' && val !== '1') {
-                return val.toLowerCase().trim() === 'engaged' ? "green" : "blue";
-            } else {
-                return val === '0' ? "blue" : "red";
-            }
-        }
-        if (filter === "autoPilot" || filter === "modeCutterBase") {
-            if (val !== '0' && val !== '1') {
-                return val.toLowerCase().trim() === 'automatic' ? "green" : "blue";
-            } else {
-                return val === '1' ? "red" : "blue";
-            }
-        }
-
-        if (ranges[filter]) {
-            return getColorFromRange(val, ranges[filter]);
-        }
-
-        return "blue";
-    }
-
-    function getColorFromRange(val, [low, med]) {
-        if (val <= low) {
-            return "green";
-        } else if (val <= med) {
-            return "yellow";
-        } else {
-            return "red";
-        }
-    }
 
     useEffect(() => {
         const checkAvailableFilters = () => {
@@ -782,31 +371,176 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
         checkAvailableFilters();
     }, [points]);
 
+    useEffect(() => {
+        applyFilters();
+    }, [filterAutoPilot, filterAutoTracket, filterModeCutterBase, filterSpeed, filterGpsQuality, filterFuel, filterRpm, filterCutterBase]);
+
+    useEffect(() => {
+        applyFilters();
+    }, [
+        lowSpeed, medSpeed, highSpeed,
+        lowGpsQuality, medGpsQuality, highGpsQuality,
+        lowFuel, medFuel, highFuel,
+        lowRpm, medRpm, highRpm,
+        lowCutterBase, medCutterBase, highCutterBase
+    ]);
+    const applyFilters = (pointsToFilter = originalPoints) => {
+        const filtered = pointsToFilter.map(point => {
+            const props = point.properties;
+            let color = 'blue';
+
+            // Aplicar colores según los filtros activos
+            if (filterAutoPilot) {
+                if (props.PILOTO_AUTOMATICO?.toLowerCase() === 'engaged') {
+                    color = 'green';
+                } else if (props.PILOTO_AUTOMATICO?.toLowerCase() !== 'engaged') {
+                    color = 'red';
+                }
+            } else if (filterAutoTracket) {
+                if (props.AUTO_TRACKET?.toLowerCase() === 'engaged') {
+                    color = 'green';
+                } else if (props.AUTO_TRACKET?.toLowerCase() !== 'engaged') {
+                    color = 'red';
+                }
+            } else if (filterModeCutterBase) {
+                if (props.MODO_CORTE_BASE?.toLowerCase() === 'automatic') {
+                    color = 'green';
+                } else if (props.MODO_CORTE_BASE?.toLowerCase() !== 'automatic') {
+                    color = 'red';
+                }
+            } else if (filterSpeed) {
+                const speed = props.VELOCIDAD_Km_H;
+                if (speed < lowSpeed) {
+                    color = 'green';
+                } else if (speed >= lowSpeed && speed < medSpeed) {
+                    color = 'yellow';
+                } else if (speed >= medSpeed && speed <= highSpeed) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+            } else if (filterGpsQuality) {
+                const gpsQuality = props.CALIDAD_DE_SENAL;
+                if (gpsQuality < lowGpsQuality) {
+                    color = 'green';
+                } else if (gpsQuality >= lowGpsQuality && gpsQuality < medGpsQuality) {
+                    color = 'yellow';
+                } else if (gpsQuality >= medGpsQuality && gpsQuality <= highGpsQuality) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+            } else if (filterFuel) {
+                const fuel = props.CONSUMOS_DE_COMBUSTIBLE;
+                if (fuel < lowFuel) {
+                    color = 'green';
+                } else if (fuel >= lowFuel && fuel < medFuel) {
+                    color = 'yellow';
+                } else if (fuel >= medFuel && fuel <= highFuel) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+            } else if (filterRpm) {
+                const rpm = props.RPM;
+                if (rpm < lowRpm) {
+                    color = 'green';
+                } else if (rpm >= lowRpm && rpm < medRpm) {
+                    color = 'yellow';
+                } else if (rpm >= medRpm && rpm <= highRpm) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+            } else if (filterCutterBase) {
+                const cutterBase = props.PRESION_DE_CORTADOR_BASE;
+                if (cutterBase < lowCutterBase) {
+                    color = 'green';
+                } else if (cutterBase >= lowCutterBase && cutterBase < medCutterBase) {
+                    color = 'yellow';
+                } else if (cutterBase >= medCutterBase && cutterBase <= highCutterBase) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+            }
+
+            return { ...point, color };
+        });
+
+        setFilteredPoints(filtered);
+    };
+
+    const handleOpenMapDialog = () => {
+        setIsMapDialogOpen(true);
+    };
+
+    const handleCloseMapDialog = () => {
+        setIsMapDialogOpen(false);
+    };
+
+    const handleToggleFilter = (filterName) => {
+        setActiveFilter(filterName);
+        setOpenIndicator(filterName);
+        switch (filterName) {
+            case 'PILOTO_AUTOMATICO':
+                setFilterAutoPilot(prev => !prev);
+                break;
+            case 'AUTO_TRACKET':
+                setFilterAutoTracket(prev => !prev);
+                break;
+            case 'MODO_CORTE_BASE':
+                setFilterModeCutterBase(prev => !prev);
+                break;
+            case 'VELOCIDAD_Km_H':
+                setFilterSpeed(prev => !prev);
+                break;
+            case 'CALIDAD_DE_SENAL':
+                setFilterGpsQuality(prev => !prev);
+                break;
+            case 'CONSUMOS_DE_COMBUSTIBLE':
+                setFilterFuel(prev => !prev);
+                break;
+            case 'RPM':
+                setFilterRpm(prev => !prev);
+                break;
+            case 'PRESION_DE_CORTADOR_BASE':
+                setFilterCutterBase(prev => !prev);
+                break;
+            default:
+                break;
+        }
+    };
+
+    const handleLabelClick = (filterLabel) => {
+        applyFilters(points, filterLabel);
+    };
+
     return (
         <>
-            {availableFilters.speed && filterSpeed && (
-                <BarIndicator filterType="speed" low={lowSpeed} medium={medSpeed} high={highSpeed} />
+            {availableFilters.speed && filterSpeed && openIndicator === 'VELOCIDAD_Km_H' && (
+                <BarIndicator filterType="speed" onLabelClick={handleLabelClick} />
             )}
-            {availableFilters.gpsQuality && filterGpsQuality && (
-                <BarIndicator filterType="gpsQuality" low={lowGpsQuality} medium={medGpsQuality} high={highGpsQuality} />
+            {availableFilters.gpsQuality && filterGpsQuality && openIndicator === 'CALIDAD_DE_SENAL' && (
+                <BarIndicator filterType="gpsQuality" onLabelClick={handleLabelClick} />
             )}
-            {availableFilters.fuel && filterFuel && (
-                <BarIndicator filterType="fuel" low={lowFuel} medium={medFuel} high={highFuel} />
+            {availableFilters.fuel && filterFuel && openIndicator === 'CONSUMOS_DE_COMBUSTIBLE' && (
+                <BarIndicator filterType="fuel" onLabelClick={handleLabelClick} />
             )}
-            {availableFilters.rpm && filterRpm && (
-                <BarIndicator filterType="rpm" low={lowRpm} medium={medRpm} high={highRpm} />
+            {availableFilters.rpm && filterRpm && openIndicator === 'RPM' && (
+                <BarIndicator filterType="rpm" onLabelClick={handleLabelClick} />
             )}
-            {availableFilters.cutterBase && filterCutterBase && (
-                <BarIndicator filterType="cutterBase" low={lowCutterBase} medium={medCutterBase} high={highCutterBase} />
+            {availableFilters.cutterBase && filterCutterBase && openIndicator === 'PRESION_DE_CORTADOR_BASE' && (
+                <BarIndicator filterType="cutterBase" onLabelClick={handleLabelClick} />
             )}
-            {availableFilters.autoPilot && filterAutoPilot && (
-                <BarIndicator filterType="autoPilot" low={0} medium={0} high={1} />
+            {availableFilters.autoPilot && filterAutoPilot && openIndicator === 'PILOTO_AUTOMATICO' && (
+                <BarIndicator filterType="autoPilot" onLabelClick={handleLabelClick} />
             )}
-            {availableFilters.autoTracket && filterAutoTracket && (
-                <BarIndicator filterType="autoTracket" low={0} medium={0} high={1} />
+            {availableFilters.autoTracket && filterAutoTracket && openIndicator === 'AUTO_TRACKET' && (
+                <BarIndicator filterType="autoTracket" onLabelClick={handleLabelClick} />
             )}
-            {availableFilters.modeCutterBase && filterModeCutterBase && (
-                <BarIndicator filterType="modeCutterBase" low={0} medium={0} high={1} />
+            {availableFilters.modeCutterBase && filterModeCutterBase && openIndicator === 'MODO_CORTE_BASE' && (
+                <BarIndicator filterType="modeCutterBase" onLabelClick={handleLabelClick} />
             )}
 
             <div className="floating-filter-button">
@@ -815,10 +549,10 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                         <Button
                             variant="contained"
                             color="primary"
-                            onClick={openFilterDialog}
+                            onClick={handleOpenMapDialog}
                             disabled={isMapButtonDisabled}
                         >
-                            <FaMap />
+                            Generar Mapas
                         </Button>
                     </span>
                 </Tooltip>
@@ -841,7 +575,7 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                     AUTO_TRACKET: { low: 0, medium: 0, high: 1 },
                     MODO_CORTE_BASE: { low: 0, medium: 0, high: 1 },
                     VELOCIDAD_Km_H: { low: lowSpeed, medium: medSpeed, high: highSpeed },
-                    CALIDAD_DE_SENAL: { low: lowGpsQuality, medium: medGpsQuality, highGpsQuality },
+                    CALIDAD_DE_SENAL: { low: lowGpsQuality, medium: medGpsQuality, high: highGpsQuality },
                     CONSUMOS_DE_COMBUSTIBLE: { low: lowFuel, medium: medFuel, high: highFuel },
                     RPM: { low: lowRpm, medium: medRpm, high: highRpm },
                     PRESION_DE_CORTADOR_BASE: { low: lowCutterBase, medium: medCutterBase, high: highCutterBase }
@@ -855,303 +589,51 @@ const MapComponent = ({ onAreaCalculated, percentageAutoPilot, progressFinish, i
                 userId={userData.ID_USUARIO}
             />
 
-            <Dialog
-                open={isFilterDialogOpen}
-                onClose={closeFilterDialog}
-                aria-labelledby="draggable-dialog-title"
-                sx={{
-                    '& .MuiDialog-paper': {
-                        width: '30%',
-                        maxWidth: 'none',
-                        overflow: 'hidden',
-                        backgroundColor: 'white',
-                        resize: 'both',
-                    }
-                }}
-                PaperComponent={PaperComponent}
-            >
-                <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
-                    Generar Mapas
-                </DialogTitle>
-                <DialogContent>
-                    <FormGroup>
-                        {availableFilters.autoPilot && (
-                            <FormControlLabel
-                                control={<Switch checked={filterAutoPilot} onChange={toggleFilter} />}
-                                label="Piloto Automático"
-                            />
-                        )}
-                        {availableFilters.autoTracket && (
-                            <FormControlLabel
-                                control={<Switch checked={filterAutoTracket} onChange={toggleFilterAutoTracket} />}
-                                label="Auto Tracket"
-                            />
-                        )}
-                        {availableFilters.modeCutterBase && (
-                            <FormControlLabel
-                                control={<Switch checked={filterModeCutterBase} onChange={toggleFilterModeCutterBase} />}
-                                label="Modo corte base"
-                            />
-                        )}
-                        {availableFilters.speed && (
-                            <>
-                                <FormControlLabel
-                                    control={<Switch checked={filterSpeed} onChange={toggleFilterSpeed} />}
-                                    label="Velocidad (Km/H)"
-                                />
-                                <TextField
-                                    label="Bajo"
-                                    variant="outlined"
-                                    type="number"
-                                    name="low"
-                                    value={lowSpeed}
-                                    inputRef={lowSpeedRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setLowSpeed(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setLowSpeed(value === '' ? 0 : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Medio"
-                                    variant="outlined"
-                                    type="number"
-                                    name="medium"
-                                    value={medSpeed}
-                                    inputRef={medSpeedRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setMedSpeed(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Alto"
-                                    variant="outlined"
-                                    type="number"
-                                    name="high"
-                                    value={highSpeed}
-                                    inputRef={highSpeedRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setHighSpeed(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                            </>
-                        )}
-                        {availableFilters.gpsQuality && (
-                            <>
-                                <FormControlLabel
-                                    control={<Switch checked={filterGpsQuality} onChange={toggleFilterGpsQuality} />}
-                                    label="Calidad Gps"
-                                />
-                                <TextField
-                                    label="Bajo"
-                                    variant="outlined"
-                                    type="number"
-                                    name="lowGps"
-                                    value={lowGpsQuality}
-                                    inputRef={lowGpsQualityRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setLowGpsQuality(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Medio"
-                                    variant="outlined"
-                                    type="number"
-                                    name="mediumGps"
-                                    value={medGpsQuality}
-                                    inputRef={medGpsQualityRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setMedGpsQuality(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Alto"
-                                    variant="outlined"
-                                    type="number"
-                                    name="highGps"
-                                    value={highGpsQuality}
-                                    inputRef={highGpsQualityRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setHighGpsQuality(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                            </>
-                        )}
-                        {availableFilters.fuel && (
-                            <>
-                                <FormControlLabel
-                                    control={<Switch checked={filterFuel} onChange={toggleFilterFuel} />}
-                                    label="Combustible"
-                                />
-                                <TextField
-                                    label="Bajo"
-                                    variant="outlined"
-                                    type="number"
-                                    name="lowFuel"
-                                    value={lowFuel}
-                                    inputRef={lowFuelRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setLowFuel(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Medio"
-                                    variant="outlined"
-                                    type="number"
-                                    name="mediumFuel"
-                                    value={medFuel}
-                                    inputRef={medFuelRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setMedFuel(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Alto"
-                                    variant="outlined"
-                                    type="number"
-                                    name="highFuel"
-                                    value={highFuel}
-                                    inputRef={highFuelRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setHighFuel(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                            </>
-                        )}
-                        {availableFilters.rpm && (
-                            <>
-                                <FormControlLabel
-                                    control={<Switch checked={filterRpm} onChange={toggleFilterRpm} />}
-                                    label="RPM"
-                                />
-                                <TextField
-                                    label="Bajo"
-                                    variant="outlined"
-                                    type="number"
-                                    name="lowRPM"
-                                    value={lowRpm}
-                                    inputRef={lowRpmRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setLowRpm(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Medio"
-                                    variant="outlined"
-                                    type="number"
-                                    name="mediumRPM"
-                                    value={medRpm}
-                                    inputRef={medRpmRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setMedRpm(value === '' ? '' : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Alto"
-                                    variant="outlined"
-                                    type="number"
-                                    name="highRPM"
-                                    value={highRpm}
-                                    inputRef={highRpmRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setHighRpm(value === '' ? '' : Number(value));
-                                    }}
-                                    margin="normal"
-                                />
-                            </>
-                        )}
-                        {availableFilters.cutterBase && (
-                            <>
-                                <FormControlLabel
-                                    control={<Switch checked={filterCutterBase} onChange={toggleFilterCutterBase} />}
-                                    label="Presión de cortador base (Bar)"
-                                />
-                                <TextField
-                                    label="Bajo"
-                                    variant="outlined"
-                                    type="number"
-                                    name="lowCutterBase"
-                                    value={lowCutterBase}
-                                    inputRef={lowCutterBaseRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setLowCutterBase(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setLowCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Medio"
-                                    variant="outlined"
-                                    type="number"
-                                    name="mediumCutterBase"
-                                    value={medCutterBase}
-                                    inputRef={medCutterBaseRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setMedCutterBase(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setMedCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                                <TextField
-                                    label="Alto"
-                                    variant="outlined"
-                                    type="number"
-                                    name="highCutterBase"
-                                    value={highCutterBase}
-                                    inputRef={highCutterBaseRef}
-                                    onChange={e => {
-                                        const value = e.target.value;
-                                        setHighCutterBase(value === '' ? '' : Number(value));
-                                    }}
-                                    onBlur={e => {
-                                        const value = e.target.value;
-                                        setHighCutterBase(value === '' ? 0 : Math.max(0, Number(value)));
-                                    }}
-                                    margin="normal"
-                                />
-                            </>
-                        )}
-                    </FormGroup>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={closeFilterDialog} color="primary">
-                        Cerrar
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <MapDialog
+                isOpen={isMapDialogOpen}
+                onClose={handleCloseMapDialog}
+                availableFilters={availableFilters}
+                filterSpeed={filterSpeed}
+                filterGpsQuality={filterGpsQuality}
+                filterFuel={filterFuel}
+                filterRpm={filterRpm}
+                filterCutterBase={filterCutterBase}
+                filterAutoPilot={filterAutoPilot}
+                filterAutoTracket={filterAutoTracket}
+                filterModeCutterBase={filterModeCutterBase}
+                lowSpeed={lowSpeed}
+                medSpeed={medSpeed}
+                highSpeed={highSpeed}
+                lowGpsQuality={lowGpsQuality}
+                medGpsQuality={medGpsQuality}
+                highGpsQuality={highGpsQuality}
+                lowFuel={lowFuel}
+                medFuel={medFuel}
+                highFuel={highFuel}
+                lowRpm={lowRpm}
+                medRpm={medRpm}
+                highRpm={highRpm}
+                lowCutterBase={lowCutterBase}
+                medCutterBase={medCutterBase}
+                highCutterBase={highCutterBase}
+                handleToggleFilter={handleToggleFilter}
+                setLowSpeed={setLowSpeed}
+                setMedSpeed={setMedSpeed}
+                setHighSpeed={setHighSpeed}
+                setLowGpsQuality={setLowGpsQuality}
+                setMedGpsQuality={setMedGpsQuality}
+                setHighGpsQuality={setHighGpsQuality}
+                setLowFuel={setLowFuel}
+                setMedFuel={setMedFuel}
+                setHighFuel={setHighFuel}
+                setLowRpm={setLowRpm}
+                setMedRpm={setMedRpm}
+                setHighRpm={setHighRpm}
+                setLowCutterBase={setLowCutterBase}
+                setMedCutterBase={setMedCutterBase}
+                setHighCutterBase={setHighCutterBase}
+                usarVelocidadKmH={true}
+            />
         </>
     );
 };

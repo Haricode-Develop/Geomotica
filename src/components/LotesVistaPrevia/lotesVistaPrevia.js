@@ -62,7 +62,6 @@ const LotesVistaPrevia = ({ userId }) => {
                 const response = await axios.get(`${API_BASE_URL}configuration/lotesIniciales/masReciente/${userId}`);
                 const geojson = response.data.content;
                 setPolygons(geojson.features);
-                console.log("GeoJSON con los polígonos: ", geojson.features);
                 const totalArea = geojson.features.reduce((sum, feature) => {
                     const polygonArea = feature.properties.area || 0;
                     return sum + polygonArea;
@@ -191,6 +190,12 @@ const LotesVistaPrevia = ({ userId }) => {
         }
     }, [loading]);
 
+    const getLoteId = (properties) => {
+        const keys = Object.keys(properties).map(key => key.toLowerCase());
+        const idLoteIndex = keys.indexOf('id_lote');
+        return idLoteIndex !== -1 ? properties[Object.keys(properties)[idLoteIndex]] : null;
+    };
+
     const onHoverLote = (loteId) => {
         setHighlightedLote(loteId);
     };
@@ -206,7 +211,7 @@ const LotesVistaPrevia = ({ userId }) => {
             setActiveLote(loteId);
             if (mapRef.current) {
                 const map = mapRef.current;
-                const lotePolygons = polygons.filter(feature => feature.properties.Lote === loteId);
+                const lotePolygons = polygons.filter(feature => getLoteId(feature.properties) === loteId);
                 const bounds = L.geoJSON(lotePolygons).getBounds();
                 map.fitBounds(bounds);
             }
@@ -223,8 +228,8 @@ const LotesVistaPrevia = ({ userId }) => {
             });
             const geojsonLayer = L.geoJSON(polygons, {
                 style: (feature) => ({
-                    color: feature.properties.Lote === activeLote ? 'red' : '#3388ff',
-                    weight: feature.properties.Lote === highlightedLote ? 3 : 1,
+                    color: getLoteId(feature.properties) === activeLote ? 'red' : '#3388ff',
+                    weight: getLoteId(feature.properties) === highlightedLote ? 3 : 1,
                 }),
             });
             geojsonLayer.addTo(map);
@@ -239,7 +244,7 @@ const LotesVistaPrevia = ({ userId }) => {
                     <Typography>Área total: {area.toFixed(2)} m²</Typography>
                     <List style={{ maxHeight: '300px', overflowY: 'auto' }}>
                         {Object.entries(polygons.reduce((acc, feature) => {
-                            const loteId = feature.properties.Lote;
+                            const loteId = getLoteId(feature.properties);
                             if (!acc[loteId]) {
                                 acc[loteId] = [];
                             }

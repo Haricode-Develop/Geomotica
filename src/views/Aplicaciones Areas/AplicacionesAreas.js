@@ -16,13 +16,16 @@ import {
     length as turfLength,
     nearestPointOnLine as turfNearestPointOnLine,
     distance as turfDistance,
-    point as turfPoint
+    point as turfPoint,
+    destination as turfDestination,
+    bearing as turfBearing
 } from '@turf/turf';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormGroup, FormControlLabel, Switch, TextField, Tooltip, IconButton } from '@mui/material';
 import { FaMap, FaCut, FaDrawPolygon, FaTrash, FaBuffer, FaUndo } from 'react-icons/fa';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
 import { v4 as uuidv4 } from 'uuid';
 import CommonMap from '../../components/CommonMap/CommonMap';
+import MapDialog from "../../components/MapDialog/MapDialog";
 
 const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPromediosCalculated, activarEdicionInteractiva }) => {
     const userData = JSON.parse(localStorage.getItem("userData"));
@@ -45,7 +48,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [areaAplicada, setAreaAplicada] = useState(0);
     const [lineas, setLineas] = useState([]);
     const [bufferedLines, setBufferedLines] = useState([]);
-    const [formData, setFormData] = useState({ idAnalisis });
+    const [formData, setFormData] = useState({idAnalisis});
     const mapRef = useRef(null); // Inicializa mapRef correctamente
     const [bufferedIntersections, setBufferedIntersections] = useState([]);
     const [poligonosKML, setPoligonosKML] = useState([]);
@@ -63,6 +66,100 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const [isBufferActive, setIsBufferActive] = useState(false);
     const workerRef = useRef(null);
 
+    const [filterValues, setFilterValues] = useState({
+        VELOCIDAD: {low: 0, medium: 0, high: 0},
+        ALTURA: {low: 0, medium: 0, high: 0},
+        DOSISREAL: {low: 0, medium: 0, high: 0}
+    });
+
+    const [availableFilters, setAvailableFilters] = useState({
+        speed: false,
+        altitude: false,
+        realDose: false
+    });
+
+    const [filterSpeed, setFilterSpeed] = useState(false);
+    const [filterAltitude, setFilterAltitude] = useState(false);
+    const [filterRealDose, setFilterRealDose] = useState(false);
+
+    const [lowSpeed, setLowSpeed] = useState(0);
+    const [medSpeed, setMedSpeed] = useState(0);
+    const [highSpeed, setHighSpeed] = useState(0);
+
+    const [lowAltitude, setLowAltitude] = useState(0);
+    const [medAltitude, setMedAltitude] = useState(0);
+    const [highAltitude, setHighAltitude] = useState(0);
+
+    const [lowRealDose, setLowRealDose] = useState(0);
+    const [medRealDose, setMedRealDose] = useState(0);
+    const [highRealDose, setHighRealDose] = useState(0);
+
+    const handleToggleFilter = (filterName) => {
+        switch (filterName) {
+            case 'VELOCIDAD':
+                setFilterSpeed(prev => !prev);
+                break;
+            case 'ALTURA':
+                setFilterAltitude(prev => !prev);
+                break;
+            case 'DOSISREAL':
+                setFilterRealDose(prev => !prev);
+                break;
+            default:
+                break;
+        }
+    };
+
+    useEffect(() => {
+        applyFilters();
+    }, [filterSpeed, filterAltitude, filterRealDose]);
+
+    const applyFilters = () => {
+        const filtered = poligonosPropiedades.map(prop => {
+            let color = 'green';
+            if (filterSpeed) {
+                const speed = prop.VELOCIDAD;
+                if (speed < lowSpeed) {
+                    color = 'green';
+                } else if (speed >= lowSpeed && speed < medSpeed) {
+                    color = 'yellow';
+                } else if (speed >= medSpeed && speed <= highSpeed) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+            }
+            if (filterAltitude) {
+                const altitude = prop.ALTURA;
+                if (altitude < lowAltitude) {
+                    color = 'green';
+                } else if (altitude >= lowAltitude && altitude < medAltitude) {
+                    color = 'yellow';
+                } else if (altitude >= medAltitude && altitude <= highAltitude) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+            }
+            if (filterRealDose) {
+                const realDose = prop.DOSISREAL;
+                if (realDose < lowRealDose) {
+                    color = 'green';
+                } else if (realDose >= lowRealDose && realDose < medRealDose) {
+                    color = 'yellow';
+                } else if (realDose >= medRealDose && realDose <= highRealDose) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+            }
+
+            return { ...prop, color };
+        });
+
+        setPoligonosPropiedades(filtered);
+    };
+
     useEffect(() => {
         workerRef.current = new Worker('dataWorker.js');
         const socket = io(API_BASE_URL);
@@ -70,14 +167,14 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         workerRef.current.onmessage = (e) => {
             if (e.data.action === 'geoJsonDataProcessed') {
                 if (!e.data.data.lines && e.data.data.polygons) {
-                    const { polygons } = e.data.data;
+                    const {polygons} = e.data.data;
                     const formattedPolygons = polygons.map(poly => formatPolygon(poly.polygon[0]));
                     setPoligonosPropiedades(polygons.map(poly => poly.properties));
                     setPoligonos(formattedPolygons);
                     setIsFiltrandoLineas(false);
                 }
                 if (e.data.data.lines && e.data.data.polygons) {
-                    const { lines, polygons } = e.data.data;
+                    const {lines, polygons} = e.data.data;
                     const formattedLines = lines.map(line => line.paths);
                     let unifiedLines;
 
@@ -90,12 +187,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     const linesWithEvents = unifiedLines.flatMap(line => {
                         const lineId = uuidv4();
                         return line.map(segment => {
-                            const latLngArray = segment.map(coord => ({ lat: coord[0], lng: coord[1] }));
-                            const polyline = L.polyline(latLngArray, { color: 'red' });
+                            const latLngArray = segment.map(coord => ({lat: coord[0], lng: coord[1]}));
+                            const polyline = L.polyline(latLngArray, {color: 'red'});
                             polyline.on('mouseover', (e) => handleLineHover(e, lineId));
                             polyline.on('mouseout', (e) => handleLineMouseOut(e, lineId));
                             polyline.on('click', (e) => handleLineClick(latLngArray, e));
-                            return { polyline, id: lineId };
+                            return {polyline, id: lineId};
                         });
                     });
 
@@ -108,7 +205,12 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         };
 
         socket.on('updateGeoJSONLayer', (geojsonData) => {
-            workerRef.current.postMessage({ action: 'processGeoJsonData', geojsonData, type: tipoAnalisis, activarEdicionInteractiva });
+            workerRef.current.postMessage({
+                action: 'processGeoJsonData',
+                geojsonData,
+                type: tipoAnalisis,
+                activarEdicionInteractiva
+            });
         });
 
         return () => {
@@ -120,18 +222,26 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
     useEffect(() => {
         if (workerRef.current) {
-            workerRef.current.postMessage({ action: 'setActivarEdicionInteractiva', activarEdicionInteractiva });
+            workerRef.current.postMessage({action: 'setActivarEdicionInteractiva', activarEdicionInteractiva});
         }
     }, [activarEdicionInteractiva]);
 
+
+
+    // ********************************************************************************************************************
+    // Se eliminan lineas que no son utiles, se unifican lineas paralelas y se generan lineas completas
     useEffect(() => {
-        if (isFiltrandoLineas && lineas.length > 0) {
+        if (isFiltrandoLineas && lineas.length > 0 && activarEdicionInteractiva) {
             const filteredLines = filterConsistentPatterns(lineas);
             const unifiedLines = unifyParallelLines(filteredLines, ANGLE_THRESHOLD, DISTANCE_THRESHOLD);
-            setLineas(unifiedLines);
+            const lineasCompletas = unifiedLines.map(linea => generarLineaCompleta(linea));
+
+            setLineas(lineasCompletas);
             setIsFiltrandoLineas(false);
         }
     }, [isFiltrandoLineas, lineas]);
+    // ********************************************************************************************************************
+
 
     const calculateLineAngle = (coord1, coord2) => {
         const dy = coord2.lat - coord1.lat;
@@ -205,7 +315,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
             const bufferWidth = width > 0 ? width : 1;
 
-            const bufferedLine = turfBuffer(lineString, bufferWidth, { units: 'meters' });
+            const bufferedLine = turfBuffer(lineString, bufferWidth, {units: 'meters'});
 
             if (!bufferedLine || !bufferedLine.geometry || !Array.isArray(bufferedLine.geometry.coordinates) || bufferedLine.geometry.coordinates.length === 0) {
                 throw new Error("Buffer result is invalid.");
@@ -217,6 +327,27 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
             return null;
         }
     };
+
+    useEffect(() => {
+        if(lineas){
+            const newBufferedLines = lineas.map(linea => {
+                if (linea.polyline && Array.isArray(linea.polyline._latlngs) && linea.polyline._latlngs.length > 0) {
+                    const bufferedLine = addBufferToLine(linea.polyline._latlngs, parseFloat(bufferValue));
+                    if (bufferedLine) {
+                        return bufferedLine;
+                    } else {
+                        console.warn("Buffer result is invalid for line: ", linea);
+                        return null;
+                    }
+                }
+                console.error("Invalid line data: missing or incorrect polyline or latlngs");
+                return null;
+            }).filter(bufferedLine => bufferedLine !== null);
+
+            setBufferedLines(newBufferedLines);
+        }
+    }, [bufferValue]);
+
 
     const handleToggleBuffer = () => {
         try {
@@ -306,26 +437,35 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     }, [poligonos, lineas, isFiltrandoLineas]);
 
     useEffect(() => {
-
         if (mapRef.current && poligonos.length > 0) {
             const latLngCoords = poligonos.flatMap(polygon =>
                 polygon.map(coordPair => [coordPair[1], coordPair[0]])
             );
             const mapBounds = L.latLngBounds(latLngCoords);
+
             if (mapBounds.isValid() || activeFilter) {
                 setIntersectionsKey(Date.now());
-
                 findIntersections(poligonos);
             }
         }
-    }, [poligonos, lineas, activeFilter]);
+    }, [poligonos, lineas, activeFilter, mapRef]);
 
-    const [filterValues, setFilterValues] = useState({
-        VELOCIDAD: { low: 0, medium: 0, high: 0 },
-        ALTURA: { low: 0, medium: 0, high: 0 },
-        DOSISREAL: { low: 0, medium: 0, high: 0 }
-    });
 
+    useEffect(() => {
+        const checkAvailableFilters = () => {
+            const hasSpeed = poligonosPropiedades.some(prop => prop.VELOCIDAD != null && prop.VELOCIDAD !== "");
+            const hasAltitude = poligonosPropiedades.some(prop => prop.ALTURA != null && prop.ALTURA !== "");
+            const hasRealDose = poligonosPropiedades.some(prop => prop.DOSISREAL != null && prop.DOSISREAL !== "");
+
+            setAvailableFilters({
+                speed: hasSpeed,
+                altitude: hasAltitude,
+                realDose: hasRealDose,
+            });
+        };
+
+        checkAvailableFilters();
+    }, [poligonosPropiedades]);
     const handleLineHover = (e, lineId) => {
         e.target.setStyle({
             color: 'cyan',
@@ -345,8 +485,8 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     const handleLineClick = (line, e) => {
         const coordinates = line.map(coord => [coord.lng, coord.lat]);
         const lineString = turfLineString(coordinates);
-        const lengthKm = turfLength(lineString, { units: 'kilometers' });
-        const lengthMiles = turfLength(lineString, { units: 'miles' });
+        const lengthKm = turfLength(lineString, {units: 'kilometers'});
+        const lengthMiles = turfLength(lineString, {units: 'miles'});
         const lengthMeters = lengthKm * 1000;
 
         setPopupInfo({
@@ -360,32 +500,11 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         });
     };
 
-    function areLinesClose(lineA, lineB) {
-        const options = { units: 'kilometers' };
-        for (const point of lineA.geometry.coordinates) {
-            const nearest = turfNearestPointOnLine(lineB, turfPoint(point));
-            const distance = turfDistance(turfPoint(point), nearest, options);
-            if (distance < DISTANCE_THRESHOLD) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function combineLines(line1, line2) {
-        const combined = [...line1, ...line2].filter(
-            (value, index, self) => index === self.findIndex((t) => (
-                t[0] === value[0] && t[1] === value[1]
-            ))
-        );
-        return combined;
-    }
-
     const unifyParallelLines = (lines, angleThreshold, distanceThreshold) => {
         const areLinesClose = (lineA, lineB, threshold) => {
             for (const point of lineA.geometry.coordinates) {
                 const nearest = turfNearestPointOnLine(lineB, turfPoint(point));
-                const distance = turfDistance(turfPoint(point), nearest, { units: 'kilometers' });
+                const distance = turfDistance(turfPoint(point), nearest, {units: 'kilometers'});
                 if (distance < threshold) {
                     return true;
                 }
@@ -453,11 +572,11 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                     }
                 }
 
-                const newPolyline = L.polyline(unifiedLine, { color: 'red' });
+                const newPolyline = L.polyline(unifiedLine, {color: 'red'});
                 newPolyline.on('mouseover', (e) => handleLineHover(e, uuidv4()));
                 newPolyline.on('mouseout', (e) => handleLineMouseOut(e, uuidv4()));
-                newPolyline.on('click', (e) => handleLineClick(unifiedLine, e));
-                unifiedLines.push({ polyline: newPolyline, id: uuidv4(), length: maxLength });
+                newPolyline.on('click', (event) => handleLineClick(unifiedLine, event));
+                unifiedLines.push({polyline: newPolyline, id: uuidv4(), length: maxLength});
             }
 
             return unifiedLines;
@@ -561,37 +680,16 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
     }, [poligonos]);
 
     const handleFilterChange = (e, filterType) => {
-        const { checked } = e.target;
-        if (filterType === "VELOCIDAD") setVelocidadFiltroActivado(true);
-        if (filterType === "ALTURA") setAlturaFiltroActivado(true);
-        if (filterType === "DOSISREAL") setDosisRealFiltroActivado(true);
+        const {checked} = e.target;
+        if (filterType === "VELOCIDAD") setVelocidadFiltroActivado(checked);
+        if (filterType === "ALTURA") setAlturaFiltroActivado(checked);
+        if (filterType === "DOSISREAL") setDosisRealFiltroActivado(checked);
         if (checked) {
             setActiveFilter(filterType);
         } else {
             setActiveFilter(null);
             setIntersectionsKey(Date.now());
         }
-        verificarYEnviarDatos();
-    };
-
-    const getPolygonColor = (properties) => {
-        if (!activeFilter || !properties || !filterValues[activeFilter]) {
-            return 'green';
-            setIntersectionsKey(Date.now());
-        }
-
-        const key = activeFilter.toUpperCase();
-        const value = properties[key];
-
-        if (value === undefined) {
-            return 'transparent';
-        }
-
-        const { low, medium, high } = filterValues[activeFilter];
-        if (value < low) return 'green';
-        if (value >= low && value < medium) return 'yellow';
-        if (value >= medium && value <= high) return 'orange';
-        return 'red';
     };
 
     useEffect(() => {
@@ -670,7 +768,7 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
     useEffect(() => {
         if (bufferedLines.length > 0) {
-            calculateBufferedIntersections(bufferedLines);
+            const totalIntersectionArea = calculateBufferedIntersections(bufferedLines);
             const correctedBufferedPolygons = bufferedLines.map(buffer => {
                 const coordinates = buffer.geometry.coordinates[0];
                 return coordinates.map(coord => [coord[0], coord[1]]);
@@ -680,17 +778,23 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
             let totalBufferedArea = 0;
             bufferedTurfPolygons.forEach(polygon => {
-                totalBufferedArea += turfArea(polygon) / 10000;
+                totalBufferedArea += turfArea(polygon) / 10000; // Convertir a hectáreas
             });
+
+            const areaAplicada = totalBufferedArea - totalIntersectionArea;
 
             if (onAreasCalculated) {
                 onAreasCalculated({
-                    areaSobreAplicada: 0,
-                    areaAplicada: totalBufferedArea.toFixed(3)
+                    areaSobreAplicada: totalIntersectionArea.toFixed(3),
+                    areaAplicada: areaAplicada.toFixed(3)
                 });
             }
         }
     }, [bufferedLines]);
+
+
+
+
 
     const calculateBufferedIntersections = (bufferedLines) => {
         let intersections = [];
@@ -711,99 +815,18 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
 
         setBufferedIntersections(intersections);
 
-        if (bufferValue === 0) {
-            const linesToRemove = findLinesToRemove(bufferedLines, intersections);
-            setLineas(prevLineas => prevLineas.filter(linea => !linesToRemove.includes(linea.id)));
-        }
-    };
-
-    const findLinesToRemove = (bufferedLines, intersections) => {
-        let linesToRemove = [];
-
+        // Calcular el área de las intersecciones
+        let totalIntersectionArea = 0;
         intersections.forEach(intersection => {
-            let intersectingLines = [];
-
-            bufferedLines.forEach(bufferedLine => {
-                const lineString = turfLineString(bufferedLine.geometry.coordinates[0]);
-                const intersectionPoints = turfLineIntersect(lineString, turfPolygon([intersection]));
-                if (intersectionPoints.features.length > 0) {
-                    const originalLine = lineas.find(linea => {
-                        if (!linea.polyline) {
-                            console.error("Línea inválida encontrada", linea);
-                            return false;
-                        }
-                        const lineCoords = linea.polyline._latlngs.map(coord => [coord.lng, coord.lat]);
-                        return turfLineIntersect(turfLineString(lineCoords), lineString).features.length > 0;
-                    });
-
-                    if (originalLine) {
-                        intersectingLines.push(originalLine);
-                    }
-                }
-            });
-
-            if (intersectingLines.length > 1) {
-                intersectingLines.sort((a, b) => turfLength(turfLineString(a.polyline._latlngs.map(coord => [coord.lng, coord.lat]))) -
-                    turfLength(turfLineString(b.polyline._latlngs.map(coord => [coord.lng, coord.lat]))));
-                intersectingLines.slice(0, -1).forEach(line => {
-                    linesToRemove.push(line.id);
-                });
-            }
+            const polygon = turfPolygon([intersection]);
+            totalIntersectionArea += turfArea(polygon) / 10000; // Convertir a hectáreas
         });
 
-        return linesToRemove;
+        return totalIntersectionArea;
     };
 
-    const verificarYEnviarDatos = () => {
-        if (Object.keys(formData).length > 0) {
-            enviarDatosFormulario(formData).then(() => {
-            }).catch(error => {
-                console.error('Error al enviar datos', error);
-            });
-        }
-    };
 
-    const enviarDatosFormulario = async () => {
-        const dataParaEnviar = {
-            idAnalisis: formData.idAnalisis || 0,
-            velocidadFiltro: velocidadFiltroActivado ? 1 : 0,
-            velocidadBajo: formData.VELOCIDAD?.low || 0,
-            velocidadMedio: formData.VELOCIDAD?.medium || 0,
-            velocidadAlto: formData.VELOCIDAD?.high || 0,
-            alturaFiltro: alturaFiltroActivado ? 1 : 0,
-            alturaBajo: formData.ALTURA?.low || 0,
-            alturaMedio: formData.ALTURA?.medium || 0,
-            alturaAlto: formData.ALTURA?.high || 0,
-            dosisRealFiltro: dosisRealFiltroActivado ? 1 : 0,
-            dosisRealBajo: formData.DOSISREAL?.low || 0,
-            dosisRealMedio: formData.DOSISREAL?.medium || 0,
-            dosisRealAlto: formData.DOSISREAL?.high || 0
-        };
 
-        try {
-            const response = await fetch(`${API_BASE_URL}dashboard/ultimosDatosIngresadosAps`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(dataParaEnviar),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const resultado = await response.json();
-            return resultado;
-        } catch (error) {
-            console.error('Error al enviar el formulario:', error);
-        }
-    };
-
-    const normalizeLabel = (key) => {
-        if (key === 'DOSISREAL') return 'Dosis real';
-        return key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
-    };
 
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
@@ -1032,13 +1055,73 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
         }
     };
 
+    const calcularPuntosExtremos = (coordinates) => {
+        let maxDistance = 0;
+        let puntosExtremos = [coordinates[0], coordinates[1]];
+
+        for (let i = 0; i < coordinates.length; i++) {
+            for (let j = i + 1; j < coordinates.length; j++) {
+                const punto1 = turfPoint(coordinates[i]);
+                const punto2 = turfPoint(coordinates[j]);
+                const distancia = turfDistance(punto1, punto2, { units: 'meters' });
+
+                if (distancia > maxDistance) {
+                    maxDistance = distancia;
+                    puntosExtremos = [coordinates[i], coordinates[j]];
+                }
+            }
+        }
+
+        return puntosExtremos;
+    };
+
+    const calcularLongitudTotal = (coordinates) => {
+        const [puntoInicio, puntoFin] = calcularPuntosExtremos(coordinates);
+        return turfDistance(turfPoint(puntoInicio), turfPoint(puntoFin), { units: 'meters' });
+    };
+
+    const calcularOrientacionDominante = (coordinates) => {
+        const [puntoInicio, puntoFin] = calcularPuntosExtremos(coordinates);
+        return turfBearing(turfPoint(puntoInicio), turfPoint(puntoFin));
+    };
+
+    const generarLineaCompleta = (linea) => {
+        const coordinates = linea.polyline._latlngs.map(coord => [coord.lng, coord.lat]);
+        const longitudTotal = calcularLongitudTotal(coordinates);
+        const orientacionDominante = calcularOrientacionDominante(coordinates);
+
+        const [inicioLng, inicioLat] = calcularPuntosExtremos(coordinates)[0];
+        const destino = turfDestination(turfPoint([inicioLng, inicioLat]), longitudTotal / 1000, orientacionDominante, { units: 'kilometers' });
+
+        const updatedLatLngs = [
+            { lat: inicioLat, lng: inicioLng },
+            { lat: destino.geometry.coordinates[1], lng: destino.geometry.coordinates[0] }
+        ];
+
+        const newPolyline = L.polyline(updatedLatLngs, linea.polyline.options);
+
+        newPolyline.on('mouseover', (e) => handleLineHover(e, linea.id));
+        newPolyline.on('mouseout', (e) => handleLineMouseOut(e, linea.id));
+        newPolyline.on('click', (e) => handleLineClick(updatedLatLngs, e));
+
+        return {
+            ...linea,
+            polyline: newPolyline
+        };
+    };
     return (
         <>
             <div className="floating-filter-button">
                 <Tooltip title="Configurar filtros">
-                    <Button variant="contained" color="primary" onClick={openFilterDialog}>
-                        <FaMap />
-                    </Button>
+                    <span>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={openFilterDialog}
+                        >
+                            Generar Mapas
+                        </Button>
+                    </span>
                 </Tooltip>
             </div>
 
@@ -1124,60 +1207,33 @@ const AplicacionesAreas = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onProm
                 <BarIndicator filterType={activeFilter ? activeFilter : "aplicacionesAreas"} isHistory={false} />
             )}
 
-            <Dialog open={isFilterDialogOpen} onClose={closeFilterDialog} aria-labelledby="draggable-dialog-title">
-                <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">Configuración de Filtros</DialogTitle>
-                <DialogContent>
-                    <FormGroup>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={showIntersections}
-                                    onChange={(e) => setShowIntersections(e.target.checked)}
-                                    name="showIntersections"
-                                />
-                            }
-                            label="Mostrar Intersecciones"
-                        />
-                        {Object.keys(filterValues).map(filterKey => (
-                            <React.Fragment key={filterKey}>
-                                <FormControlLabel
-                                    control={
-                                        <Switch
-                                            checked={activeFilter === filterKey}
-                                            onChange={(e) => handleFilterChange(e, filterKey)}
-                                            name={filterKey}
-                                        />
-                                    }
-                                    label={normalizeLabel(filterKey)}
-                                />
-
-                                {Object.keys(filterValues[filterKey]).map(valueKey => (
-                                    <TextField
-                                        key={valueKey}
-                                        label={`${filterKey.charAt(0).toUpperCase() + filterKey.slice(1)} ${valueKey.charAt(0).toUpperCase() + valueKey.slice(1)}`}
-                                        type="number"
-                                        name={valueKey}
-                                        value={filterValues[filterKey][valueKey]}
-                                        onChange={(e) => {
-                                            const newValues = { ...filterValues };
-                                            newValues[filterKey][valueKey] = parseFloat(e.target.value);
-                                            setFilterValues(newValues);
-                                        }}
-                                        variant="outlined"
-                                        margin="normal"
-                                        fullWidth
-                                    />
-                                ))}
-                            </React.Fragment>
-                        ))}
-                    </FormGroup>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={closeFilterDialog} color="primary">
-                        Cerrar
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <MapDialog
+                isOpen={isFilterDialogOpen}
+                onClose={closeFilterDialog}
+                availableFilters={availableFilters}
+                handleToggleFilter={handleToggleFilter}
+                filterSpeed={filterSpeed}
+                filterAltitude={filterAltitude}
+                filterRealDose={filterRealDose}
+                lowSpeed={lowSpeed}
+                medSpeed={medSpeed}
+                highSpeed={highSpeed}
+                setLowSpeed={setLowSpeed}
+                setMedSpeed={setMedSpeed}
+                setHighSpeed={setHighSpeed}
+                lowAltitude={lowAltitude}
+                medAltitude={medAltitude}
+                highAltitude={highAltitude}
+                setLowAltitude={setLowAltitude}
+                setMedAltitude={setMedAltitude}
+                setHighAltitude={setHighAltitude}
+                lowRealDose={lowRealDose}
+                medRealDose={medRealDose}
+                highRealDose={highRealDose}
+                setLowRealDose={setLowRealDose}
+                setMedRealDose={setMedRealDose}
+                setHighRealDose={setHighRealDose}
+            />
         </>
     );
 };

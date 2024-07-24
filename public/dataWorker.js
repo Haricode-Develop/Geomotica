@@ -27,7 +27,6 @@ self.onmessage = async function (e) {
                 if (loadedGeoJson) {
                     let processedData;
 
-
                     if(type === 'COSECHA_MECANICA'){
                         processedData = processGeoJsonData(loadedGeoJson);
                     }else if(type === 'APLICACIONES_AEREAS'){
@@ -79,6 +78,7 @@ function processGeoJsonData(geojsonData) {
         return hasCoordinates;
     });
 
+
     const polygonFeatures = geojsonData.features.filter(feature => feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon');
     let polygonCoordinates = [];
     let outsidePolygonCoordinates = [];
@@ -90,6 +90,7 @@ function processGeoJsonData(geojsonData) {
         // Si hay un segundo polígono, asignarlo a outsidePolygonCoordinates
         if (polygonFeatures.length > 1) {
             outsidePolygonCoordinates = extractCoordinates(polygonFeatures[1]);
+
         }
     }
 
