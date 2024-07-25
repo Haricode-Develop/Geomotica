@@ -276,15 +276,24 @@ const CommonMap = ({
 
                         console.log("ESTOS SON LOS BOUNDS: ", bounds);
 
+                        let attemptCount = 0;  // Contador de intentos
+                        let errorCount = 0;    // Contador de errores
+
                         // Usar setTimeout para retrasar la llamada a fitBounds
                         const tryFitBounds = () => {
+                            attemptCount++;
                             if (map && map.fitBounds && map._container) {
                                 try {
                                     map.fitBounds(bounds);
+                                    console.log(`fitBounds exitoso en el intento #${attemptCount}`);
                                 } catch (error) {
+                                    errorCount++;
+                                    console.error(`Error en fitBounds, intento #${attemptCount}, error #${errorCount}: `, error);
                                     setTimeout(tryFitBounds, 100);
                                 }
                             } else {
+                                errorCount++;
+                                console.error(`Error en fitBounds, mapa no válido, intento #${attemptCount}, error #${errorCount}`);
                                 setTimeout(tryFitBounds, 100);
                             }
                         };
@@ -297,6 +306,7 @@ const CommonMap = ({
                     console.error("Los límites calculados no son válidos.");
                 }
             } catch (error) {
+                console.error("Error al calcular los límites: ", error);
             }
         }
     }, [isMapReady, polygonsData]);
