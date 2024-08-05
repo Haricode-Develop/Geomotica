@@ -7,7 +7,7 @@ import Analista from "./Analista";
 import Admin from "./Admin";
 import "bootstrap/dist/css/bootstrap.min.css";
 import profilePicture from "./img/user.png";
-import Sidebar from "../../components/LayoutSide";
+import SideBar from "../../components/SideBar";
 
 function AdminPanel(props) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -27,7 +27,7 @@ function AdminPanel(props) {
   ];
   return (
     <div>
-      <Sidebar
+      <SideBar
         profileImage={profilePicture}
         name={userData.NOMBRE}
         apellido={userData.APELLIDO}

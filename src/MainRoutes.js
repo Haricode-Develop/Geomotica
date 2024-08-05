@@ -4,15 +4,16 @@ import { AuthContext } from './context/AuthContext';
 import LoginPage from './views/Login/Login';
 import RegisterPage from './views/Register/Register';
 import Dashboard from './views/Dashboard/Dashboard';
-import PasswordRecuperation from './views/PasswordRecuperation/PasswordRecuperation';
-import PasswordConfirmation from './views/Confirmations/passwordConfirmation';
-import PasswordSender from './views/Confirmations/passwordSender';
-import RegisterConfirmation from './views/Confirmations/registerConfirmation';
-import RegisterSender from './views/Confirmations/registerSender';
+import DashboardIndicators from "./views/DashboardIndicadores/DashboardIndicators";
+import PasswordRecovery from './views/PasswordRecovery/PasswordRecovery';
+import PasswordConfirmation from './views/Confirmations/PasswordConfirmation';
+import PasswordSender from './views/Confirmations/PasswordSender';
+import RegisterConfirmation from './views/Confirmations/RegisterConfirmation';
+import RegisterSender from './views/Confirmations/RegisterSender';
 import AdminPanel from './views/AdminPanel/AdminPanel';
 import LayoutWithSidebar from "./components/LayoutWithSidebar/LayoutWithSidebar";
-import Publicidad from './views/Publicidad/publicidad';
-import Configuracion from './views/Configuracion/configuracion';
+import Advertising from './views/Advertising/Advertising';
+import Configuration from './views/Configuracion/Configuration';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -25,18 +26,18 @@ const MainRoutes = () => {
         <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/registrar" element={<RegisterPage />} />
-            <Route path="/passwordRecuperation" element={<PasswordRecuperation />} />
+            <Route path="/passwordRecuperation" element={<PasswordRecovery />} />
             <Route path="/passwordRecuperationConfirmation" element={<PasswordConfirmation />} />
             <Route path="/passwordSender/:recipient" element={<PasswordSender />} />
             <Route path="/registerSender/:recipient" element={<RegisterSender />} />
             <Route path="/registerConfirmation/:recipient" element={<RegisterConfirmation />} />
 
-            <Route path="/" element={<ProtectedRoute><LayoutWithSidebar><Publicidad /></LayoutWithSidebar></ProtectedRoute>} />
-            <Route path="/publicidad" element={<ProtectedRoute><LayoutWithSidebar><Publicidad /></LayoutWithSidebar></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><LayoutWithSidebar><Advertising /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/publicidad" element={<ProtectedRoute><LayoutWithSidebar><Advertising /></LayoutWithSidebar></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><LayoutWithSidebar><DashboardIndicators /></LayoutWithSidebar></ProtectedRoute>} />
             <Route path="/mapeo" element={<ProtectedRoute><LayoutWithSidebar><Dashboard /></LayoutWithSidebar></ProtectedRoute>} />
             <Route path="/adminPanel" element={<ProtectedRoute><LayoutWithSidebar><AdminPanel /></LayoutWithSidebar></ProtectedRoute>} />
-            <Route path="/configuracion" element={<ProtectedRoute><LayoutWithSidebar><Configuracion/></LayoutWithSidebar></ProtectedRoute>}/>
+            <Route path="/configuracion" element={<ProtectedRoute><LayoutWithSidebar><Configuration/></LayoutWithSidebar></ProtectedRoute>}/>
         </Routes>
     );
 };

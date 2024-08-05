@@ -2,13 +2,6 @@
     display: flex;
 }
 
-.main-content {
-    display: flex;
-    flex-direction: column;
-    margin-left: 100px; /* Ancho del sidebar */
-    width: calc(100% - 250px);
-}
-
 .content-area {
     margin-top: 60px; /* Altura del navbar */
     padding: 20px;

@@ -1,7 +1,4 @@
-
-
 let activarEdicionInteractiva = false;
-
 
 async function loadGeoJsonFromUrl(url) {
     try {
@@ -16,30 +13,40 @@ async function loadGeoJsonFromUrl(url) {
     }
 }
 
-
 self.onmessage = async function (e) {
-    const {action, geojsonData, type} = e.data;
+    const { action, geojsonData, type } = e.data;
+
 
     switch (action) {
         case 'processGeoJsonData':
             if (geojsonData) {
-                const loadedGeoJson = await loadGeoJsonFromUrl(geojsonData);
-                if (loadedGeoJson) {
-                    let processedData;
+                const { geojsonDataFiltradas, geojsonDataNoFiltradas } = geojsonData;
 
-                    if(type === 'COSECHA_MECANICA'){
-                        processedData = processGeoJsonData(loadedGeoJson);
-                    }else if(type === 'APLICACIONES_AEREAS'){
-                        const isKMLType = loadedGeoJson.features.some(feature => feature.properties && feature.properties.type === 'KML');
+                // Carga las URLs de forma condicional
+                const loadedGeoJsonFiltradas = geojsonDataFiltradas ? await loadGeoJsonFromUrl(geojsonDataFiltradas) : null;
+
+                const loadedGeoJsonNoFiltradas = geojsonDataNoFiltradas ? await loadGeoJsonFromUrl(geojsonDataNoFiltradas) : null;
+
+                let processedData = null;
+                if (type === 'COSECHA_MECANICA') {
+
+                    processedData = processGeoJsonData(await loadGeoJsonFromUrl(geojsonData));
+                } else if (type === 'APLICACIONES_AEREAS') {
+                    if (loadedGeoJsonFiltradas && loadedGeoJsonNoFiltradas) {
+                        processedData = processBothKMLData(loadedGeoJsonFiltradas, loadedGeoJsonNoFiltradas);
+                    } else if (loadedGeoJsonNoFiltradas) {
+                        const isKMLType = loadedGeoJsonNoFiltradas.features.some(feature => feature.properties && feature.properties.type === 'KML');
                         if (isKMLType) {
-                            processedData = processLineStringData(loadedGeoJson);
+                            processedData = processLineStringData(loadedGeoJsonNoFiltradas);
                         } else {
-                            processedData = processAplicacionesAreasData(loadedGeoJson);
+                            processedData = processAplicacionesAreasData(loadedGeoJsonNoFiltradas);
                         }
                     }
-
-                    self.postMessage({action: 'geoJsonDataProcessed', data: processedData, activarEdicionInteractiva });
                 }
+
+                self.postMessage({ action: 'geoJsonDataProcessed', data: processedData, activarEdicionInteractiva });
+            } else {
+                console.error("GeoJSONData es null o undefined.");
             }
             break;
 
@@ -48,7 +55,6 @@ self.onmessage = async function (e) {
             break;
 
         default:
-            console.error('Acción no reconocida en el worker:', action);
             break;
     }
 };
@@ -56,20 +62,58 @@ self.onmessage = async function (e) {
 function extractCoordinates(feature) {
     let coordinates = feature.geometry.coordinates;
 
-    if (coordinates.length && coordinates[0].length && typeof coordinates[0][0][0] !== 'number') {
-        coordinates = coordinates[0];
+    // Verificar si el tipo de geometría es Polygon o MultiPolygon
+    if (
+        feature.geometry.type === "Polygon" ||
+        feature.geometry.type === "MultiPolygon"
+    ) {
+        // Si el primer elemento no es un número, probablemente sea una estructura de tipo [ [ [] ] ]
+        if (coordinates.length && !Array.isArray(coordinates[0][0])) {
+            coordinates = [coordinates];
+        }
+
+        return coordinates.map((ring) =>
+            ring.map((coord) => {
+                if (
+                    Array.isArray(coord) &&
+                    coord.length >= 2 &&
+                    typeof coord[0] === "number" &&
+                    typeof coord[1] === "number"
+                ) {
+                    return [coord[1], coord[0]]; // Lat, Lng
+                } else {
+                    return null;
+                }
+            }).filter((coord) => coord != null)
+        );
     }
 
-    return coordinates.map(ring =>
-        ring.map(coord => {
-            if (Array.isArray(coord) && coord.length >= 2 && typeof coord[0] === 'number' && typeof coord[1] === 'number') {
-                return [coord[1], coord[0]];
+    // Para geometrías tipo LineString o MultiLineString
+    if (
+        feature.geometry.type === "LineString" ||
+        feature.geometry.type === "MultiLineString"
+    ) {
+        const pathCoordinates = Array.isArray(coordinates[0])
+            ? coordinates
+            : [coordinates];
+
+        return pathCoordinates.map((coord) => {
+            if (
+                Array.isArray(coord) &&
+                coord.length >= 2 &&
+                typeof coord[0] === "number" &&
+                typeof coord[1] === "number"
+            ) {
+                return [coord[1], coord[0]]; // Lat, Lng
             } else {
-                console.error('Coordenada no válida encontrada:', coord);
+                console.error("Coordenada no válida encontrada:", coord);
                 return null;
             }
-        }).filter(coord => coord != null)
-    );
+        }).filter((coord) => coord != null);
+    }
+
+    console.error("Tipo de geometría no manejado:", feature.geometry.type);
+    return [];
 }
 
 function processGeoJsonData(geojsonData) {
@@ -77,7 +121,6 @@ function processGeoJsonData(geojsonData) {
         const hasCoordinates = feature.geometry && feature.geometry.coordinates;
         return hasCoordinates;
     });
-
 
     const polygonFeatures = geojsonData.features.filter(feature => feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon');
     let polygonCoordinates = [];
@@ -93,7 +136,6 @@ function processGeoJsonData(geojsonData) {
 
         }
     }
-
 
     return {
         points: validFeatures,
@@ -117,7 +159,6 @@ function processAplicacionesAreasData(geojsonData) {
 }
 
 function processLineStringData(geojsonData) {
-
     let kmlFeatures = geojsonData.features.filter(feature => feature.properties && feature.properties.type === 'KML');
 
     let lineFeatures = [];
@@ -176,5 +217,54 @@ function processLineStringData(geojsonData) {
     return {
         lines: lines,
         polygons: polygons
+    };
+}
+
+function processBothKMLData(geojsonDataFiltradas, geojsonDataNoFiltradas) {
+    // Procesar líneas no filtradas
+    const kmlFeaturesNoFiltradas = geojsonDataNoFiltradas.features.filter(feature => feature.properties && feature.properties.type === 'KML');
+
+    const lineFeaturesNoFiltradas = kmlFeaturesNoFiltradas.filter(feature => feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString');
+    const polygonFeaturesNoFiltradas = kmlFeaturesNoFiltradas.filter(feature => feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon');
+
+    const linesNoFiltradas = lineFeaturesNoFiltradas.map(feature => ({
+        id: feature.id,
+        properties: feature.properties,
+        paths: extractCoordinates(feature)
+    }));
+
+    const polygonsNoFiltradas = polygonFeaturesNoFiltradas.map(feature => ({
+        id: feature.id,
+        properties: feature.properties,
+        rings: extractCoordinates(feature)
+    }));
+
+    // Procesar líneas filtradas
+    const kmlFeaturesFiltradas = geojsonDataFiltradas.features.filter(feature => feature.properties && feature.properties.type === 'KML');
+
+    const lineFeaturesFiltradas = kmlFeaturesFiltradas.filter(feature => feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString');
+    const polygonFeaturesFiltradas = kmlFeaturesFiltradas.filter(feature => feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon');
+
+    const linesFiltradas = lineFeaturesFiltradas.map(feature => ({
+        id: feature.id,
+        properties: feature.properties,
+        paths: extractCoordinates(feature)
+    }));
+
+    const polygonsFiltradas = polygonFeaturesFiltradas.map(feature => ({
+        id: feature.id,
+        properties: feature.properties,
+        rings: extractCoordinates(feature)
+    }));
+
+    return {
+        noFiltradas: {
+            lines: linesNoFiltradas,
+            polygons: polygonsNoFiltradas
+        },
+        filtradas: {
+            lines: linesFiltradas,
+            polygons: polygonsFiltradas
+        }
     };
 }

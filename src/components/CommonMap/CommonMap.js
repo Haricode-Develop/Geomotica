@@ -1,50 +1,12 @@
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
-import { MapContainer, TileLayer, Polygon, LayersControl, Polyline, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, LayersControl, Polyline, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import axios from 'axios';
-import { API_BASE_URL } from '../../utils/config';
-import { Box, Card, CardContent, Typography, CircularProgress, Paper, TextField, IconButton } from '@mui/material';
-import { styled } from '@mui/system';
-import Draggable from 'react-draggable';
-import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import { Box} from '@mui/material';
 import { throttle } from 'lodash';
+import ReactDOM from 'react-dom';
 
 const { BaseLayer } = LayersControl;
-
-const FloatingPanel = styled(Paper)(({ theme }) => ({
-    position: 'absolute',
-    zIndex: 1000,
-    padding: theme.spacing(2),
-    maxHeight: '80vh',
-    overflow: 'auto',
-    resize: 'both',
-    minHeight: '330px',
-    width: '300px',
-    height: '330px',
-}));
-
-const LotCard = styled(Card)(({ theme, highlighted, selected }) => ({
-    marginBottom: theme.spacing(1),
-    backgroundColor: selected ? 'rgba(255, 0, 0, 0.1)' : 'transparent',
-    border: selected ? '1px solid red' : 'none',
-    transition: 'transform 0.2s ease-in-out',
-    transform: highlighted ? 'scale(1.05)' : 'scale(1)',
-    cursor: 'pointer',
-}));
-
-const DragHandle = styled('div')({
-    cursor: 'grab',
-    backgroundColor: '#e0e0e0',
-    padding: '8px',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    borderRadius: '4px 4px 0 0',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-});
 
 const CommonMap = ({
                        center = [14.634915, -90.506882],
@@ -52,7 +14,6 @@ const CommonMap = ({
                        polygons = [],
                        lines = [],
                        points = [],
-                       hullPolygon,
                        areasSuperpuestas,
                        nonIntersectedAreas,
                        bufferedLines,
@@ -60,31 +21,35 @@ const CommonMap = ({
                        onLineHover,
                        onLineMouseOut,
                        onLineClick,
-                       activeFilter,
-                       filterValues,
                        polygonProperties,
                        showIntersections = true,
                        mapRef,
-                       userId
+                       stretchPoints = [],
+                       lineasNoFiltradas = [],
+                       polygonsData = [],
+                       highlightedLote,
+                       activeLotes,
+                       onSelectLote,
+                       onHoverLote,
+                       onLeaveLote
                    }) => {
-    const localMapRef = useRef(null);
+    const localMapRef = useRef(null); // Crear una referencia para el mapa
     const [popupInfo, setPopupInfo] = useState(null);
     const [mapCenter, setMapCenter] = useState(center);
     const [mapZoom, setMapZoom] = useState(zoom);
     const [initialBoundsSet, setInitialBoundsSet] = useState(false);
-    const [highlightedLote, setHighlightedLote] = useState(null);
-    const [activeLotes, setActiveLotes] = useState([]);
-    const [polygonsData, setPolygonsData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isMapReady, setIsMapReady] = useState(false);
-
-    // Memoized markers to avoid re-rendering
+    const [mapKey, setMapKey] = useState(Date.now());
+    const [shouldFitBounds, setShouldFitBounds] = useState(true);
+    const [isFirstPolygons, setIsFirstPolygons] = useState(true);
     const markersRef = useRef([]);
+    const previousPointsRef = useRef(points || []);
 
+    // Hook para inicializar el mapa
     useEffect(() => {
         if (localMapRef.current && !initialBoundsSet) {
-            mapRef.current = localMapRef.current;
+            console.log("Referencia inicial del mapa asignada.");
+
+            mapRef.current = localMapRef.current; // Asigna la referencia del mapa
 
             const bounds = new L.LatLngBounds();
 
@@ -125,11 +90,10 @@ const CommonMap = ({
                 if (mapRef.current) {
                     mapRef.current.fitBounds(bounds);
                 }
-            } else {
-                obtenerLoteMasReciente();
             }
 
             const throttledHandleZoom = throttle(handleZoom, 100);
+
             if (localMapRef.current) {
                 localMapRef.current.on('zoomend', throttledHandleZoom);
                 localMapRef.current.on('moveend', throttledHandleMoveEnd);
@@ -141,6 +105,7 @@ const CommonMap = ({
             }
 
             setInitialBoundsSet(true);
+            setShouldFitBounds(true); // Habilitar el ajuste de límites solo una vez
         }
 
         return () => {
@@ -155,15 +120,6 @@ const CommonMap = ({
         };
     }, [points, lines, polygons, initialBoundsSet]);
 
-
-
-    useEffect(() => {
-        obtenerLoteMasReciente();
-    }, [userId]);
-
-    const handleTileLoad = useCallback(() => {
-        setIsMapReady(true);
-    }, []);
 
     const handleZoom = useCallback(() => {
         if (localMapRef.current) {
@@ -187,129 +143,15 @@ const CommonMap = ({
             if (map && map.getCenter) {
                 const center = map.getCenter();
                 if (center) {
-                    setMapCenter([center.lat, center.lng]);
+                    // Batching de actualizaciones
+                    ReactDOM.unstable_batchedUpdates(() => {
+                        setMapCenter([center.lat, center.lng]);
+                    });
                 }
             }
         }
     }, []);
 
-
-    const memoizedMarkers = useMemo(() => {
-        if (!localMapRef.current) return [];
-
-        const renderer = L.canvas();
-        return Array.isArray(points) ? points.map(point => {
-            const coordinates = point.geometry.coordinates;
-            const fillColor = point.color;
-            if (coordinates.length >= 2) {
-                return L.circleMarker([coordinates[1], coordinates[0]], {
-                    radius: 2,
-                    fillColor: fillColor,
-                    color: fillColor,
-                    weight: 0.2,
-                    opacity: 1,
-                    fillOpacity: 1,
-                    renderer: renderer,
-                });
-            }
-            return null;
-        }).filter(marker => marker !== null) : [];
-    }, [points]);
-
-    useEffect(() => {
-        if (memoizedMarkers.length > 0 && localMapRef.current) {
-            const map = localMapRef.current;
-            if (map && map.removeLayer && map.addLayer) {
-                markersRef.current.forEach(marker => map.removeLayer(marker));
-                markersRef.current = memoizedMarkers;
-                markersRef.current.forEach(marker => marker.addTo(map));
-            }
-        }
-    }, [memoizedMarkers]);
-
-    const obtenerLoteMasReciente = async () => {
-        setLoading(true);
-        try {
-            const response = await axios.get(`${API_BASE_URL}configuration/lotesIniciales/masReciente/${userId}`);
-            const geojson = response.data.content;
-            setPolygonsData(geojson.features);
-
-            if (localMapRef.current) {
-                const map = localMapRef.current;
-                const bounds = L.geoJSON(geojson.features).getBounds();
-                map.fitBounds(bounds);
-            }
-        } catch (error) {
-            console.error("Error al obtener el archivo más reciente", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (isMapReady && polygonsData.length > 0 && localMapRef.current) {
-            const map = localMapRef.current;
-
-            // Verificar que el mapa esté completamente cargado antes de proceder
-            if (!map || !map._loaded || !map._container || !map.getCenter || !map.getZoom || !map.fitBounds) {
-                console.error("El mapa aún no se ha cargado completamente o no está definido correctamente.");
-                return;
-            }
-
-            try {
-                const bounds = L.geoJSON(polygonsData).getBounds();
-                if (bounds.isValid()) {
-                    // Verificar que el contenedor del mapa tenga dimensiones válidas
-                    if (map._container.clientWidth > 0 && map._container.clientHeight > 0) {
-                        // Asegurarse de que el mapa es válido antes de invalidar el tamaño
-                        if (map._sizeChanged) {
-                            map.invalidateSize();
-                        }
-
-                        // Agregar validación adicional para el contenedor
-                        const container = map._container;
-                        console.log("ESTE ES EL CONTAINER: ", container);
-                        if (!container || container.clientWidth <= 0 || container.clientHeight <= 0) {
-                            console.error("El contenedor del mapa no tiene dimensiones válidas después de invalidar el tamaño.");
-                            return;
-                        }
-
-                        console.log("ESTOS SON LOS BOUNDS: ", bounds);
-
-                        let attemptCount = 0;  // Contador de intentos
-                        let errorCount = 0;    // Contador de errores
-
-                        // Usar setTimeout para retrasar la llamada a fitBounds
-                        const tryFitBounds = () => {
-                            attemptCount++;
-                            if (map && map.fitBounds && map._container) {
-                                try {
-                                    map.fitBounds(bounds);
-                                    console.log(`fitBounds exitoso en el intento #${attemptCount}`);
-                                } catch (error) {
-                                    errorCount++;
-                                    console.error(`Error en fitBounds, intento #${attemptCount}, error #${errorCount}: `, error);
-                                    setTimeout(tryFitBounds, 100);
-                                }
-                            } else {
-                                errorCount++;
-                                console.error(`Error en fitBounds, mapa no válido, intento #${attemptCount}, error #${errorCount}`);
-                                setTimeout(tryFitBounds, 100);
-                            }
-                        };
-
-                        setTimeout(tryFitBounds, 100);
-                    } else {
-                        console.error("El contenedor del mapa no tiene dimensiones válidas.");
-                    }
-                } else {
-                    console.error("Los límites calculados no son válidos.");
-                }
-            } catch (error) {
-                console.error("Error al calcular los límites: ", error);
-            }
-        }
-    }, [isMapReady, polygonsData]);
 
     const getLoteId = (properties) => {
         const keys = Object.keys(properties).map(key => key.toLowerCase());
@@ -325,63 +167,39 @@ const CommonMap = ({
         }
     };
 
-    const onHoverLote = (loteId) => {
-        setHighlightedLote(loteId);
-    };
-
-    const onLeaveLote = () => {
-        setHighlightedLote(null);
-    };
-
-    const onSelectLote = (loteId) => {
-        setActiveLotes((prevActiveLotes) =>
-            prevActiveLotes.includes(loteId)
-                ? prevActiveLotes.filter((id) => id !== loteId)
-                : [...prevActiveLotes, loteId]
-        );
-    };
-
-    const clearAllLotes = () => {
-        setActiveLotes([]);
-    };
-
     const memoizedPolygons = useMemo(() => {
-        if (!isMapReady) {
+        if (!localMapRef.current) {
+            console.log("NO HAY REFERENCIA");
             return null;
         }
 
-        if (localMapRef.current) {
-            const mapBounds = localMapRef.current.getBounds();
+        const mapBounds = localMapRef.current.getBounds();
 
-            return polygonsData
-                .filter((polygon) => {
-                    const positions = polygon.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
-                    const polygonBounds = L.polygon(positions).getBounds();
-                    return mapBounds.intersects(polygonBounds);
-                })
-                .map((polygon, index) => {
-                    const loteId = getLoteId(polygon.properties);
-                    if (activeLotes.length > 0 && !activeLotes.includes(loteId)) {
-                        return null;
-                    }
-                    const positions = polygon.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
-                    return (
-                        <Polygon
-                            key={`polygon-${index}-${loteId}`}
-                            positions={positions}
-                            color={activeLotes.includes(loteId) ? 'red' : '#ffa033'}
-                            weight={3}
-                            onMouseOver={() => onHoverLote(loteId)}
-                            onMouseOut={onLeaveLote}
-                            onClick={() => onSelectLote(loteId)}
-                        />
-                    );
-                });
-        } else {
-            return null;
-        }
-    }, [polygonsData, activeLotes, mapCenter, mapZoom, isMapReady]);
-
+        return polygonsData
+            .filter((polygon) => {
+                const positions = polygon.geometry.coordinates[0].map((coord) => [coord[1], coord[0]]);
+                const polygonBounds = L.polygon(positions).getBounds();
+                return mapBounds.intersects(polygonBounds);
+            })
+            .map((polygon, index) => {
+                const loteId = getLoteId(polygon.properties);
+                if (activeLotes.length > 0 && !activeLotes.includes(loteId)) {
+                    return null;
+                }
+                const positions = polygon.geometry.coordinates[0].map((coord) => [coord[1], coord[0]]);
+                return (
+                    <Polygon
+                        key={`polygon-${index}-${loteId}`}
+                        positions={positions}
+                        color={activeLotes.includes(loteId) ? 'red' : '#ffa033'}
+                        weight={3}
+                        onMouseOver={() => onHoverLote(loteId)}
+                        onMouseOut={onLeaveLote}
+                        onClick={() => onSelectLote(loteId)}
+                    />
+                );
+            });
+    }, [polygonsData, activeLotes]);
 
     const externalPolygons = useMemo(() => {
         if (!polygons || polygons.length === 0 || !polygonProperties || polygonProperties.length === 0) {
@@ -392,7 +210,6 @@ const CommonMap = ({
             console.error('Polygons and polygonProperties arrays have different lengths');
             return null;
         }
-
 
         return polygons.map((polygonObj, index) => {
             const polygon = Object.values(polygonObj).filter(coord => Array.isArray(coord) && coord.length === 2);
@@ -426,29 +243,119 @@ const CommonMap = ({
         }).filter(polygon => polygon !== null);
     }, [polygons, polygonProperties]);
 
+    const memoizedMarkers = useMemo(() => {
+        // Validación para verificar que points no es null o undefined
+        if (!points || points.length === 0) {
+            console.warn('No hay puntos para mostrar en el mapa.');
+            return [];
+        }
+
+        const renderer = L.canvas();
+
+        return points
+            .map((point) => {
+                const { coordinates } = point.geometry;
+                const { color } = point;
+
+                if (coordinates.length >= 2) {
+                    return L.circleMarker([coordinates[1], coordinates[0]], {
+                        radius: 2,
+                        fillColor: color,
+                        color: color,
+                        weight: 0.2,
+                        opacity: 1,
+                        fillOpacity: 1,
+                        renderer: renderer,
+                    });
+                }
+
+                return null;
+            })
+            .filter((marker) => marker !== null); // Filtrar cualquier marcador que no sea válido
+    }, [points]);
+
     useEffect(() => {
+        console.log("ESTA ES LA REFERENCIA: ", localMapRef);
         if (localMapRef.current) {
             const map = localMapRef.current;
 
             // Verificar que el mapa esté cargado antes de proceder
             if (!map._loaded) {
-                console.error("El mapa aún no se ha cargado completamente.");
+                console.error('El mapa aún no se ha cargado completamente.');
                 return;
             }
 
-            // Remover polígonos y polilíneas existentes
+            // Inicializar los puntos como un array vacío si son null o undefined
+            const currentPoints = points || [];
+
+            // Obtener los puntos anteriores
+            const previousPoints = previousPointsRef.current || [];
+
+            // Validar que ambos previousPoints y currentPoints son arrays
+            if (!Array.isArray(currentPoints)) {
+                console.error('Los puntos no son un array válido.');
+            } else if (!Array.isArray(previousPoints)) {
+                console.error('Los puntos anteriores no son un array válido.');
+            }
+
+            // Calcular si los puntos han cambiado
+            const pointsHaveChanged =
+                previousPoints.length !== currentPoints.length ||
+                currentPoints.some(
+                    (point, index) =>
+                        point.geometry.coordinates[0] !== previousPoints[index]?.geometry.coordinates[0] ||
+                        point.geometry.coordinates[1] !== previousPoints[index]?.geometry.coordinates[1] ||
+                        point.color !== previousPoints[index]?.color
+                );
+
+            if (pointsHaveChanged) {
+                // Remover marcadores previos
+                markersRef.current.forEach((marker) => map.removeLayer(marker));
+                markersRef.current = [];
+
+                // Actualizar la referencia de los puntos anteriores
+                previousPointsRef.current = currentPoints;
+
+                // Añadir marcadores optimizados y extender límites
+                markersRef.current = memoizedMarkers;
+                let bounds = new L.LatLngBounds();
+
+                markersRef.current.forEach((marker) => {
+                    marker.addTo(map);
+                    const latLng = marker.getLatLng();
+                    if (latLng && latLng.lat && latLng.lng) {
+                        bounds.extend(latLng); // Extender solo si latLng es válido
+                    } else {
+                        console.error('El marcador tiene coordenadas no válidas:', latLng);
+                    }
+                });
+
+                if (shouldFitBounds && bounds.isValid()) {
+                    map.fitBounds(bounds);
+                    setShouldFitBounds(false);
+                }
+            }
+
+            // Remover polígonos, polilíneas y otros elementos
             map.eachLayer((layer) => {
-                if (layer instanceof L.Polygon || layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
+                if (
+                    layer instanceof L.Polygon ||
+                    layer instanceof L.Polyline ||
+                    layer instanceof L.LayerGroup
+                ) {
                     map.removeLayer(layer);
                 }
             });
 
-            // Filtrar polígonos
-            const filteredPolygons = activeLotes.length > 0
-                ? polygonsData.filter((feature) => activeLotes.includes(getLoteId(feature.properties)))
-                : polygonsData;
+            // Filtrar polígonos activos
+            const filteredPolygons =
+                activeLotes.length > 0
+                    ? polygonsData.filter((feature) =>
+                        activeLotes.includes(getLoteId(feature.properties))
+                    )
+                    : polygonsData;
 
-            // Crear capa GeoJSON
+            // Crear capa GeoJSON para los polígonos
             const geojsonLayer = L.geoJSON(filteredPolygons, {
                 style: (feature) => ({
                     color: activeLotes.includes(getLoteId(feature.properties)) ? 'red' : '#ffa033',
@@ -457,153 +364,123 @@ const CommonMap = ({
             });
             geojsonLayer.addTo(map);
 
+            // Inicializar límites
+            let bounds = new L.LatLngBounds();
+
             // Ajustar límites del mapa si hay lotes activos
-            const bounds = new L.LatLngBounds();
             if (activeLotes.length > 0) {
-                const boundsPolygons = L.geoJSON(filteredPolygons).getBounds();
+                const boundsPolygons = geojsonLayer.getBounds();
                 if (boundsPolygons.isValid()) {
-                    bounds.extend(boundsPolygons);
+                    bounds.extend(boundsPolygons); // Extender con límites de polígonos si son válidos
                 } else {
-                    console.error("Los límites calculados no son válidos.");
+                    console.error('Los límites calculados para los polígonos no son válidos.');
                 }
             }
 
             // Añadir polígonos desde props si están definidos
             if (polygons && polygons.length > 0) {
                 polygons.forEach((polygon) => {
-                    const positions = polygon.map(coord => [coord[1], coord[0]]);
-                    const polygonLayer = L.polygon(positions, { color: 'green', weight: 3 }).addTo(map);
+                    const positions = polygon.map((coord) => [coord[1], coord[0]]);
+                    const polygonLayer = L.polygon(positions, {
+                        color: 'green',
+                        weight: 3,
+                    }).addTo(map);
                     bounds.extend(polygonLayer.getBounds());
                 });
             }
 
-            // Añadir áreas superpuestas si están definidas
+            // Añadir áreas superpuestas
             if (areasSuperpuestas && areasSuperpuestas.length > 0) {
                 areasSuperpuestas.forEach((area) => {
-                    const positions = area.map(coord => [coord[1], coord[0]]);
-                    const areaLayer = L.polygon(positions, { color: 'red', weight: 3 }).addTo(map);
+                    const positions = area.map((coord) => [coord[1], coord[0]]);
+                    const areaLayer = L.polygon(positions, {
+                        color: 'red',
+                        weight: 3,
+                    }).addTo(map);
                     bounds.extend(areaLayer.getBounds());
                 });
             }
 
-            // Añadir líneas desde props si están definidas y son un array
-            if (Array.isArray(lines) && lines.length > 0) {
+            // Añadir líneas no filtradas
+
+            if (lineasNoFiltradas && lineasNoFiltradas.length > 0) {
+                lineasNoFiltradas.forEach((linea) => {
+                    if (linea.polyline && Array.isArray(linea.polyline._latlngs)) {
+                        const positions = linea.polyline._latlngs.map((coord) => [
+                            coord.lat,
+                            coord.lng,
+                        ]);
+                        const polyline = L.polyline(positions, {
+                            color: 'rgb(192, 192, 192)',
+                            weight: 3,
+                            opacity: 0.8,
+                        }).addTo(map);
+                        bounds.extend(polyline.getBounds());
+                    }
+                });
+            }
+
+            // Añadir líneas desde props
+            if (lines && lines.length > 0) {
                 lines.forEach((line) => {
                     if (line && Array.isArray(line.polyline._latlngs)) {
-                        const positions = line.polyline._latlngs.map(coord => [coord.lat, coord.lng]);
-                        const lineLayer = L.polyline(positions, { color: 'red', weight: 3 }).addTo(map);
+                        const positions = line.polyline._latlngs.map((coord) => [
+                            coord.lat,
+                            coord.lng,
+                        ]);
+                        const lineLayer = L.polyline(positions, {
+                            color: 'red',
+                            weight: 3,
+                        }).addTo(map);
                         bounds.extend(lineLayer.getBounds());
                     }
                 });
             }
 
-            // Añadir markers y ajustar límites del mapa
-            const markerBounds = new L.LatLngBounds();
-            markersRef.current.forEach(marker => {
+
+            if(isFirstPolygons){
+                map.fitBounds( L.geoJSON(polygonsData).getBounds());
+                setIsFirstPolygons(false);
+            }
+
+            // Añadir stretchPoints al mapa
+            stretchPoints.forEach((marker) => {
                 marker.addTo(map);
-                markerBounds.extend(marker.getLatLng());
+                bounds.extend(marker.getLatLng());
             });
-            if (markerBounds.isValid()) {
-                bounds.extend(markerBounds);
-            }
 
-            // Ajustar los límites del mapa si son válidos
-            if (bounds.isValid()) {
+            // Ajustar límites del mapa basados en los marcadores solo si shouldFitBounds es true y bounds es válido
+            if (shouldFitBounds && bounds.isValid()) {
                 map.fitBounds(bounds);
+                setShouldFitBounds(false);
             }
-
-            // Forzar una actualización de manera segura
-            setTimeout(() => {
-                if (map && typeof map.invalidateSize === 'function' && map._container) {
-                    const container = map._container;
-                    if (container.clientHeight > 0 && container.clientWidth > 0) {
-                        map.invalidateSize();
-                    } else {
-                        console.error("El contenedor del mapa no tiene dimensiones válidas.");
-                    }
-                } else {
-                    console.error("El mapa o su contenedor no están definidos correctamente.");
-                }
-            }, 500);
         }
-    }, [activeLotes, highlightedLote, polygonsData, polygons, areasSuperpuestas, lines, memoizedMarkers]);
+    }, [
+        activeLotes,
+        highlightedLote,
+        polygonsData,
+        polygons,
+        areasSuperpuestas,
+        lines,
+        memoizedMarkers,
+        shouldFitBounds,
+        stretchPoints,
+        lineasNoFiltradas,
+    ]);
 
-
-
-    const filteredLotes = Object.entries(polygonsData.reduce((acc, feature) => {
-        const loteId = getLoteId(feature.properties);
-        if (!acc[loteId]) {
-            acc[loteId] = [];
-        }
-        acc[loteId].push(feature);
-        return acc;
-    }, {})).filter(([loteId]) => loteId.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    if (loading) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" height="65vh">
-                <CircularProgress />
-            </Box>
-        );
-    }
 
     return (
         <Box position="relative">
-            <Draggable handle=".drag-handle">
-                <FloatingPanel>
-                    <DragHandle className="drag-handle">
-                        <DragIndicatorIcon />
-                        <Typography variant="body2" component="span" ml={1}>Mover</Typography>
-                    </DragHandle>
-                    <Box display="flex" alignItems="center" mb={1}>
-                        <TextField
-                            label="Buscar Lote"
-                            variant="outlined"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            fullWidth
-                            margin="dense"
-                        />
-                        <IconButton
-                            color="secondary"
-                            onClick={clearAllLotes}
-                            disabled={activeLotes.length === 0}
-                            style={{ marginLeft: '8px' }}
-                        >
-                            <CleaningServicesIcon />
-                        </IconButton>
-                    </Box>
-                    <Box display="flex" flexDirection="column">
-                        {filteredLotes.map(([loteId, features]) => (
-                            <LotCard
-                                key={loteId}
-                                highlighted={highlightedLote === loteId}
-                                selected={activeLotes.includes(loteId)}
-                                onMouseEnter={() => onHoverLote(loteId)}
-                                onMouseLeave={onLeaveLote}
-                                onClick={() => onSelectLote(loteId)}
-                            >
-                                <CardContent>
-                                    <Typography variant="h6">
-                                        Lote ID: {loteId}
-                                    </Typography>
-                                    <Typography variant="body2" color="textSecondary">
-                                        Número de polígonos: {features.length}
-                                    </Typography>
-                                </CardContent>
-                            </LotCard>
-                        ))}
-                    </Box>
-                </FloatingPanel>
-            </Draggable>
+
             <MapContainer
                 center={mapCenter}
                 zoom={mapZoom}
-                style={{ height: '75vh', width: '100%', borderRadius: '20px' }}
+                key={mapKey}
+                style={{ height: '65vh', width: '100%' }}
                 ref={localMapRef}
-                whenCreated={(mapInstance) => {
-                    localMapRef.current = mapInstance;
-                    setIsMapReady(true);
+                whenReady={(map) => {
+                    localMapRef.current = map;
+                    setInitialBoundsSet(true);
                 }}
             >
                 <LayersControl position="topright">
@@ -613,33 +490,31 @@ const CommonMap = ({
                             minZoom={3}
                             maxZoom={20}
                             subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
-                            eventHandlers={{
-                                load: handleTileLoad
-                            }}
                         />
                     </BaseLayer>
                     <BaseLayer name="Street Map">
                         <TileLayer
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             maxZoom={19}
-                            eventHandlers={{
-                                load: handleTileLoad
-                            }}
                         />
                     </BaseLayer>
 
                     {memoizedPolygons}
 
-                    {lines && lines.map((line, index) => (
-                        <Polyline
-                            key={`line-${index}`}
-                            positions={line.polyline._latlngs}
-                            color="red"
-                            onMouseOver={(e) => onLineHover(e, line.id)}
-                            onMouseOut={(e) => onLineMouseOut(e, line.id)}
-                            onClick={(e) => onLineClick(line.polyline._latlngs, e)}
-                        />
-                    ))}
+                    {/** Luego renderizamos las líneas rojas */}
+                    {lines && lines.map((line, index) => {
+
+                        return (
+                            <Polyline
+                                key={`line-${index}`}
+                                positions={line.polyline._latlngs}
+                                color="red" // Puede ajustar el color aquí si es necesario
+                                onMouseOver={(e) => onLineHover(e, line.id)}
+                                onMouseOut={(e) => onLineMouseOut(e, line.id)}
+                                onClick={(e) => onLineClick(line.polyline._latlngs, e)}
+                            />
+                        );
+                    })}
 
                     {bufferedLines && bufferedLines.map((bufferedLine, index) => (
                         <Polygon key={`buffered-${index}`} positions={bufferedLine.geometry.coordinates[0].map(coord => [coord[1], coord[0]])} color="purple" weight={3} />

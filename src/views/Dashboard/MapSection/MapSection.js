@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import MapComponent from "../../MapeoGenerador/mapeo";
-import AplicacionesAreas from "../../Aplicaciones Areas/AplicacionesAreas";
+import Mapping from "../../Mapping/Mapping";
+import AerialApplications from "../../Aplicaciones Areas/AerialApplications";
 import CommonMap from "../../../components/CommonMap/CommonMap";
 
 const MapSection = ({
@@ -28,7 +28,14 @@ const MapSection = ({
                         setPromedioAltura,
                         setDosisReal,
                         limpiarMapa,
-                        userId
+                        activeLotes,
+                        highlightedLote,
+                        polygonsData,
+                        onLeaveLote,
+                        onSelectLote,
+                        onHoverLote,
+                        closeFilterDialog,
+                        isFilterDialogOpen
                     }) => {
     const mapRef = useRef(null);
 
@@ -63,7 +70,7 @@ const MapSection = ({
     return (
         <section className="map-section">
             {selectedFile && selectedAnalysisType === 'COSECHA_MECANICA' ? (
-                <MapComponent
+                <Mapping
                     csvData={datosMapeo}
                     zipFile={selectedZipFile}
                     progressFinish={processingFinished}
@@ -72,9 +79,17 @@ const MapSection = ({
                     onAreaCalculated={handleAreaCalculation}
                     percentageAutoPilot={handlePercentageCalculation}
                     limpiarMapa={limpiarMapa}
+                    activeLotes={activeLotes}
+                    highlightedLote={highlightedLote}
+                    polygonsData={polygonsData}
+                    onLeaveLote={onLeaveLote}
+                    onSelectLote={onSelectLote}
+                    onHoverLote={onHoverLote}
+                    closeFilterDialog={closeFilterDialog}
+                    isFilterDialogOpen={isFilterDialogOpen}
                 />
             ) : selectedZipFile && selectedFile && selectedAnalysisType === 'APLICACIONES_AEREAS' ? (
-                <AplicacionesAreas
+                <AerialApplications
                     csvData={datosMapeo}
                     zipFile={selectedZipFile}
                     progressFinish={processingFinished}
@@ -84,10 +99,23 @@ const MapSection = ({
                     onPromediosCalculated={handlePromediosCalculados}
                     activarEdicionInteractiva={activarEdicionInteractiva}
                     limpiarMapa={limpiarMapa}
-
+                    activeLotes={activeLotes}
+                    highlightedLote={highlightedLote}
+                    polygonsData={polygonsData}
+                    onLeaveLote={onLeaveLote}
+                    onSelectLote={onSelectLote}
+                    onHoverLote={onHoverLote}
+                    closeFilterDialog={closeFilterDialog}
+                    isFilterDialogOpen={isFilterDialogOpen}
                 />
             ) : (
-                <CommonMap userId={userId} mapRef={mapRef} />
+                <CommonMap mapRef={mapRef}
+                           activeLotes={activeLotes}
+                           highlightedLote={highlightedLote}
+                           polygonsData={polygonsData}
+                           onLeaveLote={onLeaveLote}
+                           onSelectLote={onSelectLote}
+                           onHoverLote={onHoverLote}/>
             )}
         </section>
     );

@@ -64,11 +64,11 @@ const MapDialog = ({
 
 
     const handleSingleToggle = (filterName) => {
-
         if (activeToggle === filterName) {
             setActiveToggle('');
             handleToggleFilter(filterName);
         } else {
+            handleToggleFilter(activeToggle);
             setActiveToggle(filterName);
             handleToggleFilter(filterName);
         }

@@ -1,12 +1,12 @@
 import React from 'react';
-import Sidebar from "../../components/LayoutSide"; // Asegúrate de que la ruta de importación es correcta
-import Navbar from "../../components/navbar"; // Asegúrate de que la ruta de importación es correcta
+import SideBar from "../../components/SideBar"; // Asegúrate de que la ruta de importación es correcta
+import Navbar from "../../components/Navbar"; // Asegúrate de que la ruta de importación es correcta
 import './LayoutWithSidebarStyle.css'; // Define los estilos para el layout
 
 const LayoutWithSidebar = ({ children }) => {
     return (
         <div className="layout">
-            <Sidebar />
+            <SideBar />
             <div className="main-content">
                 <Navbar />
                 <div className="content-area">

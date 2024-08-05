@@ -1,33 +1,33 @@
 import React from 'react';
-import './DetailsTableStyle.css';
+import { DetailsTableContainer, Table, TableData, TableHeading } from './DetailsTableStyle';
 
 const DetailsTable = ({ details }) => {
     return (
-        <div className="details-table">
+        <DetailsTableContainer>
             <h2>Detalles</h2>
-            <table>
+            <Table>
                 <thead>
                 <tr>
-                    <th>Responsable</th>
-                    <th>Fecha Inicio</th>
-                    <th>Fecha Fin</th>
-                    <th>Nombre Finca</th>
-                    <th>Operador</th>
-                    <th>Actividad</th>
+                    <TableHeading>Responsable</TableHeading>
+                    <TableHeading>Fecha Inicio</TableHeading>
+                    <TableHeading>Fecha Fin</TableHeading>
+                    <TableHeading>Nombre Finca</TableHeading>
+                    <TableHeading>Operador</TableHeading>
+                    <TableHeading>Actividad</TableHeading>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
-                    <td>{details.responsable}</td>
-                    <td>{details.fechaInicio}</td>
-                    <td>{details.fechaFin}</td>
-                    <td>{details.nombreFinca}</td>
-                    <td>{details.operador}</td>
-                    <td>{details.actividad}</td>
+                    <TableData>{details.responsable}</TableData>
+                    <TableData>{details.fechaInicio}</TableData>
+                    <TableData>{details.fechaFin}</TableData>
+                    <TableData>{details.nombreFinca}</TableData>
+                    <TableData>{details.operador}</TableData>
+                    <TableData>{details.actividad}</TableData>
                 </tr>
                 </tbody>
-            </table>
-        </div>
+            </Table>
+        </DetailsTableContainer>
     );
 };
 

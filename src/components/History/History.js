@@ -15,7 +15,7 @@ import GeoRasterLayer from 'georaster-layer-for-leaflet';
 import moment from 'moment';
 import { TextField, FormControl, InputLabel, Select, MenuItem, Drawer, Button, Fab, Tooltip, Slider } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-import Loader from '../../components/loader/loader'
+import Loader from '../loader/Loader'
 import BarIndicator from "../BarIndicator/BarIndicator";
 
 const colorMappingBool = (valueArray) => {

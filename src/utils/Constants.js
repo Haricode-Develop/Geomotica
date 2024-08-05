@@ -175,7 +175,6 @@ export const obtenerNombreResponsableCm = async (idAnalisisCosechaMecanica, setN
 
         const response = await axios.get(`${API_BASE_URL}dashboard/nombreResponsableCm/${idAnalisisCosechaMecanica}`);
 
-
         setNombreResponsableCm(response.data);
         return response.data;
     } catch (error) {
@@ -688,4 +687,3 @@ export function displayValue(value) {
         return value;
     }
 }
-
