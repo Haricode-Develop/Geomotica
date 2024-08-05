@@ -923,7 +923,6 @@ const Dashboard = ({ isSidebarOpen }) => {
         setLoading(true);
         try {
             const response = await axios.get(`${API_BASE_URL}configuration/lotesIniciales/masReciente/${userData.ID_USUARIO}`);
-            console.log("ESTA ES LA RESPUESTA DE LOS LOTES: ", response.data.content);
             const geojson = response.data.content;
             setPolygonsData(geojson.features);
 

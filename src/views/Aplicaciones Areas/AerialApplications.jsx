@@ -1045,7 +1045,6 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     const handleCutLine = () => {
         setActiveTool('cut');
         setIsFirstLoad(false);
-
         if (mapRef.current && lines.length > 0) {
             const map = mapRef.current;
             let previewLine = [];
@@ -1487,9 +1486,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         return lines.filter((_, index) => !linesToRemove.has(index));
     };
 
-    const toggleUnfilteredLines = () => {
-        setShowUnfilteredLines(prevState => !prevState);
-    };
+    const toggleUnfilteredLines = () => setShowUnfilteredLines(prevState => !prevState);
 
         return (
         <>

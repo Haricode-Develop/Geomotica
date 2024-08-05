@@ -47,7 +47,6 @@ const CommonMap = ({
     // Hook para inicializar el mapa
     useEffect(() => {
         if (localMapRef.current && !initialBoundsSet) {
-            console.log("Referencia inicial del mapa asignada.");
 
             mapRef.current = localMapRef.current; // Asigna la referencia del mapa
 
@@ -169,7 +168,6 @@ const CommonMap = ({
 
     const memoizedPolygons = useMemo(() => {
         if (!localMapRef.current) {
-            console.log("NO HAY REFERENCIA");
             return null;
         }
 
@@ -275,7 +273,6 @@ const CommonMap = ({
     }, [points]);
 
     useEffect(() => {
-        console.log("ESTA ES LA REFERENCIA: ", localMapRef);
         if (localMapRef.current) {
             const map = localMapRef.current;
 
@@ -389,20 +386,7 @@ const CommonMap = ({
                 });
             }
 
-            // Añadir áreas superpuestas
-            if (areasSuperpuestas && areasSuperpuestas.length > 0) {
-                areasSuperpuestas.forEach((area) => {
-                    const positions = area.map((coord) => [coord[1], coord[0]]);
-                    const areaLayer = L.polygon(positions, {
-                        color: 'red',
-                        weight: 3,
-                    }).addTo(map);
-                    bounds.extend(areaLayer.getBounds());
-                });
-            }
-
             // Añadir líneas no filtradas
-
             if (lineasNoFiltradas && lineasNoFiltradas.length > 0) {
                 lineasNoFiltradas.forEach((linea) => {
                     if (linea.polyline && Array.isArray(linea.polyline._latlngs)) {
@@ -437,9 +421,39 @@ const CommonMap = ({
                 });
             }
 
+            // ** Añadir bufferLines ** //
+            if (bufferedLines && bufferedLines.length > 0) {
+                bufferedLines.forEach((bufferedLine, index) => {
+                    const positions = bufferedLine.geometry.coordinates[0].map(
+                        (coord) => [coord[1], coord[0]]
+                    );
 
-            if(isFirstPolygons){
-                map.fitBounds( L.geoJSON(polygonsData).getBounds());
+                    const bufferLayer = L.polygon(positions, {
+                        color: 'purple',
+                    }).addTo(map);
+
+                    bounds.extend(bufferLayer.getBounds());
+                });
+            }
+            // ** Añadir bufferedIntersections ** //
+            if (bufferedIntersections && bufferedIntersections.length > 0) {
+                bufferedIntersections.forEach((intersection, index) => {
+                    const positions = intersection.map(
+                        (coord) => [coord[1], coord[0]]
+                    );
+
+                    const intersectionLayer = L.polygon([positions], {
+                        color: 'blue',
+                        weight: 3,
+                    }).addTo(map);
+
+                    bounds.extend(intersectionLayer.getBounds());
+                });
+            }
+
+            if (isFirstPolygons) {
+                mapRef.current = localMapRef.current;
+                map.fitBounds(L.geoJSON(polygonsData).getBounds());
                 setIsFirstPolygons(false);
             }
 
@@ -460,13 +474,16 @@ const CommonMap = ({
         highlightedLote,
         polygonsData,
         polygons,
-        areasSuperpuestas,
+        bufferedIntersections,
+        bufferedLines,
         lines,
         memoizedMarkers,
         shouldFitBounds,
         stretchPoints,
         lineasNoFiltradas,
     ]);
+
+
 
 
     return (
