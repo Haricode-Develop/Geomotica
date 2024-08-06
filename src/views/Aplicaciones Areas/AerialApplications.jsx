@@ -1591,7 +1591,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             )}
 
             {polygons.length > 0 && lines.length === 0 && (
-                <BarIndicator filterType={activeFilter ? activeFilter : "aerialApplications"} isHistory={false} />
+                <BarIndicator filterType={activeFilter ? activeFilter : "aerialApplicationsTraslape"} isHistory={false} />
             )}
 
             <MapDialog

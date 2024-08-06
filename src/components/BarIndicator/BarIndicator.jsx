@@ -92,6 +92,14 @@ const BarIndicator = ({ filterType, onLabelClick }) => {
                         { color: '#f44336', text: 'Alto' }
                     ]
                 }
+            case "aerialApplicationsTraslape":
+                return {
+                    title: "Traslape de aplicaciones aéreas",
+                    labels: [
+                        { color: 'green', text: 'sin traslape' },
+                        { color: 'red', text: 'traslape' }
+                    ]
+                };
             case "altura":
                 return {
                     title: "Altura",
