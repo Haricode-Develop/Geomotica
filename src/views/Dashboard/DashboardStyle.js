@@ -31,28 +31,6 @@ export const AnalysisSection = styled('div')({
     marginTop: '20px',
 });
 
-export const HelpButton = styled('button')({
-    position: 'fixed',
-    bottom: '20px',
-    right: '20px',
-    borderRadius: '50%',
-    width: '50px',
-    height: '50px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    boxShadow: '0 2px 5px rgba(0,0,0,.3)',
-    zIndex: 1050,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '24px',
-    cursor: 'pointer',
-    '&:hover': {
-        backgroundColor: '#0b7dda',
-    },
-});
-
 export const StyledButton = styled(Button)(({ theme }) => ({
     margin: 1,
     borderRadius: 25,

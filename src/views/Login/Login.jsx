@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
+import { AuthContext } from "../../context/AuthContext";
+import { API_BASE_URL } from "../../utils/config";
+import axios from "axios";
+
+// Import Material-UI components
+import {
+  TextField,
+  Container,
+  Grid,
+} from "@mui/material";
+
+// Import styles
 import {
   LoginBackground,
   VideoBackground,
@@ -9,15 +21,12 @@ import {
   LeftContainer,
   RightContainer,
   Logo,
-  Input,
-  Button,
-  ButtonContainer,
-  ForgotPassword
-} from './LoginStyle';
+  StyledButton,
+  StyledForgotPassword,
+} from "./LoginStyle";
+
+// Import assets
 import logo from "../../assets/img/logo.png";
-import axios from "axios";
-import { API_BASE_URL } from "../../utils/config";
-import { AuthContext } from "../../context/AuthContext";
 import backgroundVideo from "../../assets/login/background.mp4";
 
 const Login = () => {
@@ -53,70 +62,94 @@ const Login = () => {
   const handleRegisterClick = () => {
     navigate("/register");
   };
-  const handleForgotPasswordClick = () => {
+
+  const handleForgotPasswordClick = (e) => {
+    e.preventDefault();
     navigate("/passwordRecovery");
   };
 
   return (
       <LoginBackground>
-        <VideoBackground autoPlay muted loop id="backgroundVideo">
+        <VideoBackground autoPlay muted loop>
           <source src={backgroundVideo} type="video/mp4" />
           Your browser does not support the video tag.
         </VideoBackground>
         <VideoOverlay />
-        <LoginContainer>
-          <LeftContainer />
-          <RightContainer>
-            <Logo src={logo} alt="Company Logo" />
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3 text-center">
-                <label htmlFor="emailInput" className="form-label">
-                  Email:
-                </label>
-                <Input
-                    type="email"
-                    id="emailInput"
-                    placeholder="person@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="mb-3 text-center">
-                <label htmlFor="passwordInput" className="form-label">
-                  Password:
-                </label>
-                <Input
-                    type="password"
-                    id="passwordInput"
-                    placeholder="**************"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <ButtonContainer>
-                <Button
-                    type="button"
-                    onClick={handleRegisterClick}
-                >
-                  Register
-                </Button>
-                <Button
-                    type="submit"
-                >
-                  Login
-                </Button>
-              </ButtonContainer>
-            </form>
-            <ForgotPassword
-                href="passwordRecovery"
-                onClick={handleForgotPasswordClick}
-            >
-              Forgot your password?
-            </ForgotPassword>
-          </RightContainer>
-        </LoginContainer>
+        <Container
+            maxWidth="lg"
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100vh',
+              position: 'relative',
+              zIndex: 2,
+            }}
+        >
+          <LoginContainer>
+            <LeftContainer>
+              <Logo src={logo} alt="Company Logo" />
+            </LeftContainer>
+            <RightContainer>
+              <form onSubmit={handleSubmit}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="email"
+                        required
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        required
+                    />
+                  </Grid>
+                </Grid>
+                <Grid container spacing={2} sx={{ marginTop: 3 }}>
+                  <Grid item xs={12} sm={6}>
+                    <StyledButton
+                        fullWidth
+                        variant="outlined"
+                        onClick={handleRegisterClick}
+                    >
+                      Register
+                    </StyledButton>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <StyledButton
+                        fullWidth
+                        variant="contained"
+                        type="submit"
+                    >
+                      Login
+                    </StyledButton>
+                  </Grid>
+                </Grid>
+              </form>
+              <StyledForgotPassword
+                  href="#"
+                  onClick={handleForgotPasswordClick}
+              >
+                Forgot your password?
+              </StyledForgotPassword>
+            </RightContainer>
+          </LoginContainer>
+        </Container>
       </LoginBackground>
   );
-}
+};
 
 export default Login;

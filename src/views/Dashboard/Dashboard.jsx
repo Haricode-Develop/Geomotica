@@ -22,7 +22,6 @@ import {
     DashboardControls,
     MapSectionContainer,
     AnalysisSection,
-    HelpButton,
 } from './DashboardStyle';
 import {
     obtenerRpmCm,
@@ -345,7 +344,7 @@ const Dashboard = ({ isSidebarOpen }) => {
                 }));
                 setDatosCosechaMecanica(datos);
                 setDatosCargadosCosechaMecanica(true);
-                axios.post(`${API_BASE_URL}dashboard/cosecha_mecanica_analisis/${idAnalisisCosechaMecanica}`, { datos: datos })
+                axios.post(`${API_BASE_URL}dashboard/cosecha_mecanica_analisis/${idAnalisisCosechaMecanica}`, {datos: datos})
                     .then(response => {
 
                     })
@@ -402,7 +401,7 @@ const Dashboard = ({ isSidebarOpen }) => {
             setProgressMessage(message);
             setShowProgressBar(progressNumber < 100);
             if (progressNumber === 80) {
-                newSocket.emit('progressUpdate', { progress: 100, message: "Finalizado" });
+                newSocket.emit('progressUpdate', {progress: 100, message: "Finalizado"});
                 setShowProgressBar(false);
             }
         });
@@ -543,13 +542,13 @@ const Dashboard = ({ isSidebarOpen }) => {
         if (selectedAnalysisTypeRef.current !== null && selectedAnalysisTypeRef.current !== '') {
             try {
                 const response = await axios.get(`${API_BASE_URL}dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`);
-                const { data } = response;
-                const { _id, ...rest } = data;
+                const {data} = response;
+                const {_id, ...rest} = data;
                 const updatedData = {
                     ...rest,
                     ID_ANALISIS: _id
                 };
-                return { ...response, data: updatedData };
+                return {...response, data: updatedData};
             } catch (error) {
                 toast.error('Error al obtener el último análisis.', {
                     position: "top-right",
@@ -612,6 +611,7 @@ const Dashboard = ({ isSidebarOpen }) => {
         setIdAnalisisBash(id);
     }, [selectedAnalysisType, userData.ID_USUARIO]);
 
+
     function nombreAnalisis(idAnalisis) {
         switch (idAnalisis) {
             case 1:
@@ -667,7 +667,7 @@ const Dashboard = ({ isSidebarOpen }) => {
 
             const data = response.data;
             setProgress(70);
-            const csvBlob = new Blob([Papa.unparse(data)], { type: 'text/csv' });
+            const csvBlob = new Blob([Papa.unparse(data)], {type: 'text/csv'});
             const csvFile = new File([csvBlob], 'procesado.csv');
             setSelectedFile(csvFile);
             setDatosMapeo(data.data);
@@ -722,7 +722,7 @@ const Dashboard = ({ isSidebarOpen }) => {
         setTitleLoader("Cargando Análisis");
         let validar = "ok";
         if (socket) {
-            socket.emit('progressUpdate', { progress: 0, message: "Iniciando proceso" });
+            socket.emit('progressUpdate', {progress: 0, message: "Iniciando proceso"});
         }
         if (!idAnalisisBash) {
             toast.error('Debe seleccionar un análisis antes de continuar', {
@@ -769,7 +769,7 @@ const Dashboard = ({ isSidebarOpen }) => {
                         setLoadingProgress(progressIncrement);
 
                         offset += tamanoLote;
-                        if(esPrimeraIteracion){
+                        if (esPrimeraIteracion) {
                             toast.info('Cargando datos, por favor espere...', {
                                 position: toast.POSITION.TOP_RIGHT,
                                 autoClose: 5000,
@@ -936,7 +936,7 @@ const Dashboard = ({ isSidebarOpen }) => {
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" height="65vh">
-                <CircularProgress />
+                <CircularProgress/>
             </Box>
         );
     }
@@ -946,6 +946,7 @@ const Dashboard = ({ isSidebarOpen }) => {
 
     const openFilterDialog = () => setIsFilterDialogOpen(true);
     const closeFilterDialog = () => setIsFilterDialogOpen(false);
+
 
 
     return (
@@ -1112,9 +1113,7 @@ const Dashboard = ({ isSidebarOpen }) => {
                     </AnalysisSection>
                 </div>
             </MainContent>
-            <HelpButton>
-                <i className="fas fa-question"></i>
-            </HelpButton>
+
         </DashboardContainer>
     );
 };

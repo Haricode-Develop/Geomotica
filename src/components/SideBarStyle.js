@@ -124,8 +124,8 @@ export const TooltipContainer = styled(Box)(({ top, left }) => ({
 
 export const ModalContent = styled(Box)({
     position: 'absolute',
-    top: '5%',
-    left: '25%',
+    top: '50%',
+    left: '50%',
     transform: 'translate(-50%, -50%)',
     width: '300px',
     backgroundColor: 'white',
@@ -140,5 +140,27 @@ export const ModalContent = styled(Box)({
         to: {
             transform: 'rotate(360deg)',
         },
+    },
+});
+
+export const HelpButton = styled('button')({
+    position: 'fixed',
+    bottom: '20px',
+    right: '20px',
+    borderRadius: '50%',
+    width: '60px',
+    height: '60px',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    boxShadow: '0 2px 5px rgba(0,0,0,.3)',
+    zIndex: 1050,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '28px',
+    cursor: 'pointer',
+    '&:hover': {
+        backgroundColor: '#0b7dda',
     },
 });

@@ -65,6 +65,7 @@ const ToolbarComponent = ({
                             component="label"
                             startIcon={<ExcelIcon />}
                             disabled={!selectedAnalysisType}
+                            className={'subir-csv'}
                         >
                             Subir datos
                             <Input
@@ -86,6 +87,7 @@ const ToolbarComponent = ({
                             variant="contained"
                             component="label"
                             startIcon={<ShapefileIcon />}
+                            className={'subir-zip'}
                             disabled={
                                 !selectedAnalysisType || selectedAnalysisType === 'COSECHA_MECANICA'
                             }
@@ -137,6 +139,7 @@ const ToolbarComponent = ({
                     >
                         <StyledButton
                             variant="contained"
+                            className={'descargar-plantilla'}
                             startIcon={<TemplateIcon />}
                             disabled={!selectedAnalysisType}
                             href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : '#'}
@@ -150,6 +153,7 @@ const ToolbarComponent = ({
                         onClick={execBash}
                         startIcon={<AnalysisIcon />}
                         disabled={!execBashEnabled}
+                        className={'realizar-analisis'}
                     >
                         Realizar Análisis
                     </StyledButton>

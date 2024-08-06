@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { FaQuestionCircle } from 'react-icons/fa';  // Importing the icon from react-icons
 import logo from '../assets/img/logo_letra.png';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import MapIcon from '@mui/icons-material/Map';
@@ -17,8 +18,9 @@ import { Modal, Box } from '@mui/material';
 import {
     SidebarContainer, MenuToggle, LogoSection, LogoImage, MenuItemsContainer, MenuItemContainer,
     MenuIconContainer, MenuText, SubcategoriesContainer, SubcategoryItemContainer, TooltipContainer,
-    ModalContent
+    ModalContent, HelpButton
 } from './SideBarStyle';
+import Tutorial from '../components/Tutorial/Tutorial';
 
 const Sidebar = ({ onToggle }) => {
     const location = useLocation();
@@ -28,6 +30,8 @@ const Sidebar = ({ onToggle }) => {
     const [tooltip, setTooltip] = useState({ visible: false, content: '', position: { top: 0, left: 0 } });
     const [expandedItems, setExpandedItems] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [isTutorialActive, setIsTutorialActive] = useState(false);
 
     const navigate = useNavigate();
 
@@ -54,6 +58,10 @@ const Sidebar = ({ onToggle }) => {
         } else {
             setExpandedItems([...expandedItems, name]);
         }
+    };
+
+    const handleHelpClick = () => {
+        setIsTutorialActive(true);
     };
 
     const menuItems = [
@@ -248,12 +256,16 @@ const Sidebar = ({ onToggle }) => {
                         </Box>
                     ))}
                 </MenuItemsContainer>
+                <HelpButton onClick={handleHelpClick}>
+                    <FaQuestionCircle />
+                </HelpButton>
             </SidebarContainer>
             {tooltip.visible && (
                 <TooltipContainer top={tooltip.position.top} left={tooltip.position.left}>
                     {tooltip.content}
                 </TooltipContainer>
             )}
+
             <Modal
                 open={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -266,6 +278,9 @@ const Sidebar = ({ onToggle }) => {
                     <p id="modal-description">Para mejorar tu experiencia, estamos trabajando en esta sección. ¡Gracias por tu paciencia!</p>
                 </ModalContent>
             </Modal>
+
+            {/* Tutorial component */}
+            <Tutorial isActive={isTutorialActive} onClose={() => setIsTutorialActive(false)} />
         </>
     );
 };

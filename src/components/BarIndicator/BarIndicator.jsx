@@ -83,6 +83,24 @@ const BarIndicator = ({ filterType, onLabelClick }) => {
                         { color: 'red', text: 'Área sobre aplicada' }
                     ]
                 };
+            case "dosisReal":
+                return{
+                    title: "Dosis Real",
+                    labels: [
+                        { color: '#4caf50', text: 'Bajo' },
+                        { color: '#ffeb3b', text: 'Medio' },
+                        { color: '#f44336', text: 'Alto' }
+                    ]
+                }
+            case "altura":
+                return {
+                    title: "Altura",
+                    labels: [
+                        { color: '#4caf50', text: 'Bajo' },
+                        { color: '#ffeb3b', text: 'Medio' },
+                        { color: '#f44336', text: 'Alto' }
+                    ]
+                };
             default:
                 return {
                     title: "Indicador",

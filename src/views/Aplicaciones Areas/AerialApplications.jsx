@@ -30,7 +30,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     const userData = JSON.parse(localStorage.getItem("userData"));
 
     const [polygons, setPolygons] = useState([]);
-    const [overlappingAreas, setOverlappingAreas] = useState([]);
+    const [areasSuperpuestas, setAreasSuperpuestas] = useState([]);
     const [mapCenter, setMapCenter] = useState([0, 0]);
     const [zoom, setZoom] = useState(3);
     const [activeFilter, setActiveFilter] = useState(null);
@@ -47,6 +47,8 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     const [lines, setLines] = useState([]);
     const [lineasNoFiltradas, setLineasNoFiltradas] = useState([]);
     const [onClickLinea, setOnClickLinea] = useState(false);
+    const [onClickCuteLine, setOnClickCuteLine] = useState(false);
+    const [onClickDrawLine, setOnClickDrawLine] = useState(false);
     const [onClickLineaStrech, setOnClickLineaStrech] = useState(false);
 
     const [bufferedLines, setBufferedLines] = useState([]);
@@ -103,12 +105,16 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         switch (filterName) {
             case 'VELOCIDAD':
                 setFilterSpeed(prev => !prev);
+                setActiveFilter('speed');
                 break;
             case 'ALTURA':
                 setFilterAltitude(prev => !prev);
+                setActiveFilter('altura');
                 break;
             case 'DOSISREAL':
                 setFilterRealDose(prev => !prev);
+                setActiveFilter('dosisReal');
+
                 break;
             default:
                 break;
@@ -338,8 +344,8 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     }, [activarEdicionInteractiva]);
 
     useEffect(() => {
-
         if (isFilteringLines && lines.length > 0 && activarEdicionInteractiva) {
+            // Filtrar y procesar las líneas
             const filteredLines = filterConsistentPatterns(lines);
             const unifiedLines = unifyParallelLines(filteredLines, ANGLE_THRESHOLD, DISTANCE_THRESHOLD);
             const completeLines = unifiedLines.map(line => generateCompleteLine(line));
@@ -350,9 +356,8 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             // Integrar removeSmallerIntersectingLines
             const cleanedCompleteLines = removeSmallerIntersectingLines(filteredCompleteLines);
 
-            const geoJson = generateGeoJSON(cleanedCompleteLines);
-            downloadGeoJSON(geoJson, 'complete_lines.geojson');
             setLines(cleanedCompleteLines);
+
             setIsFilteringLines(false);
         }
     }, [isFilteringLines, lines]);
@@ -382,9 +387,14 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         return lines.filter(line => !linesToRemove.has(line.id));
     }
 
-    const generateGeoJSON = (completeLines) => {
-        const features = completeLines.map(line => {
-            const coordinates = line.polyline._latlngs.map(coord => [coord.lng, coord.lat]);
+// Generar GeoJSON para las líneas filtradas y no filtradas
+    const generateGeoJSON = (lines, isUnfiltered = false) => {
+        const features = lines.map(line => {
+            // Determinar si estamos procesando líneas no filtradas
+            const coordinates = isUnfiltered
+                ? line.polyline._latlngs.map(coord => [coord.lng, coord.lat]) // para lineasNoFiltradas
+                : line.polyline._latlngs.map(coord => [coord.lng, coord.lat]); // para lines
+
             return {
                 type: 'Feature',
                 properties: { id: line.id, length: line.length },
@@ -400,6 +410,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             features: features
         };
     };
+
 
     const downloadGeoJSON = (geoJson, filename) => {
         const blob = new Blob([JSON.stringify(geoJson)], { type: 'application/json' });
@@ -819,7 +830,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 }
             });
         });
-        setOverlappingAreas(intersections);
+        setAreasSuperpuestas(intersections);
     };
 
     const calculateNonIntersectedAreas = (polygons) => {
@@ -893,7 +904,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         const totalUnionArea = (turfArea(unionPolygons) / 10000) * correctionFactor;
 
         let totalIntersectedArea = 0;
-        const correctedIntersections = overlappingAreas.map(intersection => {
+        const correctedIntersections = areasSuperpuestas.map(intersection => {
             const correctedIntersection = intersection.map(coord => [coord[1], coord[0]]);
             if (correctedIntersection[0] !== correctedIntersection[correctedIntersection.length - 1]) {
                 correctedIntersection.push(correctedIntersection[0]);
@@ -917,7 +928,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             });
         }
 
-    }, [polygons, onAreasCalculated, overlappingAreas]);
+    }, [polygons, onAreasCalculated, areasSuperpuestas]);
 
     useEffect(() => {
         if (polygons.length === 0 || polygonsProperties.length === 0) return;
@@ -1045,81 +1056,104 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     const handleCutLine = () => {
         setActiveTool('cut');
         setIsFirstLoad(false);
+
         if (mapRef.current && lines.length > 0) {
             const map = mapRef.current;
             let previewLine = [];
-            let previewLayer;
+            let previewLayer = null;
+            let isCutting = false; // Estado para controlar si estamos en medio de un corte
 
             const onMove = (e) => {
+                if (!isCutting) return; // No hacer nada si no estamos cortando
+
+
                 if (previewLine.length === 1) {
                     previewLine[1] = [e.latlng.lat, e.latlng.lng];
+                } else {
+                    previewLine[1] = [e.latlng.lat, e.latlng.lng];
+                }
+
+                if (previewLayer) {
                     previewLayer.setLatLngs(previewLine);
+                } else {
+                    previewLayer = L.polyline(previewLine, { color: 'blue', dashArray: '5, 10' }).addTo(map);
                 }
             };
 
             const onCutClick = (e) => {
-                if (previewLine.length === 0) {
-                    previewLine.push([e.latlng.lat, e.latlng.lng]);
-                    previewLayer = L.polyline(previewLine, { color: 'blue', dashArray: '5, 10' }).addTo(map);
-                } else {
-                    previewLine.push([e.latlng.lat, e.latlng.lng]);
-                    previewLayer.setLatLngs(previewLine);
 
-                    if (previewLine.length < 2) {
-                        console.warn('Debe haber al menos dos puntos para crear un LineString');
+                if (isCutting) {
+                    // Completa el corte
+                    if (previewLine.length === 2) {
+                        const cutLineString = turfLineString(previewLine.map(coord => [coord[1], coord[0]]));
+
+                        const newLines = [];
+                        let cutSuccessful = false;
+                        const originalLines = [...lines];
+
+                        lines.forEach(line => {
+                            const latlngs = line.polyline?._latlngs;
+                            if (!latlngs || latlngs.length < 2) {
+                                newLines.push(line);
+                                return;
+                            }
+
+                            const lineString = turfLineString(latlngs.map(coord => [coord.lng, coord.lat]));
+                            const intersections = turfLineIntersect(lineString, cutLineString);
+
+                            if (intersections.features.length > 0) {
+                                cutSuccessful = true;
+                                const splitResult = turfLineSplit(lineString, cutLineString);
+
+                                splitResult.features.forEach(f => {
+                                    const newLine = f.geometry.coordinates.map(coord => new L.LatLng(coord[1], coord[0]));
+                                    const polyline = L.polyline(newLine, { color: 'red' }).addTo(map);
+
+                                    polyline.on('mouseover', handleLineHover);
+                                    polyline.on('mouseout', handleLineMouseOut);
+                                    polyline.on('click', (event) => handleLineClick(newLine, event));
+
+                                    newLines.push({ polyline, id: uuidv4() });
+                                });
+                            } else {
+                                newLines.push(line);
+                            }
+                        });
+
+                        if (cutSuccessful) {
+                            setLines(newLines);
+                            setActionHistory([...actionHistory, { type: 'cut', originalLines }]);
+                        }
+
+                        map.off('mousemove', onMove);
+                        map.off('click', onCutClick);
                         map.removeLayer(previewLayer);
-                        return;
+
+                        isCutting = false; // Terminar el corte
+                        setOnClickCuteLine(true);
+                    }
+                } else {
+                    // Inicia un nuevo corte
+                    isCutting = true;
+                    if (previewLayer) {
+                        map.removeLayer(previewLayer);
                     }
 
-                    const cutLineString = turfLineString(previewLine.map(coord => [coord[1], coord[0]]));
-                    const newLines = [];
-                    let cutSuccessful = false;
-                    const originalLines = [...lines];
+                    previewLine = [[e.latlng.lat, e.latlng.lng]];
 
-                    lines.forEach(line => {
-                        const latlngs = line.polyline?._latlngs;
-                        if (!latlngs || latlngs.length < 2) {
-                            newLines.push(line);
-                            return;
-                        }
+                    previewLayer = L.polyline(previewLine, { color: 'blue', dashArray: '5, 10' }).addTo(map);
 
-                        const lineString = turfLineString(latlngs.map(coord => [coord.lng, coord.lat]));
-                        const intersections = turfLineIntersect(lineString, cutLineString);
-
-                        if (intersections.features.length > 0) {
-                            cutSuccessful = true;
-                            const splitResult = turfLineSplit(lineString, cutLineString);
-
-                            splitResult.features.forEach(f => {
-                                const newLine = f.geometry.coordinates.map(coord => new L.LatLng(coord[1], coord[0]));
-                                const polyline = L.polyline(newLine, { color: 'red' }).addTo(map);
-
-                                polyline.on('mouseover', handleLineHover);
-                                polyline.on('mouseout', handleLineMouseOut);
-                                polyline.on('click', (event) => handleLineClick(newLine, event));
-
-                                newLines.push({ polyline, id: uuidv4() });
-                            });
-                        } else {
-                            newLines.push(line);
-                        }
-                    });
-
-                    if (cutSuccessful) {
-                        setLines(newLines);
-                        setActionHistory([...actionHistory, { type: 'cut', originalLines }]);
-                    }
-
-                    map.off('mousemove', onMove);
-                    map.off('click', onCutClick);
-                    map.removeLayer(previewLayer);
+                    map.on('mousemove', onMove); // Register move event
                 }
             };
 
-            map.on('mousemove', onMove);
-            map.on('click', onCutClick);
+            map.off('click');
+            map.on('click', onCutClick); // Register click event
+        } else {
+            console.warn("handleCutLine: No map reference or lines available.");
         }
     };
+
 
     const handleDrawLine = () => {
         setActiveTool('draw');
@@ -1164,6 +1198,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 map.off('click', onClick);
                 map.off('mousemove', onMove);
                 map.off('contextmenu', onRightClick);
+                setOnClickDrawLine(true);
             };
 
             map.on('click', onClick);
@@ -1216,6 +1251,21 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         }
     }, [onClickLinea]);
 
+
+    useEffect(() => {
+        if(onClickDrawLine){
+            handleDrawLine();
+            setOnClickDrawLine(false);
+        }
+    }, [onClickDrawLine]);
+
+    useEffect(() => {
+        if(onClickCuteLine){
+            handleCutLine();
+            setOnClickCuteLine(false);
+        }
+    }, [onClickCuteLine]);
+
 // Función para reasignar los eventos de clic a todas las líneas
     const reassignLineClickListeners = (map, onLineClick) => {
         // Eliminar los listeners de clic anteriores
@@ -1241,7 +1291,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         setOnClickLineaStrech(false);
         if (mapRef.current) {
             const map = mapRef.current;
-
+            map.off('click');
             // Reasignar los eventos de clic inicialmente
             reassignLineClickListeners(map, onLineClick);
         } else {
@@ -1499,7 +1549,6 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 lines={lines}
                 points={null}
                 hullPolygon={null}
-                overlappingAreas={overlappingAreas}
                 nonIntersectedAreas={nonIntersectedAreas}
                 bufferedLines={bufferedLines}
                 bufferedIntersections={bufferedIntersections}
@@ -1521,6 +1570,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 onLeaveLote={onLeaveLote}
                 onSelectLote={onSelectLote}
                 onHoverLote={onHoverLote}
+                areasSuperpuestas={areasSuperpuestas}
             />
             {isKml && (
                 <FloatingToolsAerialApplications

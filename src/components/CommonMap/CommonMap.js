@@ -386,6 +386,15 @@ const CommonMap = ({
                 });
             }
 
+            // Añadir áreas superpuestas si están definidas
+            if (areasSuperpuestas && areasSuperpuestas.length > 0) {
+                areasSuperpuestas.forEach((area) => {
+                    const positions = area.map(coord => [coord[1], coord[0]]);
+                    const areaLayer = L.polygon(positions, { color: 'red', weight: 3 }).addTo(map);
+                    bounds.extend(areaLayer.getBounds());
+                });
+            }
+
             // Añadir líneas no filtradas
             if (lineasNoFiltradas && lineasNoFiltradas.length > 0) {
                 lineasNoFiltradas.forEach((linea) => {

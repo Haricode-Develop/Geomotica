@@ -1,9 +1,8 @@
-// Tutorial.jsx
 import React, { useEffect, useState } from 'react';
-
 import Joyride, { ACTIONS, EVENTS, STATUS } from 'react-joyride';
 import { useLocation } from 'react-router-dom';
 import tutorialStepsConfig from "../../utils/tutorialStepsConfig";
+
 const Tutorial = ({ isActive, onClose }) => {
     const [run, setRun] = useState(isActive);
     const location = useLocation();
@@ -20,6 +19,7 @@ const Tutorial = ({ isActive, onClose }) => {
             setRun(false);
         }
     };
+
     const locale = {
         last: 'Finalizar',
         skip: 'Omitir',
@@ -29,14 +29,13 @@ const Tutorial = ({ isActive, onClose }) => {
     };
 
     useEffect(() => {
-        setRun(isActive);
-    }, [isActive]);
-
-    useEffect(() => {
         const pathSteps = tutorialStepsConfig[location.pathname] || [];
         setSteps(pathSteps);
     }, [location]);
 
+    useEffect(() => {
+        setRun(isActive);
+    }, [isActive]);
 
     return (
         <Joyride
@@ -57,4 +56,3 @@ const Tutorial = ({ isActive, onClose }) => {
 };
 
 export default Tutorial;
-

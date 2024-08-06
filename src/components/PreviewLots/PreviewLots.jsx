@@ -3,12 +3,26 @@ import { MapContainer, TileLayer, GeoJSON, LayersControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import JSZip from 'jszip';
 import shp from 'shpjs';
-import { Box, Button, Typography, Paper, List, ListItem, ListItemText, MenuItem, Select, FormControl, InputLabel, CircularProgress } from '@mui/material';
+import {
+    Box,
+    Button,
+    Typography,
+    Paper,
+    List,
+    ListItem,
+    ListItemText,
+    MenuItem,
+    Select,
+    FormControl,
+    InputLabel,
+    CircularProgress,
+} from '@mui/material';
 import { Root, InfoPanel, MapPanel, CustomPaper, LoaderOverlay } from './PreviewLotsStyle';
 import L from 'leaflet';
-import axios from "axios";
-import { API_BASE_URL } from "../../utils/config";
+import axios from 'axios';
+import { API_BASE_URL } from '../../utils/config';
 import { toast } from 'react-toastify';
+import ProgressBar from '../ProgressBar/ProgressBar'; // Importa el componente ProgressBar
 
 const { BaseLayer } = LayersControl;
 
@@ -22,11 +36,17 @@ const PreviewLots = ({ userId }) => {
     const [activeLote, setActiveLote] = useState(null);
     const mapRef = useRef();
 
+    // Estado para el ProgressBar
+    const [loadingBarProgress, setLoadingBarProgress] = useState(0); // Estado del progreso de carga
+    const [showProgressBar, setShowProgressBar] = useState(false); // Estado para mostrar u ocultar el ProgressBar
+
     useEffect(() => {
         const obtenerLoteMasReciente = async () => {
             setLoading(true); // Mostrar loader
             try {
-                const response = await axios.get(`${API_BASE_URL}configuration/lotesIniciales/masReciente/${userId}`);
+                const response = await axios.get(
+                    `${API_BASE_URL}configuration/lotesIniciales/masReciente/${userId}`
+                );
                 const geojson = response.data.content;
                 setPolygons(geojson.features);
                 const totalArea = geojson.features.reduce((sum, feature) => {
@@ -42,7 +62,7 @@ const PreviewLots = ({ userId }) => {
                     map.fitBounds(bounds);
                 }
             } catch (error) {
-                console.error("Error al obtener el archivo más reciente", error);
+                console.error('Error al obtener el archivo más reciente', error);
             } finally {
                 setLoading(false); // Ocultar loader
             }
@@ -54,10 +74,12 @@ const PreviewLots = ({ userId }) => {
     useEffect(() => {
         const obtenerHistorial = async () => {
             try {
-                const response = await axios.get(`${API_BASE_URL}configuration/lotesIniciales/historial/${userId}`);
+                const response = await axios.get(
+                    `${API_BASE_URL}configuration/lotesIniciales/historial/${userId}`
+                );
                 setHistorial(response.data);
             } catch (error) {
-                console.error("Error al obtener el historial de archivos", error);
+                console.error('Error al obtener el historial de archivos', error);
             }
         };
 
@@ -70,7 +92,9 @@ const PreviewLots = ({ userId }) => {
         setLoading(true); // Mostrar loader
 
         try {
-            const response = await axios.get(`${API_BASE_URL}configuration/lotesIniciales/${selectedFile}`);
+            const response = await axios.get(
+                `${API_BASE_URL}configuration/lotesIniciales/${selectedFile}`
+            );
             const geojson = response.data.content;
             setPolygons(geojson.features);
 
@@ -87,7 +111,7 @@ const PreviewLots = ({ userId }) => {
                 map.fitBounds(bounds);
             }
         } catch (error) {
-            console.error("Error al obtener el archivo seleccionado", error);
+            console.error('Error al obtener el archivo seleccionado', error);
         } finally {
             setLoading(false); // Ocultar loader
         }
@@ -96,15 +120,44 @@ const PreviewLots = ({ userId }) => {
     const handleZipUpload = async (event) => {
         const file = event.target.files[0];
         if (file) {
+            setLoading(true); // Mostrar loader
+            setLoadingBarProgress(0); // Inicializar progreso
+            setShowProgressBar(true); // Mostrar ProgressBar
             try {
                 const zip = new JSZip();
-                const content = await zip.loadAsync(file);
+
+                // Leer el archivo ZIP y actualizar el progreso
+                const content = await zip.loadAsync(file, {
+                    progress: (metadata) => {
+                        const percent = Math.floor((metadata.percent * 80) / 100); // Ajuste al 80%
+                        setLoadingBarProgress(percent);
+                    },
+                });
+
                 const shapefileBuffers = [];
 
+                // Procesar archivos .shp, .shx, .dbf, .prj y actualizar progreso
+                const filesCount = Object.keys(content.files).filter((filename) =>
+                    filename.endsWith('.shp') ||
+                    filename.endsWith('.shx') ||
+                    filename.endsWith('.dbf') ||
+                    filename.endsWith('.prj')
+                ).length;
+
+                let processedFiles = 0;
+
                 for (const filename of Object.keys(content.files)) {
-                    if (filename.endsWith('.shp') || filename.endsWith('.shx') || filename.endsWith('.dbf') || filename.endsWith('.prj')) {
+                    if (
+                        filename.endsWith('.shp') ||
+                        filename.endsWith('.shx') ||
+                        filename.endsWith('.dbf') ||
+                        filename.endsWith('.prj')
+                    ) {
                         const arrayBuffer = await content.files[filename].async('arraybuffer');
                         shapefileBuffers.push({ filename, arrayBuffer });
+                        processedFiles += 1;
+                        const progress = 80 + Math.floor((processedFiles * 20) / filesCount); // Ajuste para el 20% restante
+                        setLoadingBarProgress(progress);
                     }
                 }
 
@@ -124,7 +177,7 @@ const PreviewLots = ({ userId }) => {
 
                 setArea(totalArea);
 
-                // Fit map to polygons
+                // Ajustar mapa a polígonos
                 if (mapRef.current) {
                     const map = mapRef.current;
                     const bounds = L.geoJSON(geojson.features).getBounds();
@@ -133,19 +186,25 @@ const PreviewLots = ({ userId }) => {
 
                 const data = {
                     userId: userId,
-                    geojson: geojson
+                    geojson: geojson,
                 };
 
                 await axios.post(`${API_BASE_URL}configuration/lotesIniciales`, data);
+
+                setLoading(false); // Ocultar loader
+                setShowProgressBar(false); // Ocultar ProgressBar
                 toast.success('Lote subido y mapeado correctamente');
 
                 // Actualizar el historial después de subir el archivo
-                const response = await axios.get(`${API_BASE_URL}configuration/lotesIniciales/historial/${userId}`);
+                const response = await axios.get(
+                    `${API_BASE_URL}configuration/lotesIniciales/historial/${userId}`
+                );
                 setHistorial(response.data);
                 setSelectedLote(''); // Limpiar la selección
-
             } catch (error) {
-                console.error("Error processing shapefile: ", error);
+                console.error('Error processing shapefile: ', error);
+                setShowProgressBar(false); // Ocultar ProgressBar
+                setLoading(false); // Ocultar loader
                 toast.error('Error al subir el lote');
             }
         }
@@ -158,7 +217,7 @@ const PreviewLots = ({ userId }) => {
     }, [loading]);
 
     const getLoteId = (properties) => {
-        const keys = Object.keys(properties).map(key => key.toLowerCase());
+        const keys = Object.keys(properties).map((key) => key.toLowerCase());
         const idLoteIndex = keys.indexOf('id_lote');
         const idIndex = keys.indexOf('id');
 
@@ -170,7 +229,6 @@ const PreviewLots = ({ userId }) => {
             return null;
         }
     };
-
 
     const onHoverLote = (loteId) => {
         setHighlightedLote(loteId);
@@ -187,7 +245,9 @@ const PreviewLots = ({ userId }) => {
             setActiveLote(loteId);
             if (mapRef.current) {
                 const map = mapRef.current;
-                const lotePolygons = polygons.filter(feature => getLoteId(feature.properties) === loteId);
+                const lotePolygons = polygons.filter(
+                    (feature) => getLoteId(feature.properties) === loteId
+                );
                 const bounds = L.geoJSON(lotePolygons).getBounds();
                 map.fitBounds(bounds);
             }
@@ -198,7 +258,7 @@ const PreviewLots = ({ userId }) => {
         if (mapRef.current) {
             const map = mapRef.current;
             map.eachLayer((layer) => {
-                if (layer.options && layer.options.pane === "overlayPane") {
+                if (layer.options && layer.options.pane === 'overlayPane') {
                     map.removeLayer(layer);
                 }
             });
@@ -219,22 +279,25 @@ const PreviewLots = ({ userId }) => {
                     <Typography variant="h6">Información del Lote</Typography>
                     <Typography>Área total: {area.toFixed(2)} m²</Typography>
                     <List style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                        {Object.entries(polygons.reduce((acc, feature) => {
-                            const loteId = getLoteId(feature.properties);
-                            if (!acc[loteId]) {
-                                acc[loteId] = [];
-                            }
-                            acc[loteId].push(feature);
-                            return acc;
-                        }, {})).map(([loteId, features]) => (
+                        {Object.entries(
+                            polygons.reduce((acc, feature) => {
+                                const loteId = getLoteId(feature.properties);
+                                if (!acc[loteId]) {
+                                    acc[loteId] = [];
+                                }
+                                acc[loteId].push(feature);
+                                return acc;
+                            }, {})
+                        ).map(([loteId, features]) => (
                             <ListItem
                                 key={loteId}
                                 onMouseEnter={() => onHoverLote(loteId)}
                                 onMouseLeave={onLeaveLote}
                                 onClick={() => onSelectLote(loteId)}
                                 style={{
-                                    backgroundColor: activeLote === loteId ? 'rgba(255, 0, 0, 0.1)' : 'transparent',
-                                    border: activeLote === loteId ? '1px solid red' : 'none'
+                                    backgroundColor:
+                                        activeLote === loteId ? 'rgba(255, 0, 0, 0.1)' : 'transparent',
+                                    border: activeLote === loteId ? '1px solid red' : 'none',
                                 }}
                             >
                                 <ListItemText
@@ -259,7 +322,11 @@ const PreviewLots = ({ userId }) => {
                         </Select>
                     </FormControl>
                 </CustomPaper>
-                <Button variant="contained" component="label" style={{ marginTop: '16px' }}>
+                <Button
+                    variant="contained"
+                    component="label"
+                    style={{ marginTop: '16px' }}
+                >
                     Subir Lotes
                     <input type="file" hidden onChange={handleZipUpload} />
                 </Button>
@@ -296,6 +363,14 @@ const PreviewLots = ({ userId }) => {
                     </LayersControl>
                 </MapContainer>
             </MapPanel>
+
+            {/* Componente ProgressBar */}
+            <ProgressBar
+                progress={loadingBarProgress}
+                message="Subiendo y procesando lote..."
+                show={showProgressBar}
+                title="Cargando Lote"
+            />
         </Root>
     );
 };

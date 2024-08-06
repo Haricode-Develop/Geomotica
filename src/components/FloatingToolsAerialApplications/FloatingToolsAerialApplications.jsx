@@ -69,14 +69,6 @@ const FloatingToolsAerialApplications = ({
                             <FaUndo />
                         </IconButtonStyled>
                     </TooltipStyled>
-                    <TooltipStyled title="Estirar línea">
-                        <IconButtonStyled
-                            onClick={handleStretchLine}
-                            className={activeTool === 'stretch' ? 'active' : 'default'}
-                        >
-                            <FaArrowsAltH />
-                        </IconButtonStyled>
-                    </TooltipStyled>
                     <FormControlLabel
                         control={
                             <Switch
