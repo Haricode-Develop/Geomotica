@@ -1,4 +1,6 @@
 import { styled } from '@mui/system';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 
 export const DataSectionContainer = styled('section')({
     display: 'flex',
@@ -46,4 +48,33 @@ export const TableHeaderCell = styled(TableCell)({
     backgroundColor: '#f5f5f5',
     color: '#333',
     fontWeight: 500,
+});
+
+export const FloatingCard = styled(Paper)(({ theme }) => ({
+    padding: '20px',
+    margin: '10px',
+    borderRadius: '15px',
+    backgroundColor: '#e0f7fa',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: 'none',  // Eliminamos la sombra
+}));
+
+export const IconContainer = styled('div')({
+    marginBottom: '10px',
+});
+
+export const CardTitle = styled(Typography)({
+    fontSize: '1.2rem',
+    fontWeight: '500',
+    color: '#00796b',
+    marginBottom: '10px',
+});
+
+export const CountText = styled(Typography)({
+    fontSize: '2.5rem',
+    fontWeight: 'bold',
+    color: '#00796b',
 });

@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
+import React, {useEffect, useRef} from 'react';
 import Mapping from "../../Mapping/Mapping";
 import AerialApplications from "../../Aplicaciones Areas/AerialApplications";
 import CommonMap from "../../../components/CommonMap/CommonMap";
-
+import PalmsCount from "../../../Mappings/PalmsCount";
 const MapSection = ({
                         selectedFile,
                         selectedAnalysisType,
@@ -27,7 +27,6 @@ const MapSection = ({
                         setPromedioVelocidad,
                         setPromedioAltura,
                         setDosisReal,
-                        limpiarMapa,
                         activeLotes,
                         highlightedLote,
                         polygonsData,
@@ -35,10 +34,14 @@ const MapSection = ({
                         onSelectLote,
                         onHoverLote,
                         closeFilterDialog,
-                        isFilterDialogOpen
+                        isFilterDialogOpen,
+                        setImgLaflet,
+                        imageUrl,
+                        northWestCoords,
+                        southEastCoords
                     }) => {
     const mapRef = useRef(null);
-
+    const [nombreAnalisisMapeo, setNombreAnalisisMapeo] = React.useState('');
     const handleAreaCalculation = (polygonArea, outsidePolygonArea, areaDifference, pilotAutoPercentage, autoTracketPercentage) => {
 
         setAreaNetaCm(`${outsidePolygonArea.toFixed(2)} H`);
@@ -51,7 +54,7 @@ const MapSection = ({
         setPorcentajeAreaPilotoCm(`${autoPilot.toFixed(2)}%`);
         setPorcentajeAreaAutoTrackerCm(`${autoTracket.toFixed(2)}%`);
         setPorcentajeModoCortadorBaseCm(`${modoCorteBase.toFixed(2)}%`);
-        setEficienciaCm(`${totalEfficiency.toFixed(5)} Ha/Hora`);
+        setEficienciaCm(`${totalEfficiency.toFixed(2)} Ha/Hora`);
     };
 
     const handleAreasCalculated = (areas) => {
@@ -67,6 +70,10 @@ const MapSection = ({
         setDosisReal(promedios.promedioDosisReal);
     };
 
+    useEffect(() => {
+        setNombreAnalisisMapeo(nombreAnalisis(idAnalisisBash));
+    }, [idAnalisisBash]);
+
     return (
         <section className="map-section">
             {selectedFile && selectedAnalysisType === 'COSECHA_MECANICA' ? (
@@ -74,11 +81,10 @@ const MapSection = ({
                     csvData={datosMapeo}
                     zipFile={selectedZipFile}
                     progressFinish={processingFinished}
-                    idAnalisis={ultimoAnalisis()}
-                    tipoAnalisis={nombreAnalisis(idAnalisisBash)}
+                    idAnalisis={ultimoAnalisis}
+                    tipoAnalisis={nombreAnalisisMapeo}
                     onAreaCalculated={handleAreaCalculation}
                     percentageAutoPilot={handlePercentageCalculation}
-                    limpiarMapa={limpiarMapa}
                     activeLotes={activeLotes}
                     highlightedLote={highlightedLote}
                     polygonsData={polygonsData}
@@ -87,18 +93,18 @@ const MapSection = ({
                     onHoverLote={onHoverLote}
                     closeFilterDialog={closeFilterDialog}
                     isFilterDialogOpen={isFilterDialogOpen}
+                    setImgLaflet={setImgLaflet}
                 />
             ) : selectedZipFile && selectedFile && selectedAnalysisType === 'APLICACIONES_AEREAS' ? (
                 <AerialApplications
                     csvData={datosMapeo}
                     zipFile={selectedZipFile}
                     progressFinish={processingFinished}
-                    idAnalisis={ultimoAnalisis()}
+                    idAnalisis={ultimoAnalisis}
                     tipoAnalisis={nombreAnalisis(idAnalisisBash)}
                     onAreasCalculated={handleAreasCalculated}
                     onPromediosCalculated={handlePromediosCalculados}
                     activarEdicionInteractiva={activarEdicionInteractiva}
-                    limpiarMapa={limpiarMapa}
                     activeLotes={activeLotes}
                     highlightedLote={highlightedLote}
                     polygonsData={polygonsData}
@@ -107,6 +113,15 @@ const MapSection = ({
                     onHoverLote={onHoverLote}
                     closeFilterDialog={closeFilterDialog}
                     isFilterDialogOpen={isFilterDialogOpen}
+                    setImgLaflet={setImgLaflet}
+                />
+            ) : selectedZipFile && selectedAnalysisType === 'CONTEO_PALMA' ? (
+                <PalmsCount
+                    imageUrl={imageUrl}
+                    activeLotes={activeLotes}
+                    polygonsData={polygonsData}
+                    northWestCoords={northWestCoords}
+                    southEastCoords={southEastCoords}
                 />
             ) : (
                 <CommonMap mapRef={mapRef}
@@ -115,7 +130,8 @@ const MapSection = ({
                            polygonsData={polygonsData}
                            onLeaveLote={onLeaveLote}
                            onSelectLote={onSelectLote}
-                           onHoverLote={onHoverLote}/>
+                           onHoverLote={onHoverLote}
+                           setImgLaflet={setImgLaflet}/>
             )}
         </section>
     );

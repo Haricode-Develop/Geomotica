@@ -8,7 +8,9 @@ import TemplateIcon from '@mui/icons-material/Download';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import AnalysisControls from '../../views/Dashboard/AnalysisControls/AnalysisControls';
 import FloatingPanel from '../FloatingPanel/FloatingPanel';
-
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import analysisUtils from "../../utils/analysisConfig";
+import {manejarSubidaZip} from "../../utils/fileHandler";
 import {
     ToolbarContainer,
     ButtonGroup,
@@ -22,11 +24,9 @@ const ToolbarComponent = ({
                               selectedAnalysisType,
                               handleAnalysisTypeChange,
                               manejarSubidaArchivo,
-                              manejarSubidaZip,
                               uploadedCsvFileName,
                               uploadedZipFileName,
                               execBash,
-                              analysisTemplates,
                               activarEdicionInteractiva,
                               setActivarEdicionInteractiva,
                               isKMLFile,
@@ -42,7 +42,13 @@ const ToolbarComponent = ({
                               onSelectLote,
                               clearAllLotes,
                               openFilterDialog,
-                              processingFinished
+                              processingFinished,
+                              handleSendDashboardData,
+                              analysisOptions,
+                              setIsKMLFile,
+                              setOpenSnackbar,
+                              setSelectedZipFile,
+                              setUploadedZipFileName
                           }) => {
     return (
         <ToolbarContainer isSidebarOpen={isSidebarOpen}>
@@ -52,6 +58,7 @@ const ToolbarComponent = ({
                     <AnalysisControls
                         selectedAnalysisType={selectedAnalysisType}
                         handleAnalysisTypeChange={handleAnalysisTypeChange}
+                        analysisOptions={analysisOptions}
                     />
                     <Tooltip
                         title={
@@ -64,7 +71,7 @@ const ToolbarComponent = ({
                             variant="contained"
                             component="label"
                             startIcon={<ExcelIcon />}
-                            disabled={!selectedAnalysisType}
+                            disabled={!selectedAnalysisType || selectedAnalysisType === 'CONTEO_PALMA'}
                             className={'subir-csv'}
                         >
                             Subir datos
@@ -96,10 +103,11 @@ const ToolbarComponent = ({
                             <Input
                                 type="file"
                                 hidden
-                                onChange={manejarSubidaZip}
+                                onChange={(event) => manejarSubidaZip(event, setSelectedZipFile, setUploadedZipFileName, setOpenSnackbar, setIsKMLFile)}
                                 accept=".zip"
                             />
                         </StyledButton>
+
                     </Tooltip>
 
                     <FloatingPanel
@@ -142,7 +150,7 @@ const ToolbarComponent = ({
                             className={'descargar-plantilla'}
                             startIcon={<TemplateIcon />}
                             disabled={!selectedAnalysisType}
-                            href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : '#'}
+                            href={selectedAnalysisType ? analysisUtils[selectedAnalysisType]?.templatePath : '#'}
                             download
                         >
                             Descargar plantilla
@@ -172,6 +180,12 @@ const ToolbarComponent = ({
                             <AutoModeIcon />
                         </IconButtonStyled>
                     </Tooltip>
+                    <Tooltip title="Generar informe">
+                        <IconButtonStyled onClick={() => handleSendDashboardData()}>  {/* IconButton en lugar de StyledButton */}
+                            <PictureAsPdfIcon />
+                        </IconButtonStyled>
+                    </Tooltip>
+
                 </ButtonGroup>
             </ButtonSection>
         </ToolbarContainer>

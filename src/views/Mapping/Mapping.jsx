@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useSocket } from '../../context/SocketContext';
 import { useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import io from 'socket.io-client';
-import { Button, Tooltip } from '@mui/material';
 import { API_BASE_URL } from "../../utils/config";
 import * as turf from '@turf/turf';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
@@ -11,8 +10,26 @@ import { toast } from 'react-toastify';
 import CommonMap from '../../components/CommonMap/CommonMap';
 import MapDialog from '../../components/MapDialog/MapDialog';
 
-const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnalisis, tipoAnalisis, highlightedLote, polygonsData, activeLotes, onSelectLote, onLeaveLote, onHoverLote, closeFilterDialog, isFilterDialogOpen}) => {
+const Mapping = ({
+                     onAreaCalculated,
+                     percentageAutoPilot,
+                     progressFinish,
+                     idAnalisis,
+                     tipoAnalisis,
+                     highlightedLote,
+                     polygonsData,
+                     activeLotes,
+                     onSelectLote,
+                     onLeaveLote,
+                     onHoverLote,
+                     closeFilterDialog,
+                     isFilterDialogOpen,
+                     setImgLaflet
+                 }) => {
+
     const userData = JSON.parse(localStorage.getItem("userData"));
+    const socketContext = useSocket();
+    const {socket, socketSessionID} = socketContext;
 
     const [hullPolygon, setHullPolygon] = useState(null);
     const [pilotAutoPercentage, setPilotAutoPercentage] = useState(0);
@@ -114,7 +131,7 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
     const [originalPoints, setOriginalPoints] = useState([]);
 
 
-    const MapBounds = ({ onNoPoints }) => {
+    const MapBounds = ({onNoPoints}) => {
         const map = useMap();
 
         useEffect(() => {
@@ -134,7 +151,7 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
 
             if (latLngs.length > 0) {
                 const bounds = L.latLngBounds(latLngs);
-                map.fitBounds(bounds, { padding: [50, 50] });
+                map.fitBounds(bounds, {padding: [50, 50]});
                 setMapBounds(bounds);
             } else {
                 onNoPoints();
@@ -182,7 +199,6 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
     }, [polygon, outsidePolygon, onAreaCalculated]);
 
 
-
     useEffect(() => {
         if (idAnalisis && typeof idAnalisis.then === 'function') {
             idAnalisis.then((resultado) => {
@@ -208,8 +224,7 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
 
         worker.onmessage = (e) => {
             if (e.data.action === 'geoJsonDataProcessed') {
-                const { points: newPoints, polygon: newPolygon, outsidePolygon: newOutsidePolygon } = e.data.data;
-
+                const {points: newPoints, polygon: newPolygon, outsidePolygon: newOutsidePolygon} = e.data.data;
                 setPoints(newPoints);
                 setOriginalPoints(newPoints);
                 setPolygon(newPolygon);
@@ -241,26 +256,27 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
                         }
                     }
                 }
-
-                // Filtrar puntos aquí
                 applyFilters(newPoints);
             }
         };
 
-        const socket = io(API_BASE_URL);
+        if (socket && socket.on) {
+            const handleUpdateGeoJSONLayer = (geojsonData) => {
+                if (geojsonData) {
+                    worker.postMessage({action: 'processGeoJsonData', geojsonData, type: tipoAnalisis});
+                }
+            };
 
-        socket.on('updateGeoJSONLayer', (geojsonData) => {
-            if (geojsonData) {
-                worker.postMessage({ action: 'processGeoJsonData', geojsonData, type: tipoAnalisis });
-            }
-        });
+            // Escucha el evento usando el sessionID específico
+            socket.on(`${socketSessionID}:updateGeoJSONLayer`, handleUpdateGeoJSONLayer);
 
-        return () => {
-            worker.terminate();
-            socket.off('updateGeoJSONLayer');
-            socket.disconnect();
-        };
-    }, []);
+            return () => {
+                worker.terminate();
+                socket.off(`${socketSessionID}:updateGeoJSONLayer`, handleUpdateGeoJSONLayer);
+            };
+        }
+    }, [socket, tipoAnalisis, socketSessionID]);
+
 
     useEffect(() => {
         localStorage.setItem('formData', JSON.stringify(formData));
@@ -300,6 +316,7 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
     useEffect(() => {
 
         const pointsData = points;
+
         const totalPoints = pointsData.length;
         const pilotAutoPoints = pointsData.filter(point =>
             point.properties.PILOTO_AUTOMATICO &&
@@ -322,7 +339,9 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
             tiempoTotal = puntoEncontrado.properties.TIEMPO_TOTAL;
         }
 
-        let totalEfficiency = areaData.outsidePolygonArea / convertTimeToDecimalHours(tiempoTotal);
+        let totalEfficiency = (isNaN(areaData.outsidePolygonArea) || areaData.outsidePolygonArea == null ? 0 : areaData.outsidePolygonArea) /
+            (isNaN(convertTimeToDecimalHours(tiempoTotal)) || convertTimeToDecimalHours(tiempoTotal) == null ? 0 : convertTimeToDecimalHours(tiempoTotal)) || 0;
+
         const calculatedPilotAutoPercentaje = totalPoints > 0 ? (pilotAutoPoints / totalPoints) * 100 : 0;
         const calculatedAutoTracketPercentaje = totalPoints > 0 ? (autoTracketPoints / totalPoints) * 100 : 0;
         const calculatedModoCortadorBasePercentaje = totalPoints > 0 ? (modoCorteBase / totalPoints) * 100 : 0;
@@ -413,7 +432,6 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
     }), []);
 
 
-
 // applyFilters function optimized
     const applyFilters = useCallback((pointsToFilter = originalPoints) => {
         const conditions = {
@@ -488,7 +506,7 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
                 return false;
             });
 
-            return { ...point, color };
+            return {...point, color};
         });
 
         setFilteredPoints(filtered);
@@ -558,28 +576,28 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
     return (
         <>
             {availableFilters.speed && filterSpeed && openIndicator === 'VELOCIDAD_Km_H' && (
-                <BarIndicator filterType="speed" onLabelClick={handleLabelClick} />
+                <BarIndicator filterType="speed" onLabelClick={handleLabelClick}/>
             )}
             {availableFilters.gpsQuality && filterGpsQuality && openIndicator === 'CALIDAD_DE_SENAL' && (
-                <BarIndicator filterType="gpsQuality" onLabelClick={handleLabelClick} />
+                <BarIndicator filterType="gpsQuality" onLabelClick={handleLabelClick}/>
             )}
             {availableFilters.fuel && filterFuel && openIndicator === 'CONSUMOS_DE_COMBUSTIBLE' && (
-                <BarIndicator filterType="fuel" onLabelClick={handleLabelClick} />
+                <BarIndicator filterType="fuel" onLabelClick={handleLabelClick}/>
             )}
             {availableFilters.rpm && filterRpm && openIndicator === 'RPM' && (
-                <BarIndicator filterType="rpm" onLabelClick={handleLabelClick} />
+                <BarIndicator filterType="rpm" onLabelClick={handleLabelClick}/>
             )}
             {availableFilters.cutterBase && filterCutterBase && openIndicator === 'PRESION_DE_CORTADOR_BASE' && (
-                <BarIndicator filterType="cutterBase" onLabelClick={handleLabelClick} />
+                <BarIndicator filterType="cutterBase" onLabelClick={handleLabelClick}/>
             )}
             {availableFilters.autoPilot && filterAutoPilot && openIndicator === 'PILOTO_AUTOMATICO' && (
-                <BarIndicator filterType="autoPilot" onLabelClick={handleLabelClick} />
+                <BarIndicator filterType="autoPilot" onLabelClick={handleLabelClick}/>
             )}
             {availableFilters.autoTracket && filterAutoTracket && openIndicator === 'AUTO_TRACKET' && (
-                <BarIndicator filterType="autoTracket" onLabelClick={handleLabelClick} />
+                <BarIndicator filterType="autoTracket" onLabelClick={handleLabelClick}/>
             )}
             {availableFilters.modeCutterBase && filterModeCutterBase && openIndicator === 'MODO_CORTE_BASE' && (
-                <BarIndicator filterType="modeCutterBase" onLabelClick={handleLabelClick} />
+                <BarIndicator filterType="modeCutterBase" onLabelClick={handleLabelClick}/>
             )}
 
             <CommonMap
@@ -595,20 +613,23 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
                 bufferedIntersections={[]}
                 activeFilter={activeFilter}
                 filterValues={{
-                    PILOTO_AUTOMATICO: { low: 0, medium: 0, high: 1 },
-                    AUTO_TRACKET: { low: 0, medium: 0, high: 1 },
-                    MODO_CORTE_BASE: { low: 0, medium: 0, high: 1 },
-                    VELOCIDAD_Km_H: { low: lowSpeed, medium: medSpeed, high: highSpeed },
-                    CALIDAD_DE_SENAL: { low: lowGpsQuality, medium: medGpsQuality, high: highGpsQuality },
-                    CONSUMOS_DE_COMBUSTIBLE: { low: lowFuel, medium: medFuel, high: highFuel },
-                    RPM: { low: lowRpm, medium: medRpm, high: highRpm },
-                    PRESION_DE_CORTADOR_BASE: { low: lowCutterBase, medium: medCutterBase, high: highCutterBase }
+                    PILOTO_AUTOMATICO: {low: 0, medium: 0, high: 1},
+                    AUTO_TRACKET: {low: 0, medium: 0, high: 1},
+                    MODO_CORTE_BASE: {low: 0, medium: 0, high: 1},
+                    VELOCIDAD_Km_H: {low: lowSpeed, medium: medSpeed, high: highSpeed},
+                    CALIDAD_DE_SENAL: {low: lowGpsQuality, medium: medGpsQuality, high: highGpsQuality},
+                    CONSUMOS_DE_COMBUSTIBLE: {low: lowFuel, medium: medFuel, high: highFuel},
+                    RPM: {low: lowRpm, medium: medRpm, high: highRpm},
+                    PRESION_DE_CORTADOR_BASE: {low: lowCutterBase, medium: medCutterBase, high: highCutterBase}
                 }}
                 polygonProperties={[]}
                 showIntersections={false}
-                onLineHover={() => { }}
-                onLineMouseOut={() => { }}
-                onLineClick={() => { }}
+                onLineHover={() => {
+                }}
+                onLineMouseOut={() => {
+                }}
+                onLineClick={() => {
+                }}
                 mapRef={mapRef}
                 userId={userData.ID_USUARIO}
                 highlightedLote={highlightedLote}
@@ -617,6 +638,7 @@ const Mapping = ({ onAreaCalculated, percentageAutoPilot, progressFinish, idAnal
                 onSelectLote={onSelectLote}
                 onHoverLote={onHoverLote}
                 onLeaveLote={onLeaveLote}
+                setImgLaflet={setImgLaflet}
             />
 
             <MapDialog

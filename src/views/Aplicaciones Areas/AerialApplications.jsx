@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import L from 'leaflet';
-import io from 'socket.io-client';
+import { useSocket } from '../../context/SocketContext';
 import { API_BASE_URL } from '../../utils/config';
 import {
     polygon as turfPolygon,
@@ -100,6 +100,8 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     const [lowRealDose, setLowRealDose] = useState(0);
     const [medRealDose, setMedRealDose] = useState(0);
     const [highRealDose, setHighRealDose] = useState(0);
+    const socketContext = useSocket();
+    const { socket, socketSessionID } = socketContext;
 
     const handleToggleFilter = (filterName) => {
         switch (filterName) {
@@ -172,48 +174,38 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     };
 
     useEffect(() => {
-        // Inicializa el worker y el socket
         workerRef.current = new Worker("dataWorker.js");
-        const socket = io(API_BASE_URL);
 
-        // Handler para los mensajes del worker
         workerRef.current.onmessage = (e) => {
             if (e.data.action === "geoJsonDataProcessed") {
-                // Función auxiliar para crear LatLng para ambos tipos de estructuras
                 const createLatLngArray = (segment) => {
-                    // Verificar que el segmento es un par de coordenadas [lat, lng]
                     return segment.map((coords) => {
                         if (coords.length !== 2) {
                             return null;
                         }
                         const [lat, lng] = coords;
                         return { lat, lng };
-                    }).filter(coord => coord !== null); // Filtra coordenadas inválidas
+                    }).filter(coord => coord !== null);
                 };
 
                 // Verifica si tenemos líneas filtradas
                 if (e.data.data.filtradas && e.data.data.filtradas.lines) {
                     const { lines: filtradasLines, polygons: filtradasPolygons } = e.data.data.filtradas;
 
-                    // Procesa cada línea filtrada
                     const filtradasLinesWithEvents = filtradasLines.map((line) => {
                         const lineId = line.id; // Usamos el id proporcionado
 
-                        // Creamos un array de LatLng para cada segmento
                         const latLngArray = createLatLngArray(line.paths);
 
-                        // Validación: Asegúrate de que hay al menos dos puntos
                         if (latLngArray.length < 2) {
                             console.error("Segmento con menos de 2 puntos:", latLngArray);
                             return null;
                         }
 
-                        // Crea la polilínea con las coordenadas latLng
                         const polyline = L.polyline(latLngArray, {
                             color: "red",
                         });
 
-                        // Calcula y establece los bounds de la polilínea
                         const bounds = L.latLngBounds(latLngArray);
                         polyline._bounds = bounds;
 
@@ -225,34 +217,28 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                         return { polyline, id: lineId };
                     }).filter((line) => line !== null);
 
-                    // Actualiza el estado con las líneas filtradas
                     setLines(filtradasLinesWithEvents);
                     setIsKml(true);
                     setKmlPolygons(filtradasPolygons);
                     setIsFilteringLines(true);
                 }
 
-                // Verifica si tenemos líneas no filtradas
                 if (e.data.data.noFiltradas && e.data.data.noFiltradas.lines) {
                     const { lines: noFiltradasLines, polygons: noFiltradasPolygons } = e.data.data.noFiltradas;
                     const noFiltradasLinesWithEvents = noFiltradasLines.map((line) => {
-                        const lineId = line.id; // Usamos el id proporcionado
+                        const lineId = line.id;
 
-                        // Creamos un array de LatLng para cada segmento
                         const latLngArray = createLatLngArray(line.paths);
 
-                        // Validación: Asegúrate de que hay al menos dos puntos
                         if (latLngArray.length < 2) {
                             console.error("Segmento con menos de 2 puntos:", latLngArray);
                             return null;
                         }
 
-                        // Crea la polilínea con las coordenadas latLng
                         const polyline = L.polyline(latLngArray, {
                             color: "blue", // Azul para no filtradas
                         });
 
-                        // Calcula y establece los bounds de la polilínea
                         const bounds = L.latLngBounds(latLngArray);
                         polyline._bounds = bounds;
 
@@ -268,32 +254,26 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                     setKmlPolygons(noFiltradasPolygons);
                 }
 
-                // Verifica si tenemos solo líneas procesadas
                 if (e.data.data.lines && !e.data.data.noFiltradas) {
                     const { lines, polygons } = e.data.data;
 
                     const linesWithEvents = lines.map((line) => {
-                        const lineId = line.id; // Usamos el id proporcionado
+                        const lineId = line.id;
 
-                        // Creamos un array de LatLng para cada segmento
                         const latLngArray = createLatLngArray(line.paths);
 
-                        // Validación: Asegúrate de que hay al menos dos puntos
                         if (latLngArray.length < 2) {
                             console.error("Segmento con menos de 2 puntos:", latLngArray);
                             return null;
                         }
 
-                        // Crea la polilínea con las coordenadas latLng
                         const polyline = L.polyline(latLngArray, {
-                            color: "green", // Verde para este caso
+                            color: "green",
                         });
 
-                        // Calcula y establece los bounds de la polilínea
                         const bounds = L.latLngBounds(latLngArray);
                         polyline._bounds = bounds;
 
-                        // Añade eventos a la polilínea
                         polyline.on("mouseover", (e) => handleLineHover(e, lineId));
                         polyline.on("mouseout", (e) => handleLineMouseOut(e, lineId));
                         polyline.on("click", (e) => handleLineClick(latLngArray, e));
@@ -318,23 +298,23 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             }
         };
 
-        // Configura el evento del socket para actualizar la capa GeoJSON
-        socket.on("updateGeoJSONLayer", (geojsonData) => {
-            workerRef.current.postMessage({
-                action: "processGeoJsonData",
-                geojsonData,
-                type: tipoAnalisis,
-                activarEdicionInteractiva,
+        if(socket){
+            socket.on(`${socketSessionID}:updateGeoJSONLayer`, (geojsonData) => {
+                workerRef.current.postMessage({
+                    action: "processGeoJsonData",
+                    geojsonData,
+                    type: tipoAnalisis,
+                    activarEdicionInteractiva,
+                });
             });
-        });
 
-        // Limpia los recursos al desmontar el componente
-        return () => {
-            workerRef.current.terminate();
-            socket.off("updateGeoJSONLayer");
-            socket.disconnect();
-        };
-    }, [tipoAnalisis]);
+            return () => {
+                workerRef.current.terminate();
+                socket.off(`${socketSessionID}:updateGeoJSONLayer`);
+            };
+        }
+
+    }, [tipoAnalisis, socket]);
 
 
     useEffect(() => {
@@ -787,11 +767,20 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     useEffect(() => {
         Promise.resolve(idAnalisis)
             .then(resolvedId => {
-                const actualId = resolvedId.data?.ID_ANALISIS;
-                setFormData(currentData => ({
-                    ...currentData,
-                    idAnalisis: actualId
-                }));
+                if (resolvedId && resolvedId.data) {
+                    const actualId = resolvedId.data.ID_ANALISIS;
+                    setFormData(currentData => ({
+                        ...currentData,
+                        idAnalisis: actualId
+                    }));
+                } else {
+                    // Maneja el caso cuando resolvedId es null o no tiene la propiedad data
+                    console.error("resolvedId es null o no tiene la propiedad 'data'");
+                }
+            })
+            .catch(error => {
+                // Maneja cualquier error que ocurra durante la promesa
+                console.error("Error al resolver idAnalisis:", error);
             });
     }, [idAnalisis]);
 
@@ -1239,7 +1228,6 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             setOnClickLinea(true);
             reassignLineClickListeners(mapRef.current, onLineClick);
         } else {
-            console.log("No matching line found in state for the clicked line");
         }
     };
 
@@ -1535,6 +1523,9 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
         return lines.filter((_, index) => !linesToRemove.has(index));
     };
+    const handleLabelClick = (filterLabel) => {
+
+    };
 
     const toggleUnfilteredLines = () => setShowUnfilteredLines(prevState => !prevState);
 
@@ -1591,7 +1582,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             )}
 
             {polygons.length > 0 && lines.length === 0 && (
-                <BarIndicator filterType={activeFilter ? activeFilter : "aerialApplicationsTraslape"} isHistory={false} />
+                <BarIndicator filterType={activeFilter ? activeFilter : "aerialApplicationsTraslape"} isHistory={false} onLabelClick={handleLabelClick} />
             )}
 
             <MapDialog

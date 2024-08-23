@@ -3,7 +3,7 @@ import Draggable from 'react-draggable';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { BarIndicatorWrapper, DragHandle, BarTitle, LabelContainer, LabelItem } from './BarIndicatorStyle';
 
-const BarIndicator = ({ filterType, onLabelClick }) => {
+const BarIndicator = React.memo(({ filterType, onLabelClick }) => {
     const getTitleAndLabels = (type) => {
         switch (type) {
             case "speed":
@@ -124,9 +124,9 @@ const BarIndicator = ({ filterType, onLabelClick }) => {
     const { title, labels } = getTitleAndLabels(filterType);
 
     return (
-        <Draggable handle=".drag-handle">
+        <Draggable handle=".drag-handle" grid={[25, 25]}>
             <BarIndicatorWrapper>
-                <DragHandle>
+                <DragHandle className="drag-handle">
                     <DragIndicatorIcon />
                     Mover
                 </DragHandle>
@@ -145,6 +145,6 @@ const BarIndicator = ({ filterType, onLabelClick }) => {
             </BarIndicatorWrapper>
         </Draggable>
     );
-};
+});
 
 export default BarIndicator;

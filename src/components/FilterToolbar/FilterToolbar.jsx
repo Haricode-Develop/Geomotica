@@ -10,18 +10,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { FilterBar, FilterButton, ResetButton } from './FilterToolbarStyle';
 
-const filters = [
-    'Zafra',
-    'Tercio',
-    'Semana',
-    'Finca',
-    'Lote',
-    'Operador',
-    'Turno',
-    'Fecha',
-];
-
-const FilterToolbar = ({ isSidebarOpen, isDashboardIndicators }) => {
+const FilterToolbar = ({ isSidebarOpen, isDashboardIndicators, filterOptions }) => {
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [selectedFilter, setSelectedFilter] = React.useState(null);
 
@@ -44,13 +33,13 @@ const FilterToolbar = ({ isSidebarOpen, isDashboardIndicators }) => {
                 <IconButton edge="start" color="inherit" aria-label="filter">
                     <FilterListIcon />
                 </IconButton>
-                {filters.map((filter) => (
+                {filterOptions.map(filter => (
                     <FilterButton
-                        key={filter}
+                        key={filter.value}
                         endIcon={<ArrowDropDownIcon />}
                         onClick={(event) => handleClick(event, filter)}
                     >
-                        {filter}
+                        {filter.label}
                     </FilterButton>
                 ))}
                 <ResetButton

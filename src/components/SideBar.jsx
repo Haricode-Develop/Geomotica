@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaQuestionCircle } from 'react-icons/fa';  // Importing the icon from react-icons
-import logo from '../assets/img/logo_letra.png';
+import { FaQuestionCircle } from 'react-icons/fa';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import MapIcon from '@mui/icons-material/Map';
 import AgricultureIcon from '@mui/icons-material/Agriculture';
@@ -21,21 +20,24 @@ import {
     ModalContent, HelpButton
 } from './SideBarStyle';
 import Tutorial from '../components/Tutorial/Tutorial';
-
+import { CompanyContext } from '../context/CompanyContext';  // Importar el contexto de la empresa
+import { SidebarContext } from '../context/SidebarContext';
 const Sidebar = ({ onToggle }) => {
     const location = useLocation();
     const { logout } = useAuth();
+    const {selectedSidebarOption, setSelectedSidebarOption } = useContext(SidebarContext);
     const [activeItem, setActiveItem] = useState(location.pathname);
     const [isOpen, setIsOpen] = useState(true);
     const [tooltip, setTooltip] = useState({ visible: false, content: '', position: { top: 0, left: 0 } });
     const [expandedItems, setExpandedItems] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
+    const { logo } = useContext(CompanyContext);
     const [isTutorialActive, setIsTutorialActive] = useState(false);
 
     const navigate = useNavigate();
 
-    const handleMenuItemClick = (path) => {
+    const handleMenuItemClick = (path, name) => {
+        setSelectedSidebarOption(name);
         if (path === '/logout') {
             logout();
             navigate('/');
@@ -66,8 +68,8 @@ const Sidebar = ({ onToggle }) => {
 
     const menuItems = [
         { name: 'Dashboard', icon: <BarChartIcon />, path: '/dashboard', subcategories: [] },
-        { name: 'Mapeo de maquinaria', icon: <MapIcon />, path: '/mapeo', subcategories: [] },
-        { name: 'Conteo de plantas', icon: <AgricultureIcon />, path: '/conteo-de-plantas', subcategories: [] },
+        { name: 'Mapeo de maquinaria', icon: <MapIcon />, path: '/mapeo?tipo=mapeo_maquinaria', subcategories: [] },
+        { name: 'Conteo de plantas', icon: <AgricultureIcon />, path: '/mapeo?tipo=conteo_plantas', subcategories: [] },
         {
             name: 'SIG Agrícola', icon: <LayersIcon />, subcategories: [
                 {
@@ -201,7 +203,7 @@ const Sidebar = ({ onToggle }) => {
                         <Box key={index} style={{ width: '100%' }}>
                             <MenuItemContainer
                                 active={activeItem === item.path}
-                                onClick={() => { item.subcategories.length > 0 ? handleExpandClick(item.name) : handleMenuItemClick(item.path); }}
+                                onClick={() => { item.subcategories.length > 0 ? handleExpandClick(item.name) : handleMenuItemClick(item.path, item.name); }}
                                 onMouseEnter={(e) => showTooltip(item.name, e)}
                                 onMouseLeave={hideTooltip}
                             >
@@ -274,8 +276,8 @@ const Sidebar = ({ onToggle }) => {
             >
                 <ModalContent>
                     <ConstructionIcon style={{ fontSize: '4rem', color: '#f5a623', animation: 'rotate 2s linear infinite' }} />
-                    <h2 id="modal-title">Sección en Construcción</h2>
-                    <p id="modal-description">Para mejorar tu experiencia, estamos trabajando en esta sección. ¡Gracias por tu paciencia!</p>
+                    <h2 id="modal-title">Section Under Construction</h2>
+                    <p id="modal-description">We're working on this section to improve your experience. Thank you for your patience!</p>
                 </ModalContent>
             </Modal>
 

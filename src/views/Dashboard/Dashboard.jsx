@@ -1,20 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
-import io from 'socket.io-client';
+import React, {useEffect, useState, useRef, useContext } from 'react';
+import { useSocket } from '../../context/SocketContext';
 import Papa from 'papaparse';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import JSZip from 'jszip';
-import { useAuth } from '../../context/AuthContext';
-import { API_BASE_URL } from '../../utils/config';
+import pako from 'pako';
+import {API_BASE_PYTHON_SERVICE, API_BASE_URL} from '../../utils/config';
 import ProgressBar from "../../components/ProgressBar/ProgressBar";
-import SideBar from '../../components/SideBar';
 import MapSection from './MapSection/MapSection';
 import DataSection from './DataSection/DataSection';
 import Tutorial from '../../components/Tutorial/Tutorial';
 import ToolbarComponent from "../../components/ToolbarComponent/ToolbarComponent";
 import FilterToolbar from "../../components/FilterToolbar/FilterToolbar";
-import {Link, Button, Tooltip, IconButton, Box, CircularProgress} from '@mui/material';
-import AutoModeIcon from '@mui/icons-material/AutoMode';
+import {Box, CircularProgress} from '@mui/material';
 import LoadingBar from "../../components/LoadingBar/LoadingBar";
 import {
     DashboardContainer,
@@ -23,84 +21,26 @@ import {
     MapSectionContainer,
     AnalysisSection,
 } from './DashboardStyle';
-import {
-    obtenerRpmCm,
-    obtenerActividadCm,
-    obtenerCalidadGpsCm,
-    obtenerConsumoCombustibleCm,
-    obtenerFechaFinCosechaCm,
-    obtenerCodigoParcelaResponsableCm,
-    obtenerFechaInicioCosechaCm,
-    obtenerHoraFinalCm,
-    obtenerHoraInicioCm,
-    obtenerNombreFincaCm,
-    obtenerNombreMaquinaCm,
-    obtenerNombreResponsableCm,
-    obtenerNombreOperadorCm,
-    obtenerPromedioVelocidadCm,
-    obtenerTiempoTotalActividadCm,
-    obtenerTahCm,
-    obtenerPresionCortadorBaseCm,
-    obtenerTchCm,
-    obtenerNombreFincaFertilizacion,
-    obtenerAreaBrutaFertilizacion,
-    obtenerResponsableFertilizacion,
-    obtenerAreaNetaFertilizacion,
-    obtenerDiferenciaAreaFertilizacion,
-    obtenerActividadFertilizacion,
-    obtenerDosisTeoricaFertilizacion,
-    obtenerEficienciaFertilizacion,
-    obtenerEquipoFertilizacion,
-    obtenerFechaFinalFertilizacion,
-    obtenerFechaInicioFertilizacion,
-    obtenerHoraInicioFertilizacion,
-    obtenerOperadorFertilizacion,
-    obtenerTiempoTotalFertilizacion,
-    obtenerHoraFinalFertilizacion,
-    obtenerPromedioDosisRealFertilizacion,
-    obtenerCodigoParcelasAps,
-    obtenerEficienciaAps,
-    obtenerEquipoAps,
-    obtenerFechaInicioCosechaAps,
-    obtenerFechaFinCosechaAps,
-    obtenerHoraInicioAps,
-    obtenerHoraFinalAps,
-    obtenerNombreFincaAps,
-    obtenerNombreOperadorAps,
-    obtenerResponsableAps,
-    obtenerCodigoLotesAps,
-    obtenerDosisTeoricaAps,
-    obtenerHumedadDelCultivoAps,
-    obtenerTchEstimado,
-    obtenerAreaBrutaHerbicidas,
-    obtenerEficienciaHerbicidas,
-    obtenerHoraFinalHerbicidas,
-    obtenerActividadHerbicidas,
-    obtenerAreaNetaHerbicidas,
-    obtenerHoraInicioHerbicidas,
-    obtenerDiferenciaDeAreaHerbicidas,
-    obtenerNombreFincaHerbicidas,
-    obtenerPromedioVelocidadHerbicidas,
-    obtenerTiempoTotalHerbicidas,
-    obtenerEquipoHerbicidas,
-    obtenerFechaHerbicidas,
-    obtenerOperadorHerbicidas,
-    obtenerParcelaHerbicidas,
-    obtenerResponsableHerbicidas,
-    displayValue,
-    obtenerTiempoTotalAps,
-    obtenerProductoAps
-} from "../../utils/Constants";
-import L from "leaflet";
+import {sendDashboardData} from '../../utils/DashboardUtils';
+import {SidebarContext} from "../../context/SidebarContext";
+import analysisConfig from "../../utils/analysisConfig";
+import sidebarOptionsConfig from "../../utils/sidebarOptionsConfig";
+import {manejarSubidaArchivo} from "../../utils/fileHandler";
+import {insertarUltimoAnalisis, obtenerLoteMasReciente} from "../../utils/mapUtils";
+import {ejecutarProcesoCosechaMecanica, ejecutarProcesoSinArchivoCosechaMecanica} from "../../analysis/cosechaMecanica/cosechaMecanicaProcess";
+import {ejecutarProcesoAps, ejecutarProcesoSinArchivoAps} from "../../analysis/aps/apsProcess";
+import {ejecutarProcesoHerbicidas, ejecutarProcesoSinArchivoHerbicidas} from "../../analysis/herbicidas/herbicidasProcess";
+import {ejecutarProcesoFertilizacion, ejecutarProcesoSinArchivoFertilizacion} from "../../analysis/fertilizacion/fertilizacionProcess";
+import {ejecutarProcesoConteoPalmas} from "../../analysis/conteoPalmas/conteoPalmasProcess";
+import {APLICACIONES_AEREAS, COSECHA_MECANICA, HERBICIDAS, FERTILIZACION, CONTEO_PALMA} from "../../utils/Constants";
+const Dashboard = React.memo(({ isSidebarOpen }) => {
 
-const Dashboard = ({ isSidebarOpen }) => {
     const userData = JSON.parse(localStorage.getItem("userData"));
     const [runTutorial, setRunTutorial] = useState(false);
     const [tutorialKey, setTutorialKey] = useState(0);
     const [progress, setProgress] = useState(0);
     const [selectedFile, setSelectedFile] = useState(null);
     const [idMax, setIdMax] = useState(null);
-    const [progressIteracion, setProgressIteracion] = useState(null);
     const [processingFinished, setProcessingFinished] = useState(false);
     const [titleLoader, setTitleLoader] = useState("");
     const [idAnalisisAps, setIdAnalisisAps] = useState(null);
@@ -108,105 +48,36 @@ const Dashboard = ({ isSidebarOpen }) => {
     const [idAnalisisFertilizacion, setIdAnalisisFertilizacion] = useState(null);
     const [idAnalisisHerbicidas, setIdAnalisisHerbicidas] = useState(null);
     const [idAnalisisBash, setIdAnalisisBash] = useState(null);
+    const [idAnalisisUltimoAnalisis, setIdAnalisisUltimoAnalisis] = useState(null);
     const selectedAnalysisTypeRef = useRef();
-    const [socket, setSocket] = useState(null);
     const [progressMessage, setProgressMessage] = useState("");
     const [selectedZipFile, setSelectedZipFile] = useState(null);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [showProgressBar, setShowProgressBar] = useState(false);
     const [datosMapeo, setDatosMapeo] = useState([]);
-    const [ResponsableAps, setResponsableAps] = useState(null);
-    const [tiempoTotalAps, setTiempoTotalAps] = useState(null);
-    const [fechaInicioCosechaAps, setFechaInicioCosechaAps] = useState(null);
-    const [fechaFinCosechaAps, setFechaFinCosechaAps] = useState(null);
-    const [nombreOperadorAps, setNombreOperadorAps] = useState(null);
-    const [equipoAps, setEquipoAps] = useState(null);
-    const [horaInicioAps, setHoraInicioAps] = useState(null);
-    const [horaFinalAps, setHoraFinalAps] = useState(null);
-    const [eficienciaAps, setEficienciaAps] = useState(null);
-    const [nombreFincaAps, setNombreFincaAps] = useState(null);
-    const [codigoParcelasAps, setCodigoParcelasAps] = useState(null);
-    const [codigoLotesAps, setCodigoLotesAps] = useState(null);
-    const [dosisTeorica, setDosisTeoricaAps] = useState(null);
-    const [humedadDelCultivoAps, setHumedadDelCultivoAps] = useState(null);
-    const [tchEstimado, setTchEstimadoAps] = useState(null);
     const [areaAplicada, setAreaAplicada] = useState(0);
     const [porcentajeVariacion, setPorcentajeVariacion] = useState(0);
     const [areaNoAplicada, setAreaNoAplicada] = useState(0);
     const [promedioVelocidad, setPromedioVelocidad] = useState(0);
     const [promedioAltura, setPromedioAltura] = useState(0);
     const [promedioDosisReal, setDosisReal] = useState(0);
-    const [productoAps, setProductoAps] = useState(null);
-    const [nombreResponsableCm, setNombreResponsableCm] = useState(null);
-    const [fechaInicioCosechaCm, setFechaInicioCosechaCm] = useState(null);
-    const [fechaFinCosechaCm, setFechaFinCosechaCm] = useState(null);
-    const [nombreFincaCm, setNombreFincaCm] = useState(null);
-    const [codigoParcelaResponsableCm, setCodigoParcelaResponsableCm] = useState(null);
-    const [nombreOperadorCm, setNombreOperadorCm] = useState(null);
-    const [nombreMaquinaCm, setNombreMaquinaCm] = useState(null);
-    const [actividadCm, setActividadCm] = useState(null);
     const [areaNetaCm, setAreaNetaCm] = useState(null);
     const [areaBrutaCm, setAreaBrutaCm] = useState(null);
     const [diferenciaDeAreaCm, setDiferenciaDeAreaCm] = useState(null);
-    const [horaInicioCm, setHoraInicioCm] = useState(null);
-    const [horaFinalCm, setHoraFinalCm] = useState(null);
-    const [tiempoTotalActividadCm, setTiempoTotalActividadCm] = useState(null);
     const [eficienciaCm, setEficienciaCm] = useState(null);
     const [promedioVelocidadCm, setPromedioVelocidadCm] = useState(null);
     const [porcentajeAreaPilotoCm, setPorcentajeAreaPilotoCm] = useState(null);
-    const [consumoCombustibleCm, setConsumoCombustibleCm] = useState(null);
     const [areaSobreAplicada, setAreaSobreAplicada] = useState(0);
-    const [calidadGpsCm, setCalidadGpsCm] = useState(null);
-    const [rpmCm, setRpmCm] = useState(null);
-    const [tchCm, setTchCm] = useState(null);
-    const [tahCm, setTahCm] = useState(null);
-    const [presionCortadorBase, setPresionCortadorBase] = useState(null);
     const [porcentajeAreaAutoTrackerCm, setPorcentajeAreaAutoTrackerCm] = useState(null);
     const [porcentajeModoCortadorBaseCm, setPorcentajeModoCortadorBaseCm] = useState(null);
-    const [responsableFertilizacion, setResponsableFertilizacion] = useState(null);
-    const [fechaInicioFertilizacion, setFechaInicioFertilizacion] = useState(null);
-    const [fechaFinalFertilizacion, setFechaFinalFertilizacion] = useState(null);
-    const [nombreFincaFertilizacion, setNombreFincaFertilizacion] = useState(null);
-    const [operadorFertilizacion, setOperadorFertilizacion] = useState(null);
-    const [equipoFertilizacion, setEquipoFertilizacion] = useState(null);
-    const [actividadFertilizacion, setActividadFertilizacion] = useState(null);
-    const [areaNetaFertilizacion, setAreaNetaFertilizacion] = useState(null);
-    const [areaBrutaFertilizacion, setAreaBrutaFertilizacion] = useState(null);
-    const [diferenciaAreaFertilizacion, setDiferenciaAreaFertilizacion] = useState(null);
-    const [horaInicioFertilizacion, setHoraInicioFertilizacion] = useState(null);
-    const [horaFinalFertilizacion, setHoraFinalFertilizacion] = useState(null);
-    const [tiempoTotalFertilizacion, setTiempoTotalFertilizacion] = useState(null);
-    const [eficienciaFertilizacion, setEficienciaFertilizacion] = useState(null);
-    const [promedioDosisRealFertilizacion, setPromedioDosisRealFertilizacion] = useState(null);
-    const [dosisTeoricaFertilizacion, setDosisTeoricaFertilizacion] = useState(null);
-    const [responsableHerbicidas, setResponsableHerbicidas] = useState(null);
-    const [fechaHerbicidas, setFechaHerbicidas] = useState(null);
-    const [nombreFincaHerbicidas, setNombreFincaHerbicidas] = useState(null);
-    const [parcelaHerbicidas, setParcelaHerbicidas] = useState(null);
-    const [operadorHerbicidas, setOperadorHerbicidas] = useState(null);
-    const [equipoHerbicidas, setEquipoHerbicidas] = useState(null);
-    const [actividadHerbicidas, setActividadHerbicidas] = useState(null);
-    const [areaNetaHerbicidas, setAreaNetaHerbicidas] = useState(null);
-    const [areaBrutaHerbicidas, setAreaBrutaHerbicidas] = useState(null);
-    const [diferenciaDeAreaHerbicidas, setDiferenciaDeAreaHerbicidas] = useState(null);
-    const [horaInicioHerbicidas, setHoraInicioHerbicidas] = useState(null);
-    const [horaFinalHerbicidas, setHoraFinalHerbicidas] = useState(null);
-    const [tiempoTotalHerbicidas, setTiempoTotalHerbicidas] = useState(null);
-    const [eficienciaHerbicidas, setEficienciaHerbicidas] = useState(null);
-    const [promedioVelocidadHerbicidas, setPromedioVelocidadHerbicidas] = useState(null);
-    const [datosCosechaMecanica, setDatosCosechaMecanica] = useState({});
+
+    const [datosAnalisis, setDatosAnalisis] = useState({});
     const [isKMLFile, setIsKMLFile] = useState(false);
     const [activarEdicionInteractiva, setActivarEdicionInteractiva] = useState(true);
     const [selectedAnalysisType, setSelectedAnalysisType] = useState('');
-    const [datosCargadosAps, setDatosCargadosAps] = useState(false);
-    const [datosCargadosCosechaMecanica, setDatosCargadosCosechaMecanica] = useState(false);
-    const [datosCargadosFertilizacion, setDatosCargadosFertilizacion] = useState(false);
-    const [datosCargadosHerbicidas, setDatosCargadosHerbicidas] = useState(false);
     const dashboardRef = useRef();
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [uploadedCsvFileName, setUploadedCsvFileName] = useState('');
     const [uploadedZipFileName, setUploadedZipFileName] = useState('');
-    const [limpiarMapa, setLimpiarMapa] = useState(false);
     const [execBashEnabled, setExecBashEnabled] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(0);
     const [polygonsData, setPolygonsData] = useState([]);
@@ -214,353 +85,114 @@ const Dashboard = ({ isSidebarOpen }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-
-    const analysisTemplates = {
-        APLICACIONES_AEREAS: "/templates/APLICACIONES_AEREAS.csv",
-        COSECHA_MECANICA: "/templates/COSECHA_MECANICA.csv",
-        FERTILIZACION: "/templates/FERTILIZACION.csv",
-        HERBICIDAS: "/templates/HERBICIDAS.csv"
-    };
-    const CancelToken = axios.CancelToken;
-    let cancel;
-
-    const resetData = () => {
-        setDatosMapeo([]);
-        setSelectedFile(null);
-        setSelectedZipFile(null);
-        setProcessingFinished(false);
-        setIdAnalisisBash(null);
-        setUploadedCsvFileName('');
-        setUploadedZipFileName('');
-    };
+    const socketContext = useSocket();
+    const { socket, socketSessionID } = socketContext;
+    const [indicadores, setIndicadores] = useState('');
+    const [imgLaflet, setImgLaflet] = useState(null);
+    const { selectedSidebarOption } = useContext(SidebarContext);
+    const [filterOptions, setFilterOptions] = useState([]);
+    const [analysisOptions, setAnalysisOptions] = useState([]);
+    const [ultimoAnalisis, setUltimoAnalisis] = useState(null);
+    const [imageUrl, setImageUrl] = useState('');
+    const [northWestCoords, setNorthWestCoords] = useState(null);
+    const [southEastCoords, setSouthEastCoords] = useState(null);
+    const [conteoPalmas, setConteoPalmas] = useState(0);
 
     useEffect(() => {
-        let isMounted = true;
-        const fetchDataHerbicidas = async () => {
-            if (!idAnalisisHerbicidas) return;
-            try {
-                await Promise.all([
-                    obtenerResponsableHerbicidas(idAnalisisHerbicidas),
-                    obtenerFechaHerbicidas(idAnalisisHerbicidas),
-                    obtenerNombreFincaHerbicidas(idAnalisisHerbicidas),
-                    obtenerParcelaHerbicidas(idAnalisisHerbicidas),
-                    obtenerOperadorHerbicidas(idAnalisisHerbicidas),
-                    obtenerEquipoHerbicidas(idAnalisisHerbicidas),
-                    obtenerActividadHerbicidas(idAnalisisHerbicidas),
-                    obtenerAreaNetaHerbicidas(idAnalisisHerbicidas),
-                    obtenerAreaBrutaHerbicidas(idAnalisisHerbicidas),
-                    obtenerDiferenciaDeAreaHerbicidas(idAnalisisHerbicidas),
-                    obtenerHoraInicioHerbicidas(idAnalisisHerbicidas),
-                    obtenerHoraFinalHerbicidas(idAnalisisHerbicidas),
-                    obtenerTiempoTotalHerbicidas(idAnalisisHerbicidas),
-                    obtenerEficienciaHerbicidas(idAnalisisHerbicidas),
-                    obtenerPromedioVelocidadHerbicidas(idAnalisisHerbicidas)
-                ]);
-                if (isMounted) {
-                    setDatosCargadosHerbicidas(true);
-                }
-            } catch (error) {
-                console.error("Error al cargar datos de Herbicidas:", error);
-            }
-        };
-        fetchDataHerbicidas();
-        return () => {
-            isMounted = false;
-        };
-    }, [idAnalisisHerbicidas]);
-
-    useEffect(() => {
-        const fetchDataFertilizacion = async () => {
-            if (idAnalisisFertilizacion) {
-                try {
-                    await Promise.all([
-                        obtenerResponsableFertilizacion(idAnalisisFertilizacion),
-                        obtenerFechaInicioFertilizacion(idAnalisisFertilizacion),
-                        obtenerFechaFinalFertilizacion(idAnalisisFertilizacion),
-                        obtenerNombreFincaFertilizacion(idAnalisisFertilizacion),
-                        obtenerOperadorFertilizacion(idAnalisisFertilizacion),
-                        obtenerEquipoFertilizacion(idAnalisisFertilizacion),
-                        obtenerActividadFertilizacion(idAnalisisFertilizacion),
-                        obtenerAreaNetaFertilizacion(idAnalisisFertilizacion),
-                        obtenerAreaBrutaFertilizacion(idAnalisisFertilizacion),
-                        obtenerDiferenciaAreaFertilizacion(idAnalisisFertilizacion),
-                        obtenerHoraInicioFertilizacion(idAnalisisFertilizacion),
-                        obtenerHoraFinalFertilizacion(idAnalisisFertilizacion),
-                        obtenerTiempoTotalFertilizacion(idAnalisisFertilizacion),
-                        obtenerEficienciaFertilizacion(idAnalisisFertilizacion),
-                        obtenerPromedioDosisRealFertilizacion(idAnalisisFertilizacion),
-                        obtenerDosisTeoricaFertilizacion(idAnalisisFertilizacion)
-                    ]);
-                    setDatosCargadosFertilizacion(true);
-                } catch (error) {
-                    console.error("Error al cargar datos de Fertilización:", error);
-                }
-            }
-        };
-        fetchDataFertilizacion();
-    }, [idAnalisisFertilizacion]);
-
-    useEffect(() => {
-        const fetchDataCosechaMecanica = async () => {
-            try {
-                const datos = await Promise.all([
-                    obtenerNombreResponsableCm(idAnalisisCosechaMecanica, setNombreResponsableCm),
-                    obtenerFechaInicioCosechaCm(idAnalisisCosechaMecanica, setFechaInicioCosechaCm),
-                    obtenerFechaFinCosechaCm(idAnalisisCosechaMecanica, setFechaFinCosechaCm),
-                    obtenerNombreFincaCm(idAnalisisCosechaMecanica, setNombreFincaCm),
-                    obtenerCodigoParcelaResponsableCm(idAnalisisCosechaMecanica, setCodigoParcelaResponsableCm),
-                    obtenerNombreOperadorCm(idAnalisisCosechaMecanica, setNombreOperadorCm),
-                    obtenerNombreMaquinaCm(idAnalisisCosechaMecanica, setNombreMaquinaCm),
-                    obtenerActividadCm(idAnalisisCosechaMecanica, setActividadCm),
-                    obtenerHoraInicioCm(idAnalisisCosechaMecanica, setHoraInicioCm),
-                    obtenerHoraFinalCm(idAnalisisCosechaMecanica, setHoraFinalCm),
-                    obtenerTiempoTotalActividadCm(idAnalisisCosechaMecanica, setTiempoTotalActividadCm),
-                    obtenerCalidadGpsCm(idAnalisisCosechaMecanica, setCalidadGpsCm),
-                    obtenerPromedioVelocidadCm(idAnalisisCosechaMecanica, setPromedioVelocidadCm),
-                    obtenerConsumoCombustibleCm(idAnalisisCosechaMecanica, setConsumoCombustibleCm),
-                    obtenerPresionCortadorBaseCm(idAnalisisCosechaMecanica, setPresionCortadorBase),
-                    obtenerTahCm(idAnalisisCosechaMecanica, setTahCm),
-                    obtenerRpmCm(idAnalisisCosechaMecanica, setRpmCm),
-                    obtenerTchCm(idAnalisisCosechaMecanica, setTchCm)
-                ]).then(results => ({
-                    nombreResponsable: results[0],
-                    fechaInicioCosecha: results[1],
-                    fechaFinCosecha: results[2],
-                    nombreFinca: results[3],
-                    codigoParcelaResponsable: results[4],
-                    nombreOperador: results[5],
-                    nombreMaquina: results[6],
-                    actividad: results[7],
-                    horaInicio: results[8],
-                    horaFin: results[9],
-                    tiempoTotalActividad: results[10],
-                    calidadGps: results[11],
-                    promedioVelocidad: results[12],
-                    consumoCombustible: results[13],
-                    presionCortadorBase: results[14],
-                    tah: results[15],
-                    rpm: results[16],
-                    tch: results[17]
-                }));
-                setDatosCosechaMecanica(datos);
-                setDatosCargadosCosechaMecanica(true);
-                axios.post(`${API_BASE_URL}dashboard/cosecha_mecanica_analisis/${idAnalisisCosechaMecanica}`, {datos: datos})
-                    .then(response => {
-
-                    })
-                    .catch(error => {
-                        console.error("Error al enviar datos de cosecha mecánica", error);
-                    });
-                setDatosCargadosCosechaMecanica(true);
-            } catch (error) {
-                console.error("Error al cargar datos de Cosecha:", error);
-            }
-        };
-        if (idAnalisisCosechaMecanica) {
-            fetchDataCosechaMecanica();
-        }
-    }, [idAnalisisCosechaMecanica]);
-
-    useEffect(() => {
-        if (!idAnalisisAps) return;
-        const fetchDataAps = async () => {
-            try {
-                await Promise.all([
-                    obtenerResponsableAps(idAnalisisAps, setResponsableAps),
-                    obtenerFechaInicioCosechaAps(idAnalisisAps, setFechaInicioCosechaAps),
-                    obtenerTiempoTotalAps(idAnalisisAps, setTiempoTotalAps),
-                    obtenerFechaFinCosechaAps(idAnalisisAps, setFechaFinCosechaAps),
-                    obtenerHoraInicioAps(idAnalisisAps, setHoraInicioAps),
-                    obtenerHoraFinalAps(idAnalisisAps, setHoraFinalAps),
-                    obtenerNombreOperadorAps(idAnalisisAps, setNombreOperadorAps),
-                    obtenerEquipoAps(idAnalisisAps, setEquipoAps),
-                    obtenerEficienciaAps(idAnalisisAps, setEficienciaAps),
-                    obtenerNombreFincaAps(idAnalisisAps, setNombreFincaAps),
-                    obtenerCodigoParcelasAps(idAnalisisAps, setCodigoParcelasAps),
-                    obtenerCodigoLotesAps(idAnalisisAps, setCodigoLotesAps),
-                    obtenerDosisTeoricaAps(idAnalisisAps, setDosisTeoricaAps),
-                    obtenerHumedadDelCultivoAps(idAnalisisAps, setHumedadDelCultivoAps),
-                    obtenerTchEstimado(idAnalisisAps, setTchEstimadoAps),
-                    obtenerProductoAps(idAnalisisAps, setProductoAps)
-                ]);
-                setDatosCargadosAps(true);
-            } catch (error) {
-                console.error("Error al cargar datos de APS:", error);
-            }
-        };
-        fetchDataAps();
-    }, [idAnalisisAps]);
-
-    useEffect(() => {
-        const newSocket = io(API_BASE_URL);
-        setSocket(newSocket);
-        newSocket.on('progressUpdate', (data) => {
-            const progressNumber = Number(data.progress);
-            const message = data.message;
-            setProgress(progressNumber);
-            setProgressMessage(message);
-            setShowProgressBar(progressNumber < 100);
-            if (progressNumber === 80) {
-                newSocket.emit('progressUpdate', {progress: 100, message: "Finalizado"});
-                setShowProgressBar(false);
-            }
-        });
-        return () => {
-            newSocket.off('progressUpdate');
-            newSocket.disconnect();
-        };
+        obtenerLoteMasReciente(setLoading, setPolygonsData, userData.ID_USUARIO);
     }, []);
 
     useEffect(() => {
+        return () => {
+            setDatosMapeo([]);
+            setSelectedFile(null);
+        };
+    }, [setDatosMapeo, setSelectedFile]);
+
+
+
+    useEffect(() => {
         if (socket) {
-            const handleDatosInsertados = async () => {
-                switch (selectedAnalysisTypeRef.current) {
-                    case 'APLICACIONES_AEREAS':
-                        await cargaDatosAps();
-                        break;
-                    case 'COSECHA_MECANICA':
-                        await cargaDatosCosechaMecanica();
-                        break;
-                    case 'FERTILIZACION':
-                        await cargaDatosFertilizacion();
-                        break;
-                    case 'HERBICIDAS':
-                        await cargaDatosHerbicidas();
-                        break;
-                    default:
-                        toast.warn('Debes seleccionar un tipo de análisis.', {
-                            position: "top-right",
-                            autoClose: 5000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                        });
-                        break;
+            socket.on(`${socketSessionID}:progressUpdate`, (data) => {
+                const progressNumber = Number(data.progress);
+                const message = data.message;
+                setProgress(progressNumber);
+                setProgressMessage(message);
+                setShowProgressBar(progressNumber < 100);
+                if (progressNumber === 80) {
+                    socket.emit(`${socketSessionID}:progressUpdate`, {progress: 100, message: "Finalizado"});
+                    setShowProgressBar(false);
                 }
-            };
-            socket.on('datosInsertados', handleDatosInsertados);
+            });
+
             return () => {
-                if (socket) {
-                    socket.off('datosInsertados', handleDatosInsertados);
-                }
+                socket.off(`${socketSessionID}:progressUpdate`);
             };
         }
     }, [socket]);
 
     useEffect(() => {
-        const shouldEnableExecBash = () => {
-            if (selectedAnalysisType === 'COSECHA_MECANICA' && selectedFile) {
-                return true;
-            }
-            if (selectedAnalysisType === 'APLICACIONES_AEREAS' && selectedZipFile) {
-                return true;
-            }
-            return false;
-        };
-        setExecBashEnabled(shouldEnableExecBash());
+        if (socket && socket.on) {
+            socket.on(`${socketSessionID}:dataInsertion`, handleDatosInsertados);
+
+            return () => {
+                socket.off(`${socketSessionID}:dataInsertion`, handleDatosInsertados);
+            };
+        }
+    }, [socket, socketSessionID]);
+
+
+
+    useEffect(() => {
+        const config = analysisConfig[selectedAnalysisType];
+
+        if (config && config.fetchData) {
+
+            config.fetchData(idAnalisisUltimoAnalisis, setDatosAnalisis);
+        }
+    }, [idAnalisisCosechaMecanica, idAnalisisAps, idAnalisisHerbicidas, idAnalisisFertilizacion]);
+
+
+    useEffect(() => {
+        const config = analysisConfig[selectedAnalysisType];
+        if (config && config.shouldEnableExecBash) {
+            setExecBashEnabled(config.shouldEnableExecBash(selectedFile || selectedZipFile));
+        } else {
+            setExecBashEnabled(false);
+        }
     }, [selectedAnalysisType, selectedFile, selectedZipFile]);
 
-    const cargaDatosHerbicidas = async () => {
-        if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
-            try {
-                const response = await ultimoAnalisis();
-                if (response && response.data && response.data.ID_ANALISIS) {
-                    setIdAnalisisHerbicidas(response.data.ID_ANALISIS);
-                } else {
-                    console.error("Respuesta del último análisis no contiene datos esperados");
-                }
-            } catch (error) {
-                console.error("Error al obtener último análisis:", error);
-            }
-        }
-    };
 
-    const cargaDatosFertilizacion = async () => {
-        if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
-            try {
-                const response = await ultimoAnalisis();
-                if (response && response.data && response.data.ID_ANALISIS) {
-                    setIdAnalisisFertilizacion(response.data.ID_ANALISIS);
-                } else {
-                    console.error("Respuesta del último análisis no contiene datos esperados");
-                }
-            } catch (error) {
-                console.error("Error al obtener último análisis:", error);
-            }
-        }
-    };
+    useEffect(() => {
+        selectedAnalysisTypeRef.current = selectedAnalysisType;
 
-    const cargaDatosCosechaMecanica = async () => {
-        if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
-            try {
-                const response = await ultimoAnalisis();
-                if (response && response.data && response.data.ID_ANALISIS) {
-                    setIdAnalisisCosechaMecanica(response.data.ID_ANALISIS);
-                } else {
-                    console.error("Respuesta del último análisis no contiene datos esperados");
-                }
-            } catch (error) {
-                console.error("Error al obtener último análisis:", error);
-            }
-        }
-    };
+        const config = analysisConfig[selectedAnalysisType];
+        const id = config ? config.id : null;
+        setIdAnalisisBash(id);
+    }, [selectedAnalysisType, userData.ID_USUARIO]);
 
-    const cargaDatosAps = async () => {
-        if (selectedAnalysisTypeRef.current && userData.ID_USUARIO) {
-            try {
-                const response = await ultimoAnalisis();
-                if (response && response.data && response.data.ID_ANALISIS) {
-                    setIdAnalisisAps(response.data.ID_ANALISIS);
-                } else {
-                    console.error("Respuesta del último análisis no contiene datos esperados");
-                }
-            } catch (error) {
-                console.error("Error al obtener último análisis:", error);
-            }
-        }
-    };
+    useEffect(() => {
+        const config = sidebarOptionsConfig[selectedSidebarOption];
 
-    const insertarUltimoAnalisis = async () => {
-        if (selectedAnalysisTypeRef.current !== null || selectedAnalysisTypeRef.current !== '') {
-            return await axios.post(`${API_BASE_URL}dashboard/insert_analisis/${nombreAnalisis(idAnalisisBash)}/${userData.ID_USUARIO}`)
-        } else {
-            toast.warn('No se pudo insertar el análisis', {
-                position: "top-right",
-                autoClose: 5000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-            });
+        if (config) {
+            setAnalysisOptions(config.analysisOptions || []);
+            setFilterOptions(config.filterOptions || []);
         }
-    };
+    }, [selectedSidebarOption]);
 
-    const ultimoAnalisis = async () => {
-        if (selectedAnalysisTypeRef.current !== null && selectedAnalysisTypeRef.current !== '') {
-            try {
-                const response = await axios.get(`${API_BASE_URL}dashboard/ultimo_analisis/${selectedAnalysisTypeRef.current}/${userData.ID_USUARIO}`);
-                const {data} = response;
-                const {_id, ...rest} = data;
-                const updatedData = {
-                    ...rest,
-                    ID_ANALISIS: _id
-                };
-                return {...response, data: updatedData};
-            } catch (error) {
-                toast.error('Error al obtener el último análisis.', {
-                    position: "top-right",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                });
-                throw error;
-            }
+    useEffect(() => {
+        if(idAnalisisUltimoAnalisis){
+            setIdAnalisisAps(idAnalisisUltimoAnalisis);
+            setIdAnalisisCosechaMecanica(idAnalisisUltimoAnalisis);
+            setIdAnalisisFertilizacion(idAnalisisUltimoAnalisis);
+            setIdAnalisisHerbicidas(idAnalisisUltimoAnalisis);
+        }
+    }, [idAnalisisUltimoAnalisis]);
+
+    const handleDatosInsertados = async () => {
+        const config = analysisConfig[selectedAnalysisTypeRef.current];
+        if (config && config.cargaDatos) {
+            setUltimoAnalisis(await config.cargaDatos(userData, selectedAnalysisTypeRef, setIdAnalisisUltimoAnalisis));
         } else {
             toast.warn('Debes seleccionar un tipo de análisis.', {
                 position: "top-right",
@@ -573,157 +205,39 @@ const Dashboard = ({ isSidebarOpen }) => {
             });
         }
     };
-
-    useEffect(() => {
-        obtenerLoteMasReciente();
-        setProgressIteracion(true);
-        return () => {
-            if (cancel) cancel();
-        };
-    }, []);
-
-    useEffect(() => {
-        return () => {
-            setDatosMapeo([]);
-            setSelectedFile(null);
-        };
-    }, [setDatosMapeo, setSelectedFile]);
-
-    useEffect(() => {
-        selectedAnalysisTypeRef.current = selectedAnalysisType;
-        let id;
-        switch (selectedAnalysisType) {
-            case 'APLICACIONES_AEREAS':
-                id = 1;
-                break;
-            case 'COSECHA_MECANICA':
-                id = 2;
-                break;
-            case 'HERBICIDAS':
-                id = 3;
-                break;
-            case 'FERTILIZACION':
-                id = 4;
-                break;
-            default:
-                id = null;
-        }
-        setIdAnalisisBash(id);
-    }, [selectedAnalysisType, userData.ID_USUARIO]);
-
-
     function nombreAnalisis(idAnalisis) {
-        switch (idAnalisis) {
-            case 1:
-                return "APLICACIONES_AEREAS";
-            case 2:
-                return "COSECHA_MECANICA";
-            case 3:
-                return "HERBICIDAS";
-            case 4:
-                return "FERTILIZACION";
-            default:
-                return "";
-        }
+        const entry = Object.entries(analysisConfig).find(([, config]) => config.id === idAnalisis);
+        return entry ? entry[0] : "";
     }
 
-    const manejarSubidaArchivo = async (event) => {
-        if (!event.target.files || event.target.files.length === 0) {
-            console.error("No se seleccionó ningún archivo");
-            return;
-        }
-
-        setTitleLoader("Subiendo Datos");
-        let archivo = event.target.files[0];
-        setOpenSnackbar(true);
-        setUploadedCsvFileName(archivo.name);
-
+    const handleFileUpload = async (event) => {
         try {
-            const idAnalisis = await insertarUltimoAnalisis();
-            setIdMax(idAnalisis.data.idAnalisis);
-            const isExcel = archivo.name.endsWith('.xlsx') || archivo.name.endsWith('.xls');
-            let formData = new FormData();
-            formData.append('csv', archivo);
-            formData.append('idTipoAnalisis', idAnalisis.data.idAnalisis);
-            formData.append('tipoAnalisis', nombreAnalisis(idAnalisisBash));
-            formData.append('isExcel', isExcel);
-
-            setShowProgressBar(true);
-            setProgress(30);
-            setProgressMessage("Procesando los datos ingresados");
-            archivo = null;
-
-            const response = await axios.post(`${API_BASE_URL}dashboard/procesarCsv/`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-                cancelToken: new CancelToken(function executor(c) {
-                    cancel = c;
-                }),
-            });
-
-            setProgress(50);
-            formData = null;
-
-            const data = response.data;
-            setProgress(70);
-            const csvBlob = new Blob([Papa.unparse(data)], {type: 'text/csv'});
-            const csvFile = new File([csvBlob], 'procesado.csv');
-            setSelectedFile(csvFile);
-            setDatosMapeo(data.data);
-            setProgress(100);
-            setShowProgressBar(false);
+            // Primero subir el archivo y procesar
+            await manejarSubidaArchivo(
+                event,
+                setTitleLoader,
+                setOpenSnackbar,
+                setUploadedCsvFileName,
+                selectedAnalysisTypeRef,
+                idAnalisisBash,
+                nombreAnalisis,
+                userData.ID_USUARIO,
+                setIdMax,
+                setSelectedFile,
+                setDatosMapeo,
+                setProgress,
+                setShowProgressBar
+            );
         } catch (error) {
-            console.error('Se produjo un error al intentar subir el archivo:', error);
-
-            if (error.response) {
-                console.error('Respuesta del servidor:', error.response);
-                console.error('Headers:', error.response.headers);
-                console.error('Status:', error.response.status);
-                toast.warn(`Error en fila ${error.response.data.fila}: ${error.response.data.error}`, {
-                    position: "top-right",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                });
-            } else if (error.request) {
-                console.error('No se recibió respuesta del servidor:', error.request);
-                toast.warn('Se produjo un error al enviar el archivo. No se recibió respuesta del servidor.', {
-                    position: "top-right",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                });
-            } else {
-                console.error('Error al configurar la solicitud:', error.message);
-                toast.warn('Se produjo un error al procesar el archivo.', {
-                    position: "top-right",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                });
-            }
-
-            setShowProgressBar(false);
-            console.error('Configuración de la solicitud:', error.config);
+            console.error("Error en handleFileUpload:", error);
         }
     };
 
     const execBash = async () => {
+        setShowProgressBar(true);
         setTitleLoader("Cargando Análisis");
-        let validar = "ok";
-        if (socket) {
-            socket.emit('progressUpdate', {progress: 0, message: "Iniciando proceso"});
-        }
+        const idUsuario = userData.ID_USUARIO;
+
         if (!idAnalisisBash) {
             toast.error('Debe seleccionar un análisis antes de continuar', {
                 position: toast.POSITION.TOP_RIGHT,
@@ -733,149 +247,53 @@ const Dashboard = ({ isSidebarOpen }) => {
             return;
         }
 
-        // Validar que selectedFile esté presente
         if (!selectedFile) {
-            console.warn('No se ha seleccionado un archivo');
             ejecutarProcesoSinArchivo();
             return;
         }
 
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const content = e.target.result;
-            if (idAnalisisBash === 2) {
-                const lines = content.split(/\r\n|\n/).length - 1;
-                const tamanoLote = 10000;
-                let offset = 0;
-                let esPrimeraIteracion = true;
-                setLoadingProgress(0);
-
-
-                while (offset < lines) {
-                    const formData = new FormData();
-                    formData.append('csv', selectedFile);
-                    formData.append('polygon', selectedZipFile);
-                    formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
-
-                    try {
-                        const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}/${lines}`, formData, {
-                            headers: {
-                                'Content-Type': 'multipart/form-data',
-                            },
-                        });
-
-                        const progressIncrement = Math.min((offset + tamanoLote) / lines * 100, 100);
-                        setLoadingProgress(progressIncrement);
-
-                        offset += tamanoLote;
-                        if (esPrimeraIteracion) {
-                            toast.info('Cargando datos, por favor espere...', {
-                                position: toast.POSITION.TOP_RIGHT,
-                                autoClose: 5000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                            });
-                        }
-                        esPrimeraIteracion = false;
-                    } catch (error) {
-                        console.error("Error al procesar el lote:", error);
-                        break;
-                    }
-                }
-                setLoadingProgress(100);
-                toast.success('Datos cargados exitosamente.', {
-                    position: toast.POSITION.TOP_RIGHT,
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                });
-                setProcessingFinished(true);
-            } else {
-                let esPrimeraIteracion = true;
-                const formData = new FormData();
-                formData.append('csv', selectedFile);
-                formData.append('polygon', selectedZipFile);
-                formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
-                formData.append('esKmlInteractivo', activarEdicionInteractiva ? 'true' : 'false');
-                const lines = content.split(/\r\n|\n/).length - 1;
-                let offset = 0;
-                try {
-                    const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}/${lines}`, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                        },
-                    });
-                } catch (error) {
-                    console.error("Error al procesar el lote de Aplicaciones Áreas");
-                }
-            }
-            setProcessingFinished(true);
-        };
-        reader.onerror = (error) => console.log(error);
-        reader.readAsText(selectedFile);
-    };
-
-    const ejecutarProcesoSinArchivo = async () => {
-        let validar = "ok";
-        if (idAnalisisBash === 2) {
-            const formData = new FormData();
-            formData.append('esPrimeraIteracion', 'true');
-
-            try {
-                const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/0/${validar}/0`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                setProcessingFinished(true);
-            } catch (error) {
-                console.error("Error al procesar el lote:", error);
-            }
-        } else {
-            const formData = new FormData();
-            formData.append('esPrimeraIteracion', 'true');
-            formData.append('esKmlInteractivo', activarEdicionInteractiva ? 'true' : 'false');
-
-            try {
-                const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/0/${validar}/0`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                setProcessingFinished(true);
-            } catch (error) {
-                console.error("Error al procesar el lote de Aplicaciones Áreas");
-            }
+        if (idAnalisisBash === APLICACIONES_AEREAS) {
+            await ejecutarProcesoAps({
+                selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID, activarEdicionInteractiva, setShowProgressBar, setProgress, setTitleLoader
+            });
+        } else if (idAnalisisBash === COSECHA_MECANICA) {
+            await ejecutarProcesoCosechaMecanica({
+                selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID, setShowProgressBar, setProgress, setTitleLoader, setLoadingProgress
+            });
+        } else if (idAnalisisBash === HERBICIDAS) {
+            await ejecutarProcesoHerbicidas({
+                selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID
+            });
+        } else if (idAnalisisBash === FERTILIZACION) {
+            await ejecutarProcesoFertilizacion({
+                selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID
+            });
         }
     };
 
-    const manejarSubidaZip = async (event) => {
-        const file = event.target.files[0];
-        setSelectedZipFile(file);
-        if (file) {
-            setUploadedZipFileName(file.name);
-            setOpenSnackbar(true);
-            try {
-                const zip = new JSZip();
-                const zipContent = await zip.loadAsync(file);
-                let foundKML = false;
-                zipContent.forEach((relativePath, zipEntry) => {
-                    if (zipEntry.name.endsWith('.kml')) {
-                        foundKML = true;
-                    }
-                });
-                setIsKMLFile(foundKML);
-            } catch (error) {
-                console.error('Error al procesar el archivo ZIP:', error);
-                setIsKMLFile(false);
-            }
+    const ejecutarProcesoSinArchivo = async () => {
+        const idUsuario = userData.ID_USUARIO;
+
+        if (idAnalisisBash === APLICACIONES_AEREAS) {
+            await ejecutarProcesoSinArchivoAps({
+                idMax, idUsuario, setProcessingFinished
+            });
+        } else if (idAnalisisBash === COSECHA_MECANICA) {
+            await ejecutarProcesoSinArchivoCosechaMecanica({
+                idMax, idUsuario, setProcessingFinished
+            });
+        } else if (idAnalisisBash === HERBICIDAS) {
+            await ejecutarProcesoSinArchivoHerbicidas({
+                idMax, idUsuario, setProcessingFinished
+            });
+        } else if (idAnalisisBash === FERTILIZACION) {
+            await ejecutarProcesoSinArchivoFertilizacion({
+                idMax, idUsuario, setProcessingFinished
+            });
+        } else if (idAnalisisBash === CONTEO_PALMA) {
+            await ejecutarProcesoConteoPalmas({
+                selectedZipFile, setProcessingFinished, setImageUrl, setNorthWestCoords, setSouthEastCoords, setConteoPalmas, socket, socketSessionID, setProgress, setTitleLoader, setShowProgressBar
+            });
         }
     };
 
@@ -919,20 +337,6 @@ const Dashboard = ({ isSidebarOpen }) => {
     };
 
 
-    const obtenerLoteMasReciente = async () => {
-        setLoading(true);
-        try {
-            const response = await axios.get(`${API_BASE_URL}configuration/lotesIniciales/masReciente/${userData.ID_USUARIO}`);
-            const geojson = response.data.content;
-            setPolygonsData(geojson.features);
-
-        } catch (error) {
-            console.error("Error al obtener el archivo más reciente", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" height="65vh">
@@ -941,6 +345,13 @@ const Dashboard = ({ isSidebarOpen }) => {
         );
     }
 
+    const handleSendDashboardData = async () => {
+        if(imgLaflet){
+            await sendDashboardData(imgLaflet, indicadores);
+        }else{
+            console.warn("No se ha generado el mapa");
+        }
+    }
 
     // Generar mapeos
 
@@ -963,12 +374,10 @@ const Dashboard = ({ isSidebarOpen }) => {
                         <ToolbarComponent
                             selectedAnalysisType={selectedAnalysisType}
                             handleAnalysisTypeChange={handleAnalysisTypeChange}
-                            manejarSubidaArchivo={manejarSubidaArchivo}
-                            manejarSubidaZip={manejarSubidaZip}
+                            manejarSubidaArchivo={handleFileUpload}
                             uploadedCsvFileName={uploadedCsvFileName}
                             uploadedZipFileName={uploadedZipFileName}
                             execBash={execBash}
-                            analysisTemplates={analysisTemplates}
                             activarEdicionInteractiva={activarEdicionInteractiva}
                             setActivarEdicionInteractiva={setActivarEdicionInteractiva}
                             isKMLFile={isKMLFile}
@@ -985,9 +394,14 @@ const Dashboard = ({ isSidebarOpen }) => {
                             clearAllLotes={clearAllLotes}
                             openFilterDialog={openFilterDialog}
                             processingFinished={processingFinished}
-
+                            handleSendDashboardData={handleSendDashboardData}
+                            analysisOptions={analysisOptions}
+                            setSelectedZipFile={setSelectedZipFile}
+                            setUploadedZipFileName={setUploadedZipFileName}
+                            setOpenSnackbar={setOpenSnackbar}
+                            setIsKMLFile={setIsKMLFile}
                         />
-                        <FilterToolbar isSidebarOpen={isSidebarOpen} isDashboardIndicators={false} />
+                        <FilterToolbar isSidebarOpen={isSidebarOpen} isDashboardIndicators={false} filterOptions={filterOptions}/>
                     </DashboardControls>
                     <MapSectionContainer>
                         <MapSection
@@ -1014,7 +428,6 @@ const Dashboard = ({ isSidebarOpen }) => {
                             setPromedioVelocidad={setPromedioVelocidad}
                             setPromedioAltura={setPromedioAltura}
                             setDosisReal={setDosisReal}
-                            limpiarMapa={limpiarMapa}
                             polygonsData={polygonsData}
                             highlightedLote={highlightedLote}
                             activeLotes={activeLotes}
@@ -1023,92 +436,31 @@ const Dashboard = ({ isSidebarOpen }) => {
                             onSelectLote={onSelectLote}
                             closeFilterDialog={closeFilterDialog}
                             isFilterDialogOpen={isFilterDialogOpen}
+                            setImgLaflet={setImgLaflet}
+                            imageUrl={imageUrl}
+                            northWestCoords={northWestCoords}
+                            southEastCoords={southEastCoords}
                         />
                     </MapSectionContainer>
                     <AnalysisSection ref={dashboardRef}>
                         <DataSection
                             selectedAnalysisType={selectedAnalysisType}
-                            datosCargadosAps={datosCargadosAps}
-                            ResponsableAps={ResponsableAps}
-                            fechaInicioCosechaAps={fechaInicioCosechaAps}
-                            fechaFinCosechaAps={fechaFinCosechaAps}
-                            horaInicioAps={horaInicioAps}
-                            horaFinalAps={horaFinalAps}
-                            tiempoTotalAps={tiempoTotalAps}
-                            nombreOperadorAps={nombreOperadorAps}
-                            equipoAps={equipoAps}
-                            eficienciaAps={eficienciaAps}
-                            nombreFincaAps={nombreFincaAps}
-                            codigoParcelasAps={codigoParcelasAps}
-                            codigoLotesAps={codigoLotesAps}
-                            dosisTeorica={dosisTeorica}
-                            productoAps={productoAps}
-                            humedadDelCultivoAps={humedadDelCultivoAps}
-                            tchEstimado={tchEstimado}
                             promedioAltura={promedioAltura}
                             areaSobreAplicada={areaSobreAplicada}
                             areaAplicada={areaAplicada}
                             porcentajeVariacion={porcentajeVariacion}
                             promedioDosisReal={promedioDosisReal}
                             promedioVelocidad={promedioVelocidad}
-                            datosCargadosCosechaMecanica={datosCargadosCosechaMecanica}
-                            nombreResponsableCm={nombreResponsableCm}
-                            fechaInicioCosechaCm={fechaInicioCosechaCm}
-                            fechaFinCosechaCm={fechaFinCosechaCm}
-                            nombreFincaCm={nombreFincaCm}
-                            codigoParcelaResponsableCm={codigoParcelaResponsableCm}
-                            nombreOperadorCm={nombreOperadorCm}
-                            nombreMaquinaCm={nombreMaquinaCm}
-                            actividadCm={actividadCm}
                             areaBrutaCm={areaBrutaCm}
-                            horaInicioCm={horaInicioCm}
-                            horaFinalCm={horaFinalCm}
-                            tiempoTotalActividadCm={tiempoTotalActividadCm}
-                            consumoCombustibleCm={consumoCombustibleCm}
-                            calidadGpsCm={calidadGpsCm}
                             eficienciaCm={eficienciaCm}
                             promedioVelocidadCm={promedioVelocidadCm}
-                            rpmCm={rpmCm}
-                            tchCm={tchCm}
-                            tahCm={tahCm}
-                            presionCortadorBase={presionCortadorBase}
                             porcentajeAreaPilotoCm={porcentajeAreaPilotoCm}
                             porcentajeAreaAutoTrackerCm={porcentajeAreaAutoTrackerCm}
                             porcentajeModoCortadorBaseCm={porcentajeModoCortadorBaseCm}
-                            datosCargadosFertilizacion={datosCargadosFertilizacion}
-                            responsableFertilizacion={responsableFertilizacion}
-                            fechaInicioFertilizacion={fechaInicioFertilizacion}
-                            fechaFinalFertilizacion={fechaFinalFertilizacion}
-                            nombreFincaFertilizacion={nombreFincaFertilizacion}
-                            operadorFertilizacion={operadorFertilizacion}
-                            equipoFertilizacion={equipoFertilizacion}
-                            actividadFertilizacion={actividadFertilizacion}
-                            areaNetaFertilizacion={areaNetaFertilizacion}
-                            areaBrutaFertilizacion={areaBrutaFertilizacion}
-                            diferenciaAreaFertilizacion={diferenciaAreaFertilizacion}
-                            horaInicioFertilizacion={horaInicioFertilizacion}
-                            horaFinalFertilizacion={horaFinalFertilizacion}
-                            tiempoTotalFertilizacion={tiempoTotalFertilizacion}
-                            eficienciaFertilizacion={eficienciaFertilizacion}
-                            promedioDosisRealFertilizacion={promedioDosisRealFertilizacion}
-                            dosisTeoricaFertilizacion={dosisTeoricaFertilizacion}
-                            datosCargadosHerbicidas={datosCargadosHerbicidas}
-                            responsableHerbicidas={responsableHerbicidas}
-                            fechaHerbicidas={fechaHerbicidas}
-                            nombreFincaHerbicidas={nombreFincaHerbicidas}
-                            parcelaHerbicidas={parcelaHerbicidas}
-                            operadorHerbicidas={operadorHerbicidas}
-                            equipoHerbicidas={equipoHerbicidas}
-                            actividadHerbicidas={actividadHerbicidas}
-                            areaNetaHerbicidas={areaNetaHerbicidas}
-                            areaBrutaHerbicidas={areaBrutaHerbicidas}
-                            diferenciaDeAreaHerbicidas={diferenciaDeAreaHerbicidas}
-                            horaInicioHerbicidas={horaInicioHerbicidas}
-                            horaFinalHerbicidas={horaFinalHerbicidas}
-                            tiempoTotalHerbicidas={tiempoTotalHerbicidas}
-                            eficienciaHerbicidas={eficienciaHerbicidas}
-                            promedioVelocidadHerbicidas={promedioVelocidadHerbicidas}
                             esValorValido={esValorValido}
+                            setIndicadores={setIndicadores}
+                            datosAnalisis={datosAnalisis}
+                            conteoPalmas={conteoPalmas}
                         />
                     </AnalysisSection>
                 </div>
@@ -1116,6 +468,6 @@ const Dashboard = ({ isSidebarOpen }) => {
 
         </DashboardContainer>
     );
-};
+});
 
 export default Dashboard;

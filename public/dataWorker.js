@@ -20,18 +20,17 @@ self.onmessage = async function (e) {
     switch (action) {
         case 'processGeoJsonData':
             if (geojsonData) {
-                const { geojsonDataFiltradas, geojsonDataNoFiltradas } = geojsonData;
 
+                const { geojsonDataFiltradas, geojsonDataNoFiltradas } = geojsonData;
                 // Carga las URLs de forma condicional
                 const loadedGeoJsonFiltradas = geojsonDataFiltradas ? await loadGeoJsonFromUrl(geojsonDataFiltradas) : null;
 
                 const loadedGeoJsonNoFiltradas = geojsonDataNoFiltradas ? await loadGeoJsonFromUrl(geojsonDataNoFiltradas) : null;
-
                 let processedData = null;
                 if (type === 'COSECHA_MECANICA') {
-
                     processedData = processGeoJsonData(await loadGeoJsonFromUrl(geojsonData));
                 } else if (type === 'APLICACIONES_AEREAS') {
+
                     if (loadedGeoJsonFiltradas && loadedGeoJsonNoFiltradas) {
                         processedData = processBothKMLData(loadedGeoJsonFiltradas, loadedGeoJsonNoFiltradas);
                     } else if (loadedGeoJsonNoFiltradas) {
@@ -43,6 +42,7 @@ self.onmessage = async function (e) {
                         }
                     }
                 }
+
 
                 self.postMessage({ action: 'geoJsonDataProcessed', data: processedData, activarEdicionInteractiva });
             } else {

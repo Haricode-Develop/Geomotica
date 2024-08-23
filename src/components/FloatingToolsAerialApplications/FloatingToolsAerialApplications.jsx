@@ -81,7 +81,7 @@ const FloatingToolsAerialApplications = ({
                     />
                     {isBufferActive && (
                         <TextFieldStyled
-                            label="Buffer en metros"
+                            label="Ancho de faja en metros"
                             type="number"
                             value={bufferValue}
                             onChange={(e) => setBufferValue(e.target.value)}

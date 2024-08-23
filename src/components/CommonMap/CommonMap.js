@@ -1,11 +1,12 @@
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
-import { MapContainer, TileLayer, Polygon, LayersControl, Polyline, Popup, useMapEvents } from 'react-leaflet';
+import {MapContainer, TileLayer, Polygon, LayersControl, Polyline, Popup, useMapEvents} from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Box} from '@mui/material';
 import { throttle } from 'lodash';
 import ReactDOM from 'react-dom';
-
+import leafletImage from 'leaflet-image';
+import { captureAndReturnMapImage } from '../../utils/mapUtils';
 const { BaseLayer } = LayersControl;
 
 const CommonMap = ({
@@ -31,7 +32,11 @@ const CommonMap = ({
                        activeLotes,
                        onSelectLote,
                        onHoverLote,
-                       onLeaveLote
+                       onLeaveLote,
+                       setImgLaflet,
+                       imageUrl,
+                       northWestCoords,
+                       southEastCoords
                    }) => {
     const localMapRef = useRef(null); // Crear una referencia para el mapa
     const [popupInfo, setPopupInfo] = useState(null);
@@ -43,6 +48,8 @@ const CommonMap = ({
     const [isFirstPolygons, setIsFirstPolygons] = useState(true);
     const markersRef = useRef([]);
     const previousPointsRef = useRef(points || []);
+    const imageOverlayRef = useRef(null);
+
 
     // Hook para inicializar el mapa
     useEffect(() => {
@@ -492,7 +499,48 @@ const CommonMap = ({
         lineasNoFiltradas,
     ]);
 
+    const addImageOverlay = useCallback(() => {
+        if (localMapRef.current && imageUrl) {
+            const map = localMapRef.current;
+            const bounds = L.latLngBounds(
+                L.latLng(northWestCoords[1], northWestCoords[0]),
+                L.latLng(southEastCoords[1], southEastCoords[0])
+            );
 
+            if (imageOverlayRef.current) {
+                // Actualiza la imagen y los límites
+                imageOverlayRef.current.setUrl(imageUrl);
+                imageOverlayRef.current.setBounds(bounds);
+
+                // Ajustar los límites del mapa usando requestAnimationFrame
+                requestAnimationFrame(() => {
+                    map.fitBounds(bounds);
+                });
+
+            } else {
+                // Superposición normal de imagen
+                imageOverlayRef.current = L.imageOverlay(imageUrl, bounds).addTo(map);
+
+                // Ajustar los límites del mapa usando requestAnimationFrame
+                requestAnimationFrame(() => {
+                    map.fitBounds(bounds);
+                });
+            }
+
+            // Ajustar los límites del mapa solo la primera vez
+            if (!initialBoundsSet) {
+                requestAnimationFrame(() => {
+                    map.fitBounds(bounds);
+                    setInitialBoundsSet(true);
+                });
+            }
+        }
+    }, [imageUrl, northWestCoords, southEastCoords, initialBoundsSet]);
+
+
+    useEffect(() => {
+        addImageOverlay();
+    }, [addImageOverlay]);
 
 
     return (
