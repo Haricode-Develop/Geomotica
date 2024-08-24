@@ -40,6 +40,18 @@ const sidebarOptionsConfig = {
             { label: 'Fecha', value: 'fecha' },
         ],
     },
+    'Dashboard': {
+        filterOptions: [
+            { label: 'Zafra', value: 'zsafra' },
+            { label: 'Tercio', value: 'tercio' },
+            { label: 'Semana', value: 'semana' },
+            { label: 'Finca', value: 'finca' },
+            { label: 'Lote', value: 'lote' },
+            { label: 'Operador', value: 'operador' },
+            { label: 'Turno', value: 'turno' },
+            { label: 'Fecha', value: 'fecha' },
+        ]
+    }
 };
 
 export default sidebarOptionsConfig;

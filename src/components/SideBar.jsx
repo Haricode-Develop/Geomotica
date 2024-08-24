@@ -25,7 +25,7 @@ import { SidebarContext } from '../context/SidebarContext';
 const Sidebar = ({ onToggle }) => {
     const location = useLocation();
     const { logout } = useAuth();
-    const {selectedSidebarOption, setSelectedSidebarOption } = useContext(SidebarContext);
+    const {setSelectedSidebarOption } = useContext(SidebarContext);
     const [activeItem, setActiveItem] = useState(location.pathname);
     const [isOpen, setIsOpen] = useState(true);
     const [tooltip, setTooltip] = useState({ visible: false, content: '', position: { top: 0, left: 0 } });

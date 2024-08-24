@@ -1,9 +1,11 @@
-import React from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import { DashboardContainer, ContentContainer, LeftPanel, RightPanel, CardsContainer } from './DashboardIndicatorsStyle';
 import FilterToolbar from '../../components/FilterToolbar/FilterToolbar';
 import ActivitiesComponent from '../../components/ActivitiesComponent/ActivitiesComponent';
 import ChartCard from '../../components/ChartCard/ChartCard';
 import CardData from '../../components/CardData/DataCard';
+import sidebarOptionsConfig from "../../utils/sidebarOptionsConfig";
+import {SidebarContext} from "../../context/SidebarContext";
 
 const chartsData = [
     { name: '5k', value: 20 },
@@ -21,9 +23,22 @@ const chartsData = [
 ];
 
 const DashboardIndicators = ({ isSidebarOpen }) => {
+    const [filterOptions, setFilterOptions] = useState([]);
+    const [analysisOptions, setAnalysisOptions] = useState([]);
+    const { selectedSidebarOption } = useContext(SidebarContext);
+
+    useEffect(() => {
+        const config = sidebarOptionsConfig[selectedSidebarOption];
+
+        if (config) {
+            setAnalysisOptions(config.analysisOptions || []);
+            setFilterOptions(config.filterOptions || []);
+        }
+    }, [selectedSidebarOption]);
+
     return (
         <DashboardContainer isSidebarOpen={isSidebarOpen}>
-            <FilterToolbar isSidebarOpen={isSidebarOpen} isDashboardIndicators={true} />
+            <FilterToolbar isSidebarOpen={isSidebarOpen} isDashboardIndicators={true}  filterOptions={filterOptions}/>
             <ContentContainer>
                 <LeftPanel>
                     <ActivitiesComponent />
