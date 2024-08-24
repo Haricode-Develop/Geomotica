@@ -467,7 +467,7 @@ const CommonMap = ({
                 });
             }
 
-            if (isFirstPolygons) {
+            if (isFirstPolygons && polygonsData && polygonsData.length > 0) {
                 mapRef.current = localMapRef.current;
                 map.fitBounds(L.geoJSON(polygonsData).getBounds());
                 setIsFirstPolygons(false);
