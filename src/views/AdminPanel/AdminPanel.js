@@ -7,7 +7,7 @@ import Analista from "./Analista";
 import Admin from "./Admin";
 import "bootstrap/dist/css/bootstrap.min.css";
 import profilePicture from "./img/user.png";
-import SideBar from "../../components/SideBar";
+import SideBar from "../../components/SideBar/SideBar";
 
 function AdminPanel(props) {
   const [sidebarOpen, setSidebarOpen] = useState(true);

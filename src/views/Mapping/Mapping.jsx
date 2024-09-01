@@ -24,7 +24,8 @@ const Mapping = ({
                      onHoverLote,
                      closeFilterDialog,
                      isFilterDialogOpen,
-                     setImgLaflet
+                     setImgLaflet,
+                     mapRef
                  }) => {
 
     const userData = JSON.parse(localStorage.getItem("userData"));
@@ -74,7 +75,6 @@ const Mapping = ({
     const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
     const [mapKey, setMapKey] = useState(Date.now());
     const workerRef = useRef(null);
-    const mapRef = useRef(null);
 
     const [polygon, setPolygon] = useState([]);
     const [outsidePolygon, setOutsidePolygon] = useState([]);
@@ -219,7 +219,7 @@ const Mapping = ({
     }, [toastShown]);
 
     useEffect(() => {
-        const worker = new Worker('dataWorker.js');
+        const worker = new Worker('Workers/dataWorker.js');
         workerRef.current = worker;
 
         worker.onmessage = (e) => {
@@ -365,14 +365,14 @@ const Mapping = ({
 
     useEffect(() => {
         const checkAvailableFilters = () => {
-            const hasSpeed = points.some(point => point.properties.VELOCIDAD_Km_H != null && point.properties.VELOCIDAD_Km_H !== "");
-            const hasGpsQuality = points.some(point => point.properties.CALIDAD_DE_SENAL != null && point.properties.CALIDAD_DE_SENAL !== "");
-            const hasFuel = points.some(point => point.properties.CONSUMOS_DE_COMBUSTIBLE != null && point.properties.CONSUMOS_DE_COMBUSTIBLE !== "");
+            const hasSpeed = points.some(point => point.properties.VELOCIDAD_KMH != null && point.properties.VELOCIDAD_KMH !== "");
+            const hasGpsQuality = points.some(point => point.properties.CALIDAD_GPS != null && point.properties.CALIDAD_GPS !== "");
+            const hasFuel = points.some(point => point.properties.COMBUSTIBLE != null && point.properties.COMBUSTIBLE !== "");
             const hasRpm = points.some(point => point.properties.RPM != null && point.properties.RPM !== "");
-            const hasCutterBase = points.some(point => point.properties.PRESION_DE_CORTADOR_BASE != null && point.properties.PRESION_DE_CORTADOR_BASE !== "");
+            const hasCutterBase = points.some(point => point.properties.PRESION_DE_CORTADOR_BASE_BAR != null && point.properties.PRESION_DE_CORTADOR_BASE_BAR !== "");
             const hasAutoPilot = points.some(point => point.properties.PILOTO_AUTOMATICO != null && point.properties.PILOTO_AUTOMATICO !== "");
             const hasAutoTracket = points.some(point => point.properties.AUTO_TRACKET != null && point.properties.AUTO_TRACKET !== "");
-            const hasModeCutterBase = points.some(point => point.properties.MODO_CORTE_BASE != null && point.properties.MODO_CORTE_BASE !== "");
+            const hasModeCutterBase = points.some(point => point.properties.MODO_DE_CORTE_BASE	 != null && point.properties.MODO_DE_CORTE_BASE	 !== "");
 
             setAvailableFilters({
                 speed: hasSpeed,
@@ -449,25 +449,25 @@ const Mapping = ({
             },
             filterModeCutterBase: {
                 active: filterModeCutterBase,
-                prop: 'MODO_CORTE_BASE',
+                prop: 'MODO_DE_CORTE_BASE',
                 colors: colors.modeCutterBase,
                 check: (val) => val.toLowerCase() === 'automatic',
             },
             filterSpeed: {
                 active: filterSpeed,
-                prop: 'VELOCIDAD_Km_H',
+                prop: 'VELOCIDAD_KMH',
                 values: [lowSpeed, medSpeed, highSpeed],
                 colors: colors.speed,
             },
             filterGpsQuality: {
                 active: filterGpsQuality,
-                prop: 'CALIDAD_DE_SENAL',
+                prop: 'CALIDAD_GPS',
                 values: [lowGpsQuality, medGpsQuality, highGpsQuality],
                 colors: colors.gpsQuality,
             },
             filterFuel: {
                 active: filterFuel,
-                prop: 'CONSUMOS_DE_COMBUSTIBLE',
+                prop: 'COMBUSTIBLE',
                 values: [lowFuel, medFuel, highFuel],
                 colors: colors.fuel,
             },
@@ -479,11 +479,12 @@ const Mapping = ({
             },
             filterCutterBase: {
                 active: filterCutterBase,
-                prop: 'PRESION_DE_CORTADOR_BASE',
+                prop: 'PRESION_DE_CORTADOR_BASE_BAR',
                 values: [lowCutterBase, medCutterBase, highCutterBase],
                 colors: colors.cutterBase,
             },
         };
+
 
         const filtered = pointsToFilter.map((point) => {
             const props = point.properties;
@@ -527,6 +528,7 @@ const Mapping = ({
         lowRpm, medRpm, highRpm,
         lowCutterBase, medCutterBase, highCutterBase
     ]);
+
 
     const handleOpenMapDialog = () => {
         setIsMapDialogOpen(true);

@@ -23,7 +23,7 @@ export const MenuToggle = styled(Box)(({ theme, isOpen }) => ({
     top: '20px',
     left: isOpen ? '250px' : '75px',
     cursor: 'pointer',
-    zIndex: 1100,
+    zIndex: 1000,
     backgroundColor: '#fff',
     padding: '10px',
     borderRadius: '0 5px 5px 0',

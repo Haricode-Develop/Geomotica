@@ -88,9 +88,9 @@ const ImageUploader = ({ userId }) => {
 
             if (response.status === 200) {
                 const newLogoUrl = URL.createObjectURL(image);
-                setLogo(newLogoUrl);  // Actualiza el logo en el contexto
-                setPreviewUrl(newLogoUrl);  // Actualiza la vista previa
-                setError('');  // Limpiar cualquier error anterior
+                setLogo(newLogoUrl);
+                setPreviewUrl(newLogoUrl);
+                setError('');
             }
         } catch (error) {
             console.error('Error al subir la imagen:', error);

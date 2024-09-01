@@ -158,33 +158,6 @@ export const obtenerPromedioVelocidadHerbicidas = async (idAnalisisHerbicidas) =
     return result.success ? `${parseFloat(result.data).toFixed(3)} Km/H` : null;
 };
 
-// Función para mostrar valores en la UI
-export function displayValue(value) {
-    if (value === undefined || value === null) {
-        return '-';
-    } else if (Array.isArray(value) && value.length > 1) {
-        return (
-            <div style={{ overflowY: 'auto', maxHeight: '100px', listStyle: 'none'}}>
-                <ul>
-                    {value.map((item, index) => (
-                        <li key={index}>{item}</li>
-                    ))}
-                </ul>
-            </div>
-        );
-    } else if (typeof value === 'object') {
-        // Devolver solo los valores de las propiedades del objeto
-        return Object.values(value).join(', ');
-    } else if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/)) {
-        // Formatear la cadena de fecha
-        const date = new Date(value);
-        return date.toLocaleDateString(); // Formatea la fecha a un formato legible
-    } else {
-        return value;
-    }
-}
-
-
 // ID DE LOS ANALISIS
 
 export const APLICACIONES_AEREAS = 1;

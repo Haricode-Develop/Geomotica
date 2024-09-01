@@ -3,9 +3,9 @@ import { Avatar, Badge, Menu, MenuItem, IconButton } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Flag from 'react-world-flags';
-import { useAuth } from '../context/AuthContext';
-import profilePicture from '../assets/img/user.png';
-import logo from '../assets/img/logo.png'; // Importamos el logo
+import { useAuth } from '../../context/AuthContext';
+import profilePicture from '../../assets/img/user.png';
+import logo from '../../assets/img/logo.png'; // Importamos el logo
 import { useNavigate } from 'react-router-dom';
 import {
     NavbarContainer,

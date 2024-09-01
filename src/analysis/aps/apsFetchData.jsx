@@ -1,23 +1,23 @@
 import { API_BASE_URL } from "../../utils/Constants";
 import { ultimoAnalisis } from "../../utils/mapUtils";
 import {obtenerDatosCompletosAps} from "../../utils/Constants";
+import {API_BASE_URL_DASHBOARD} from "../../utils/config";
 
-// Función para obtener todos los datos de APS de una sola vez
 export const fetchDataAps = async (idAnalisisAps, setDatosAnalisis) => {
     try {
         const data = await obtenerDatosCompletosAps(idAnalisisAps);
         const datos = {
-            responsable: data.nombreResponsable || '',
+            nombreResponsable: data.nombreResponsable || '',
             fechaInicio: data.fechaInicio || '',
-            fechaFin: data.fechaFinal || '',
+            fechaFin: data.fechaFin || '',
             nombreFinca: data.nombreFinca || '',
-            codigoFincaResponsable: data.codigoFincaResponsable || '',
+            codigoFinca: data.codigoFinca || '',
+            codigoLote: data.codigoLote || '',
             nombreOperador: data.nombreOperador || '',
             codigoEquipo: data.codigoEquipo || '',
             horaInicio: data.horaInicio || '',
             horaFinal: data.horaFinal || '',
             eficiencia: data.eficiencia || '',
-            codigoLote: data.codigoLote || '',
             dosisTeorica: data.dosisTeorica || '',
             humedadDelCultivo: data.humedadDelCultivo || '',
             tchEstimado: data.tchEstimado || '',
@@ -28,7 +28,6 @@ export const fetchDataAps = async (idAnalisisAps, setDatosAnalisis) => {
         setDatosAnalisis(datos);
     } catch (error) {
         console.error("Error al cargar datos de APS:", error);
-        // Opcional: setear datos vacíos en caso de error
         setDatosAnalisis({});
     }
 };
@@ -51,4 +50,23 @@ export const cargaDatosAps = async (userData, selectedAnalysisTypeRef, setIdAnal
             console.error("Error al obtener último análisis:", error);
         }
     }
+};
+
+
+export const processApsData = (datosAnalisis, indicadores) => ({
+    analisis: "APLICACIONES_AEREAS",
+    ...datosAnalisis,
+    indicadores: {
+        ...indicadores
+    }
+});
+
+
+export const fetchDataApsIndicators = async () => {
+    const response = await fetch(`${API_BASE_URL_DASHBOARD}api/indicators/aplicaciones-aereas`);
+    const data = await response.json();
+    return data.map(item => ({
+        title: item.indicatorName,
+        value: item.indicatorValue,
+    }));
 };

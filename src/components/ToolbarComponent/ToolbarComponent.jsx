@@ -11,6 +11,7 @@ import FloatingPanel from '../FloatingPanel/FloatingPanel';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import analysisUtils from "../../utils/analysisConfig";
 import {manejarSubidaZip} from "../../utils/fileHandler";
+import {captureMapImage} from "../../analysis/AnalysisMapping/MappingGeneral";
 import {
     ToolbarContainer,
     ButtonGroup,
@@ -19,6 +20,7 @@ import {
     ButtonSection,
     TooltipStyled,
 } from './ToolbarComponentStyle';
+import Loader from '../Loader/Loader';
 
 const ToolbarComponent = ({
                               selectedAnalysisType,
@@ -48,8 +50,32 @@ const ToolbarComponent = ({
                               setIsKMLFile,
                               setOpenSnackbar,
                               setSelectedZipFile,
-                              setUploadedZipFileName
+                              setUploadedZipFileName,
+                              mapRef,
+                              setImgLaflet,
+                              setIsGeneratingReport,
+                              isGeneratingReport
                           }) => {
+
+
+    const handleGeneratePdf = async () => {
+        try {
+            setIsGeneratingReport(true); // Activa el loader
+            if (mapRef.current) {
+                const imgData = await captureMapImage(mapRef);
+                setImgLaflet(imgData);
+                await handleSendDashboardData(imgData);
+            }
+        } catch (error) {
+            console.error("Error generando el PDF:", error);
+            setIsGeneratingReport(false); // Desactiva el loader en caso de error
+        }
+    };
+
+
+
+
+
     return (
         <ToolbarContainer isSidebarOpen={isSidebarOpen}>
             {/* Sección de botones izquierda */}
@@ -181,15 +207,16 @@ const ToolbarComponent = ({
                         </IconButtonStyled>
                     </Tooltip>
                     <Tooltip title="Generar informe">
-                        <IconButtonStyled onClick={() => handleSendDashboardData()}>  {/* IconButton en lugar de StyledButton */}
+                        <IconButtonStyled onClick={handleGeneratePdf}>
                             <PictureAsPdfIcon />
                         </IconButtonStyled>
                     </Tooltip>
 
                 </ButtonGroup>
             </ButtonSection>
+            {isGeneratingReport && <Loader />}
         </ToolbarContainer>
     );
 };
 
-export default ToolbarComponent;
+export default React.memo(ToolbarComponent);

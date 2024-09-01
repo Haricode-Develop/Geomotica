@@ -1,8 +1,9 @@
-import React, {useEffect, useRef} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Mapping from "../../Mapping/Mapping";
 import AerialApplications from "../../Aplicaciones Areas/AerialApplications";
 import CommonMap from "../../../components/CommonMap/CommonMap";
 import PalmsCount from "../../../Mappings/PalmsCount";
+
 const MapSection = ({
                         selectedFile,
                         selectedAnalysisType,
@@ -27,56 +28,97 @@ const MapSection = ({
                         setPromedioVelocidad,
                         setPromedioAltura,
                         setDosisReal,
-                        activeLotes,
+                        activeLotes = [],
                         highlightedLote,
-                        polygonsData,
+                        polygonsData = [],
                         onLeaveLote,
                         onSelectLote,
                         onHoverLote,
                         closeFilterDialog,
                         isFilterDialogOpen,
                         setImgLaflet,
-                        imageUrl,
-                        northWestCoords,
-                        southEastCoords
+                        imageUrl = '',
+                        northWestCoords = 0,
+                        southEastCoords = 0,
+                        isAnalysisPerformed,
+                        mapRef
                     }) => {
-    const mapRef = useRef(null);
-    const [nombreAnalisisMapeo, setNombreAnalisisMapeo] = React.useState('');
-    const handleAreaCalculation = (polygonArea, outsidePolygonArea, areaDifference, pilotAutoPercentage, autoTracketPercentage) => {
+    const [nombreAnalisisMapeo, setNombreAnalisisMapeo] = useState('');
+    const [isFirstRender, setIsFirstRender] = useState(true);
+    const [commonMapElement, setCommonMapElement] = useState(null); // Guardar la instancia de CommonMap
 
-        setAreaNetaCm(`${outsidePolygonArea.toFixed(2)} H`);
-        setAreaBrutaCm(`${polygonArea.toFixed(2)} H`);
-        setDiferenciaDeAreaCm(`${areaDifference.toFixed(2)} H`);
+    useEffect(() => {
+        if (isFirstRender) {
+            setIsFirstRender(false);
+            // Renderizar y guardar la instancia de CommonMap
+            setCommonMapElement(
+                <CommonMap
+                    mapRef={mapRef}
+                    activeLotes={activeLotes}
+                    highlightedLote={highlightedLote}
+                    polygonsData={polygonsData}
+                    onLeaveLote={onLeaveLote}
+                    onSelectLote={onSelectLote}
+                    onHoverLote={onHoverLote}
+                    setImgLaflet={setImgLaflet}
+                />
+            );
+        }
+    }, [isFirstRender]); // Este efecto solo se ejecuta una vez al inicio
+
+    useEffect(() => {
+        try {
+            setNombreAnalisisMapeo(nombreAnalisis(idAnalisisBash));
+        } catch (error) {
+            console.error("Error en useEffect nombreAnalisisMapeo:", error);
+        }
+    }, [idAnalisisBash]);
+
+    const handleAreaCalculation = (polygonArea, outsidePolygonArea, areaDifference) => {
+        try {
+            setAreaNetaCm(`${outsidePolygonArea.toFixed(2)} H`);
+            setAreaBrutaCm(`${polygonArea.toFixed(2)} H`);
+            setDiferenciaDeAreaCm(`${areaDifference.toFixed(2)} H`);
+        } catch (error) {
+            console.error("Error en handleAreaCalculation:", error);
+        }
     };
 
     const handlePercentageCalculation = (autoTracket, autoPilot, modoCorteBase, totalEfficiency) => {
-
-        setPorcentajeAreaPilotoCm(`${autoPilot.toFixed(2)}%`);
-        setPorcentajeAreaAutoTrackerCm(`${autoTracket.toFixed(2)}%`);
-        setPorcentajeModoCortadorBaseCm(`${modoCorteBase.toFixed(2)}%`);
-        setEficienciaCm(`${totalEfficiency.toFixed(2)} Ha/Hora`);
+        try {
+            setPorcentajeAreaPilotoCm(`${autoPilot.toFixed(2)}%`);
+            setPorcentajeAreaAutoTrackerCm(`${autoTracket.toFixed(2)}%`);
+            setPorcentajeModoCortadorBaseCm(`${modoCorteBase.toFixed(2)}%`);
+            setEficienciaCm(`${totalEfficiency.toFixed(2)} Ha/Hora`);
+        } catch (error) {
+            console.error("Error en handlePercentageCalculation:", error);
+        }
     };
 
     const handleAreasCalculated = (areas) => {
-        setAreaSobreAplicada(areas.areaSobreAplicada);
-        setAreaAplicada(areas.areaAplicada);
-        setPorcentajeVariacion(`${areas.porcentajeDeVariacion}%`);
-        setAreaNoAplicada(areas.nonAppliedArea);
+        try {
+            setAreaSobreAplicada(areas.areaSobreAplicada || 0);
+            setAreaAplicada(areas.areaAplicada || 0);
+            setPorcentajeVariacion(`${areas.porcentajeDeVariacion || 0}%`);
+            setAreaNoAplicada(areas.nonAppliedArea || 0);
+        } catch (error) {
+            console.error("Error en handleAreasCalculated:", error);
+        }
     };
 
     const handlePromediosCalculados = (promedios) => {
-        setPromedioVelocidad(promedios.promedioVelocidad);
-        setPromedioAltura(promedios.promedioAltura);
-        setDosisReal(promedios.promedioDosisReal);
+        try {
+            setPromedioVelocidad(promedios.promedioVelocidad || 0);
+            setPromedioAltura(promedios.promedioAltura || 0);
+            setDosisReal(promedios.promedioDosisReal || 0);
+        } catch (error) {
+            console.error("Error en handlePromediosCalculados:", error);
+        }
     };
-
-    useEffect(() => {
-        setNombreAnalisisMapeo(nombreAnalisis(idAnalisisBash));
-    }, [idAnalisisBash]);
 
     return (
         <section className="map-section">
-            {selectedFile && selectedAnalysisType === 'COSECHA_MECANICA' ? (
+            {isAnalysisPerformed && selectedFile && selectedAnalysisType === 'COSECHA_MECANICA' ? (
                 <Mapping
                     csvData={datosMapeo}
                     zipFile={selectedZipFile}
@@ -94,8 +136,9 @@ const MapSection = ({
                     closeFilterDialog={closeFilterDialog}
                     isFilterDialogOpen={isFilterDialogOpen}
                     setImgLaflet={setImgLaflet}
+                    mapRef={mapRef}
                 />
-            ) : selectedZipFile && selectedFile && selectedAnalysisType === 'APLICACIONES_AEREAS' ? (
+            ) : isAnalysisPerformed && selectedZipFile && selectedFile && selectedAnalysisType === 'APLICACIONES_AEREAS' ? (
                 <AerialApplications
                     csvData={datosMapeo}
                     zipFile={selectedZipFile}
@@ -114,25 +157,25 @@ const MapSection = ({
                     closeFilterDialog={closeFilterDialog}
                     isFilterDialogOpen={isFilterDialogOpen}
                     setImgLaflet={setImgLaflet}
+                    mapRef={mapRef}
                 />
-            ) : selectedZipFile && selectedAnalysisType === 'CONTEO_PALMA' ? (
+            ) : isAnalysisPerformed && selectedZipFile && selectedAnalysisType === 'CONTEO_PALMA' ? (
                 <PalmsCount
                     imageUrl={imageUrl}
                     activeLotes={activeLotes}
                     polygonsData={polygonsData}
                     northWestCoords={northWestCoords}
                     southEastCoords={southEastCoords}
+                    setImgLaflet={setImgLaflet}
+                    onSelectLote={onSelectLote}
+                    onHoverLote={onHoverLote}
+                    mapRef={mapRef}
                 />
-            ) : (
-                <CommonMap mapRef={mapRef}
-                           activeLotes={activeLotes}
-                           highlightedLote={highlightedLote}
-                           polygonsData={polygonsData}
-                           onLeaveLote={onLeaveLote}
-                           onSelectLote={onSelectLote}
-                           onHoverLote={onHoverLote}
-                           setImgLaflet={setImgLaflet}/>
-            )}
+            ) : commonMapElement ? (
+                <>
+                    {commonMapElement}
+                </>
+            ) : null}
         </section>
     );
 };

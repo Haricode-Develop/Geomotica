@@ -34,7 +34,7 @@ export const ejecutarProcesoConteoPalmas = async ({
     fileReader.onload = function (event) {
         const blob = new Blob([event.target.result], { type: selectedZipFile.type });
         const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
-        const worker = new Worker('PalmasWorker.js');
+        const worker = new Worker('Workers/PalmasWorker.js');
         setProgress(20);
         setTitleLoader("Archivo subido, procesando fragmentos...");
 
@@ -52,7 +52,7 @@ export const ejecutarProcesoConteoPalmas = async ({
             if (event.data.progress) {
                 processedChunks++;
                 const progressPercentage = 20 + ((processedChunks / totalChunks) * 70); // 20% inicial + 70% por los fragmentos
-                setProgress(progressPercentage);
+                setProgress(progressPercentage.toFixed(2));
                 setTitleLoader(`Procesando fragmentos (${processedChunks}/${totalChunks})...`);
 
                 socket.emit(`${socketSessionID}:progressUpdate`, { progress: event.data.progress });

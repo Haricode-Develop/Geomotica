@@ -12,16 +12,16 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ConstructionIcon from '@mui/icons-material/Construction';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Modal, Box } from '@mui/material';
 import {
     SidebarContainer, MenuToggle, LogoSection, LogoImage, MenuItemsContainer, MenuItemContainer,
     MenuIconContainer, MenuText, SubcategoriesContainer, SubcategoryItemContainer, TooltipContainer,
     ModalContent, HelpButton
 } from './SideBarStyle';
-import Tutorial from '../components/Tutorial/Tutorial';
-import { CompanyContext } from '../context/CompanyContext';  // Importar el contexto de la empresa
-import { SidebarContext } from '../context/SidebarContext';
+import Tutorial from '../Tutorial/Tutorial';
+import { CompanyContext } from '../../context/CompanyContext';  // Importar el contexto de la empresa
+import { SidebarContext } from '../../context/SidebarContext';
 const Sidebar = ({ onToggle }) => {
     const location = useLocation();
     const { logout } = useAuth();

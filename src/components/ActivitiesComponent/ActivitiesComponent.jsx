@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import AgriculturalIcon from '@mui/icons-material/Agriculture';
 import FlightIcon from '@mui/icons-material/Flight';
@@ -13,19 +12,24 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import { StyledPaper, ActivityList, ActivityItem, SelectedActivityItem } from './ActivitiesComponentStyle';
 
 const activities = [
-    { text: 'Cosecha Mecanica', icon: <AgriculturalIcon /> },
-    { text: 'Aplicaciones Areas', icon: <FlightIcon /> },
-    { text: 'Herbicidas', icon: <LocalFloristIcon /> },
-    { text: 'Fertilización', icon: <SpaIcon /> },
-    { text: 'Siembra', icon: <SpaIcon /> },
-    { text: 'Gráficas Comparativas', icon: <AssessmentIcon /> },
+    { id: 'COSECHA_MECANICA', text: 'Cosecha Mecanica', icon: <AgriculturalIcon /> },
+    { id: 'APLICACIONES_AEREAS', text: 'Aplicaciones Areas', icon: <FlightIcon /> },
+    { id: 'HERBICIDAS', text: 'Herbicidas', icon: <LocalFloristIcon /> },
+    { id: 'FERTILIZACION', text: 'Fertilización', icon: <SpaIcon /> },
+    { id: 'SIEMBRA', text: 'Siembra', icon: <SpaIcon /> },
+    { id: 'GRAFICAS_COMPARATIVAS', text: 'Gráficas Comparativas', icon: <AssessmentIcon /> },
 ];
 
-const ActivitiesComponent = () => {
+const ActivitiesComponent = ({ onSelectActivity }) => {
     const [selectedIndex, setSelectedIndex] = React.useState(0);
 
-    const handleListItemClick = (event, index) => {
+    useEffect(() => {
+        onSelectActivity(activities[0].id);
+    }, [onSelectActivity]);
+
+    const handleListItemClick = (event, index, activity) => {
         setSelectedIndex(index);
+        onSelectActivity(activity.id);
     };
 
     return (
@@ -35,12 +39,12 @@ const ActivitiesComponent = () => {
             </Typography>
             <ActivityList>
                 {activities.map((activity, index) => (
-                    <React.Fragment key={activity.text}>
+                    <React.Fragment key={activity.id}>
                         {index === selectedIndex ? (
                             <SelectedActivityItem
                                 button
                                 selected={index === selectedIndex}
-                                onClick={(event) => handleListItemClick(event, index)}
+                                onClick={(event) => handleListItemClick(event, index, activity)}
                             >
                                 <ListItemIcon>{activity.icon}</ListItemIcon>
                                 <ListItemText primary={activity.text} />
@@ -49,7 +53,7 @@ const ActivitiesComponent = () => {
                             <ActivityItem
                                 button
                                 selected={index === selectedIndex}
-                                onClick={(event) => handleListItemClick(event, index)}
+                                onClick={(event) => handleListItemClick(event, index, activity)}
                             >
                                 <ListItemIcon>{activity.icon}</ListItemIcon>
                                 <ListItemText primary={activity.text} />

@@ -18,7 +18,7 @@ import {
     distance as turfDistance,
     point as turfPoint,
     destination as turfDestination,
-    bearing as turfBearing
+    bearing as turfBearing,
 } from '@turf/turf';
 import BarIndicator from "../../components/BarIndicator/BarIndicator";
 import { v4 as uuidv4 } from 'uuid';
@@ -26,7 +26,25 @@ import CommonMap from '../../components/CommonMap/CommonMap';
 import MapDialog from '../../components/MapDialog/MapDialog';
 import FloatingToolsAerialApplications
     from "../../components/FloatingToolsAerialApplications/FloatingToolsAerialApplications";
-const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPromediosCalculated, activarEdicionInteractiva, highlightedLote, activeLotes, polygonsData, onSelectLote, onLeaveLote, onHoverLote, isFilterDialogOpen, closeFilterDialog}) => {
+
+const AerialApplications = ({
+                                idAnalisis,
+                                tipoAnalisis,
+                                onAreasCalculated,
+                                onPromediosCalculated,
+                                activarEdicionInteractiva,
+                                highlightedLote,
+                                activeLotes,
+                                polygonsData,
+                                onSelectLote,
+                                onLeaveLote,
+                                onHoverLote,
+                                isFilterDialogOpen,
+                                closeFilterDialog,
+                                setImgLaflet,
+                                mapRef
+                            }) => {
+
     const userData = JSON.parse(localStorage.getItem("userData"));
 
     const [polygons, setPolygons] = useState([]);
@@ -52,8 +70,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     const [onClickLineaStrech, setOnClickLineaStrech] = useState(false);
 
     const [bufferedLines, setBufferedLines] = useState([]);
-    const [formData, setFormData] = useState({ idAnalisis });
-    const mapRef = useRef(null);
+    const [formData, setFormData] = useState({idAnalisis});
     const [bufferedIntersections, setBufferedIntersections] = useState([]);
     const [kmlPolygons, setKmlPolygons] = useState([]);
     const [isKml, setIsKml] = useState(false);
@@ -74,9 +91,9 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     const workerRef = useRef(null);
 
     const [filterValues, setFilterValues] = useState({
-        VELOCIDAD: { low: 0, medium: 0, high: 0 },
-        ALTURA: { low: 0, medium: 0, high: 0 },
-        DOSISREAL: { low: 0, medium: 0, high: 0 }
+        VELOCIDAD: {low: 0, medium: 0, high: 0},
+        ALTURA: {low: 0, medium: 0, high: 0},
+        DOSISREAL: {low: 0, medium: 0, high: 0}
     });
 
     const [availableFilters, setAvailableFilters] = useState({
@@ -101,7 +118,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     const [medRealDose, setMedRealDose] = useState(0);
     const [highRealDose, setHighRealDose] = useState(0);
     const socketContext = useSocket();
-    const { socket, socketSessionID } = socketContext;
+    const {socket, socketSessionID} = socketContext;
 
     const handleToggleFilter = (filterName) => {
         switch (filterName) {
@@ -167,14 +184,14 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 }
             }
 
-            return { ...prop, color };
+            return {...prop, color};
         });
 
         setPolygonsProperties(filtered);
     };
 
     useEffect(() => {
-        workerRef.current = new Worker("dataWorker.js");
+        workerRef.current = new Worker("Workers/dataWorker.js");
 
         workerRef.current.onmessage = (e) => {
             if (e.data.action === "geoJsonDataProcessed") {
@@ -184,13 +201,13 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                             return null;
                         }
                         const [lat, lng] = coords;
-                        return { lat, lng };
+                        return {lat, lng};
                     }).filter(coord => coord !== null);
                 };
 
                 // Verifica si tenemos líneas filtradas
                 if (e.data.data.filtradas && e.data.data.filtradas.lines) {
-                    const { lines: filtradasLines, polygons: filtradasPolygons } = e.data.data.filtradas;
+                    const {lines: filtradasLines, polygons: filtradasPolygons} = e.data.data.filtradas;
 
                     const filtradasLinesWithEvents = filtradasLines.map((line) => {
                         const lineId = line.id; // Usamos el id proporcionado
@@ -214,7 +231,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                         polyline.on("mouseout", (e) => handleLineMouseOut(e, lineId));
                         polyline.on("click", (e) => handleLineClick(latLngArray, e));
 
-                        return { polyline, id: lineId };
+                        return {polyline, id: lineId};
                     }).filter((line) => line !== null);
 
                     setLines(filtradasLinesWithEvents);
@@ -224,7 +241,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 }
 
                 if (e.data.data.noFiltradas && e.data.data.noFiltradas.lines) {
-                    const { lines: noFiltradasLines, polygons: noFiltradasPolygons } = e.data.data.noFiltradas;
+                    const {lines: noFiltradasLines, polygons: noFiltradasPolygons} = e.data.data.noFiltradas;
                     const noFiltradasLinesWithEvents = noFiltradasLines.map((line) => {
                         const lineId = line.id;
 
@@ -247,7 +264,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                         polyline.on("mouseout", (e) => handleLineMouseOut(e, lineId));
                         polyline.on("click", (e) => handleLineClick(latLngArray, e));
 
-                        return { polyline, id: lineId };
+                        return {polyline, id: lineId};
                     }).filter((line) => line !== null);
                     setLineasNoFiltradas(noFiltradasLinesWithEvents);
                     setIsKml(true);
@@ -255,7 +272,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 }
 
                 if (e.data.data.lines && !e.data.data.noFiltradas) {
-                    const { lines, polygons } = e.data.data;
+                    const {lines, polygons} = e.data.data;
 
                     const linesWithEvents = lines.map((line) => {
                         const lineId = line.id;
@@ -278,7 +295,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                         polyline.on("mouseout", (e) => handleLineMouseOut(e, lineId));
                         polyline.on("click", (e) => handleLineClick(latLngArray, e));
 
-                        return { polyline, id: lineId };
+                        return {polyline, id: lineId};
                     }).filter((line) => line !== null);
 
                     setLines(linesWithEvents);
@@ -289,7 +306,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
                 // Verifica si solo tenemos polígonos
                 if (!e.data.data.lines && e.data.data.polygons) {
-                    const { polygons } = e.data.data;
+                    const {polygons} = e.data.data;
                     const formattedPolygons = polygons.map((poly) => formatPolygon(poly.polygon[0]));
                     setPolygonsProperties(polygons.map((poly) => poly.properties));
                     setPolygons(formattedPolygons);
@@ -298,7 +315,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             }
         };
 
-        if(socket){
+        if (socket) {
             socket.on(`${socketSessionID}:updateGeoJSONLayer`, (geojsonData) => {
                 workerRef.current.postMessage({
                     action: "processGeoJsonData",
@@ -319,7 +336,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
     useEffect(() => {
         if (workerRef.current) {
-            workerRef.current.postMessage({ action: 'setActivarEdicionInteractiva', activarEdicionInteractiva });
+            workerRef.current.postMessage({action: 'setActivarEdicionInteractiva', activarEdicionInteractiva});
         }
     }, [activarEdicionInteractiva]);
 
@@ -377,7 +394,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
             return {
                 type: 'Feature',
-                properties: { id: line.id, length: line.length },
+                properties: {id: line.id, length: line.length},
                 geometry: {
                     type: 'LineString',
                     coordinates: coordinates
@@ -393,7 +410,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
 
     const downloadGeoJSON = (geoJson, filename) => {
-        const blob = new Blob([JSON.stringify(geoJson)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(geoJson)], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -476,7 +493,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
             const bufferWidth = width > 0 ? width : 1;
 
-            const bufferedLine = turfBuffer(lineString, bufferWidth, { units: 'meters' });
+            const bufferedLine = turfBuffer(lineString, bufferWidth, {units: 'meters'});
 
             if (!bufferedLine || !bufferedLine.geometry || !Array.isArray(bufferedLine.geometry.coordinates) || bufferedLine.geometry.coordinates.length === 0) {
                 throw new Error("Buffer result is invalid.");
@@ -537,6 +554,8 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         }
     };
 
+
+
     useEffect(() => {
         const adjustMapBounds = (entities, entityType) => {
             if (mapRef.current != null && entities.length > 0) {
@@ -594,6 +613,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         if (isFirstLoad && !isFilteringLines) {
             adjustMapBounds(polygons, "POLYGONS");
             adjustMapBounds(lines, "LINES");
+            setIsFirstLoad(false);
         }
     }, [polygons, lines, isFilteringLines]);
 
@@ -645,28 +665,46 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     };
 
     const handleLineClick = (line, e) => {
-        const coordinates = line.map(coord => [coord.lng, coord.lat]);
-        const lineString = turfLineString(coordinates);
-        const lengthKm = turfLength(lineString, { units: 'kilometers' });
-        const lengthMiles = turfLength(lineString, { units: 'miles' });
-        const lengthMeters = lengthKm * 1000;
+        if (activeTool === 'delete') {
+            const clickedLatLngs = line.map(coord => [coord.lng, coord.lat]);
+            const lineString = turfLineString(clickedLatLngs);
 
-        setPopupInfo({
-            position: e.latlng,
-            content: `
-        Line length:
-        <br>- ${lengthKm.toFixed(3)} km
-        <br>- ${lengthMiles.toFixed(3)} mi
-        <br>- ${lengthMeters.toFixed(3)} m
-      `
-        });
+            // Encuentra la línea en el estado y elimínala
+            const lineInState = lines.find(l => {
+                const stateLatLngs = l.polyline.getLatLngs().map(coord => [coord.lng, coord.lat]);
+                return JSON.stringify(stateLatLngs) === JSON.stringify(clickedLatLngs);
+            });
+
+            if (lineInState) {
+                setLines(lines.filter(l => l.id !== lineInState.id));
+                setActionHistory([...actionHistory, { type: 'delete', line: lineInState }]);
+            }
+        } else {
+            // Lógica original para manejar el clic en la línea (no eliminar)
+            const coordinates = line.map(coord => [coord.lng, coord.lat]);
+            const lineString = turfLineString(coordinates);
+            const lengthKm = turfLength(lineString, { units: 'kilometers' });
+            const lengthMiles = turfLength(lineString, { units: 'miles' });
+            const lengthMeters = lengthKm * 1000;
+
+            setPopupInfo({
+                position: e.latlng,
+                content: `
+                Line length:
+                <br>- ${lengthKm.toFixed(3)} km
+                <br>- ${lengthMiles.toFixed(3)} mi
+                <br>- ${lengthMeters.toFixed(3)} m
+            `,
+            });
+        }
     };
+
 
     const unifyParallelLines = (lines, angleThreshold, distanceThreshold) => {
         const areLinesClose = (lineA, lineB, threshold) => {
             for (const point of lineA.geometry.coordinates) {
                 const nearest = turfNearestPointOnLine(lineB, turfPoint(point));
-                const distance = turfDistance(turfPoint(point), nearest, { units: 'kilometers' });
+                const distance = turfDistance(turfPoint(point), nearest, {units: 'kilometers'});
                 if (distance < threshold) {
                     return true;
                 }
@@ -734,11 +772,11 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                     }
                 }
 
-                const newPolyline = L.polyline(unifiedLine, { color: 'red' });
+                const newPolyline = L.polyline(unifiedLine, {color: 'red'});
                 newPolyline.on('mouseover', (e) => handleLineHover(e, uuidv4()));
                 newPolyline.on('mouseout', (e) => handleLineMouseOut(e, uuidv4()));
                 newPolyline.on('click', (event) => handleLineClick(unifiedLine, event));
-                unifiedLines.push({ polyline: newPolyline, id: uuidv4(), length: maxLength });
+                unifiedLines.push({polyline: newPolyline, id: uuidv4(), length: maxLength});
             }
 
             return unifiedLines;
@@ -794,27 +832,30 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     };
 
     const formatPolygon = (polygon) => {
-        if (polygon.length > 0) {
+        if (polygon.length >= 3) {
             if (polygon[0][0] !== polygon[polygon.length - 1][0] || polygon[0][1] !== polygon[polygon.length - 1][1]) {
                 polygon.push([polygon[0][0], polygon[0][1]]);
             }
+            return polygon.map(coordPair => [coordPair[1], coordPair[0]]);
         }
-        return polygon.map(coordPair => [coordPair[1], coordPair[0]]);
+        return [];
     };
+
 
     const findIntersections = (polygons) => {
         let intersections = [];
         polygons.forEach((poly1, i) => {
             polygons.slice(i + 1).forEach(poly2 => {
-                const intersection = turfIntersect(turfPolygon([poly1]), turfPolygon([poly2]));
-                if (intersection) {
-                    if (intersection.geometry.type === 'MultiPolygon') {
-                        intersection.geometry.coordinates.forEach(coords => {
-                            intersections.push(coords[0]);
-                        });
-                    } else if (intersection.geometry.type === 'Polygon') {
-
-                        intersections.push(intersection.geometry.coordinates[0]);
+                if (poly1.length > 0 && poly2.length > 0) {
+                    const intersection = turfIntersect(turfPolygon([poly1]), turfPolygon([poly2]));
+                    if (intersection) {
+                        if (intersection.geometry.type === 'MultiPolygon') {
+                            intersection.geometry.coordinates.forEach(coords => {
+                                intersections.push(coords[0]);
+                            });
+                        } else if (intersection.geometry.type === 'Polygon') {
+                            intersections.push(intersection.geometry.coordinates[0]);
+                        }
                     }
                 }
             });
@@ -851,7 +892,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     }, [polygons]);
 
     const handleFilterChange = (e, filterType) => {
-        const { checked } = e.target;
+        const {checked} = e.target;
         if (filterType === "VELOCIDAD") setSpeedFilterActivated(checked);
         if (filterType === "ALTURA") setAltitudeFilterActivated(checked);
         if (filterType === "DOSISREAL") setRealDoseFilterActivated(checked);
@@ -941,57 +982,84 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
     useEffect(() => {
         if (bufferedLines.length > 0) {
             const totalIntersectionArea = calculateBufferedIntersections(bufferedLines);
-            const correctedBufferedPolygons = bufferedLines.map(buffer => {
-                const coordinates = buffer.geometry.coordinates[0];
-                return coordinates.map(coord => [coord[0], coord[1]]);
-            });
 
-            const bufferedTurfPolygons = correctedBufferedPolygons.map(polygon => turfPolygon([polygon]));
-
-            let totalBufferedArea = 0;
-            bufferedTurfPolygons.forEach(polygon => {
-                totalBufferedArea += turfArea(polygon) / 10000;
-            });
+            const totalBufferedArea = bufferedLines.reduce((acc, buffer) =>
+                acc + turfArea(turfPolygon([buffer.geometry.coordinates[0]])) / 10000, 0);
 
             const appliedArea = totalBufferedArea - totalIntersectionArea;
 
             if (onAreasCalculated) {
+                const areaSobreAplicada = totalIntersectionArea.toFixed(3);
+                const areaAplicada = appliedArea.toFixed(3);
+                const porcentajeDeVariacion = (areaSobreAplicada / areaAplicada * 100).toFixed(3);
+
                 onAreasCalculated({
-                    areaSobreAplicada: totalIntersectionArea.toFixed(3),
-                    areaAplicada: appliedArea.toFixed(3),
-                    porcentajeDeVariacion: (((totalIntersectionArea.toFixed(3) / appliedArea.toFixed(3))) * 100).toFixed(3)
-            });
+                    areaSobreAplicada,
+                    areaAplicada,
+                    porcentajeDeVariacion
+                });
             }
         }
     }, [bufferedLines]);
 
+    const isValidPolygon = ({ type, coordinates }) =>
+        type === 'Polygon' &&
+        Array.isArray(coordinates) &&
+        coordinates.length > 0 &&
+        coordinates.every(
+            ring =>
+                Array.isArray(ring) &&
+                ring.length >= 4 && // Un polígono debe tener al menos 4 puntos (incluyendo el cierre del anillo)
+                ring.every(point => Array.isArray(point) && point.length === 2)
+        );
+
+
+    const areValidGeometries = (buffer1, buffer2) => {
+        if (!buffer1?.geometry || !buffer2?.geometry) return false;
+        const geom1 = buffer1.geometry;
+        const geom2 = buffer2.geometry;
+
+        if (
+            !isValidPolygon(geom1) ||
+            !isValidPolygon(geom2) ||
+            JSON.stringify(geom1.coordinates) === JSON.stringify(geom2.coordinates)
+        ) return false;
+
+        return true;
+    };
+
     const calculateBufferedIntersections = (bufferedLines) => {
-        let intersections = [];
+        const intersections = [];
+
         bufferedLines.forEach((buffer1, i) => {
             bufferedLines.slice(i + 1).forEach(buffer2 => {
-                const intersection = turfIntersect(buffer1, buffer2);
-                if (intersection) {
-                    if (intersection.geometry.type === 'MultiPolygon') {
-                        intersection.geometry.coordinates.forEach(coords => {
-                            intersections.push(coords[0]);
-                        });
-                    } else if (intersection.geometry.type === 'Polygon') {
-                        intersections.push(intersection.geometry.coordinates[0]);
+                if (areValidGeometries(buffer1, buffer2)) {
+                    try {
+                        const intersection = turfIntersect(buffer1, buffer2);
+                        if (intersection && isValidPolygon(intersection.geometry)) {
+                            const coords = intersection.geometry.coordinates;
+                            if (intersection.geometry.type === 'MultiPolygon') {
+                                coords.forEach(coord => intersections.push(coord[0]));
+                            } else {
+                                intersections.push(coords[0]);
+                            }
+                        }
+                    } catch (error) {
                     }
                 }
             });
         });
-
         setBufferedIntersections(intersections);
 
-        let totalIntersectionArea = 0;
-        intersections.forEach(intersection => {
-            const polygon = turfPolygon([intersection]);
-            totalIntersectionArea += turfArea(polygon) / 10000;
-        });
+        const totalIntersectionArea = intersections.reduce((acc, intersection) =>
+            acc + turfArea(turfPolygon([intersection])) / 10000, 0);
 
         return totalIntersectionArea;
     };
+
+
+
+
     useEffect(() => {
         if (isDrawingLine && mapRef.current) {
             const map = mapRef.current;
@@ -1033,7 +1101,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 default:
                     break;
             }
-            if(activeTool === 'delete'){
+            if (activeTool === 'delete') {
                 handleDeleteLine();
             }
 
@@ -1065,7 +1133,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 if (previewLayer) {
                     previewLayer.setLatLngs(previewLine);
                 } else {
-                    previewLayer = L.polyline(previewLine, { color: 'blue', dashArray: '5, 10' }).addTo(map);
+                    previewLayer = L.polyline(previewLine, {color: 'blue', dashArray: '5, 10'}).addTo(map);
                 }
             };
 
@@ -1096,13 +1164,13 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
                                 splitResult.features.forEach(f => {
                                     const newLine = f.geometry.coordinates.map(coord => new L.LatLng(coord[1], coord[0]));
-                                    const polyline = L.polyline(newLine, { color: 'red' }).addTo(map);
+                                    const polyline = L.polyline(newLine, {color: 'red'}).addTo(map);
 
                                     polyline.on('mouseover', handleLineHover);
                                     polyline.on('mouseout', handleLineMouseOut);
                                     polyline.on('click', (event) => handleLineClick(newLine, event));
 
-                                    newLines.push({ polyline, id: uuidv4() });
+                                    newLines.push({polyline, id: uuidv4()});
                                 });
                             } else {
                                 newLines.push(line);
@@ -1111,7 +1179,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
                         if (cutSuccessful) {
                             setLines(newLines);
-                            setActionHistory([...actionHistory, { type: 'cut', originalLines }]);
+                            setActionHistory([...actionHistory, {type: 'cut', originalLines}]);
                         }
 
                         map.off('mousemove', onMove);
@@ -1130,7 +1198,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
                     previewLine = [[e.latlng.lat, e.latlng.lng]];
 
-                    previewLayer = L.polyline(previewLine, { color: 'blue', dashArray: '5, 10' }).addTo(map);
+                    previewLayer = L.polyline(previewLine, {color: 'blue', dashArray: '5, 10'}).addTo(map);
 
                     map.on('mousemove', onMove); // Register move event
                 }
@@ -1151,17 +1219,17 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         if (mapRef.current && mapRef.current._loaded) {  // Verificación adicional
             const map = mapRef.current;
             let newLine = [];
-            let polyline = L.polyline([], { color: 'red', pane: 'overlayPane' }).addTo(map);
+            let polyline = L.polyline([], {color: 'red', pane: 'overlayPane'}).addTo(map);
 
             const onMove = (e) => {
                 if (newLine.length > 0) {
-                    const currentLine = [...newLine, { lat: e.latlng.lat, lng: e.latlng.lng }];
+                    const currentLine = [...newLine, {lat: e.latlng.lat, lng: e.latlng.lng}];
                     polyline.setLatLngs(currentLine);
                 }
             };
 
             const onClick = (e) => {
-                newLine.push({ lat: e.latlng.lat, lng: e.latlng.lng });
+                newLine.push({lat: e.latlng.lat, lng: e.latlng.lng});
                 polyline.addLatLng(e.latlng);
             };
 
@@ -1181,8 +1249,11 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
                 const lineId = uuidv4();
 
-                setLines([...lines, { polyline: polyline, _latlngs: newLine, id: lineId }]);
-                setActionHistory([...actionHistory, { type: 'draw', line: { polyline: polyline, _latlngs: newLine, id: lineId } }]);
+                setLines([...lines, {polyline: polyline, _latlngs: newLine, id: lineId}]);
+                setActionHistory([...actionHistory, {
+                    type: 'draw',
+                    line: {polyline: polyline, _latlngs: newLine, id: lineId}
+                }]);
 
                 map.off('click', onClick);
                 map.off('mousemove', onMove);
@@ -1222,7 +1293,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 return newLines;
             });
             setActionHistory(prevActionHistory => {
-                const newActionHistory = [...prevActionHistory, { type: 'delete', line: lineInState }];
+                const newActionHistory = [...prevActionHistory, {type: 'delete', line: lineInState}];
                 return newActionHistory;
             });
             setOnClickLinea(true);
@@ -1233,7 +1304,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
 
     useEffect(() => {
-        if(onClickLinea){
+        if (onClickLinea) {
             handleDeleteLine();
             setOnClickLinea(false);
         }
@@ -1241,14 +1312,14 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
 
     useEffect(() => {
-        if(onClickDrawLine){
+        if (onClickDrawLine) {
             handleDrawLine();
             setOnClickDrawLine(false);
         }
     }, [onClickDrawLine]);
 
     useEffect(() => {
-        if(onClickCuteLine){
+        if (onClickCuteLine) {
             handleCutLine();
             setOnClickCuteLine(false);
         }
@@ -1275,21 +1346,20 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
     const handleDeleteLine = () => {
         setActiveTool('delete');
-        setIsFirstLoad(false);
-        setOnClickLineaStrech(false);
         if (mapRef.current) {
             const map = mapRef.current;
-            map.off('click');
-            // Reasignar los eventos de clic inicialmente
-            reassignLineClickListeners(map, onLineClick);
-        } else {
-            console.error("Map reference not found");
+            map.eachLayer(layer => {
+                if (layer instanceof L.Polyline) {
+                    layer.off('click');
+                    layer.on('click', (e) => handleLineClick(layer.getLatLngs(), e));
+                }
+            });
         }
     };
 
 
     useEffect(() => {
-        if(onClickLineaStrech){
+        if (onClickLineaStrech) {
             handleStretchLine();
         }
 
@@ -1321,8 +1391,16 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 console.log("Selected line set");
 
                 // Resaltar los extremos de la línea
-                const startMarker = L.circleMarker(clickedLatLngs[0], { color: 'blue', radius: 5, draggable: true }).addTo(map);
-                const endMarker = L.circleMarker(clickedLatLngs[clickedLatLngs.length - 1], { color: 'blue', radius: 5, draggable: true }).addTo(map);
+                const startMarker = L.circleMarker(clickedLatLngs[0], {
+                    color: 'blue',
+                    radius: 5,
+                    draggable: true
+                }).addTo(map);
+                const endMarker = L.circleMarker(clickedLatLngs[clickedLatLngs.length - 1], {
+                    color: 'blue',
+                    radius: 5,
+                    draggable: true
+                }).addTo(map);
                 console.log("Start and end markers added to map:", startMarker, endMarker);
                 setStretchPoints([startMarker, endMarker]);
                 console.log("Stretch points set");
@@ -1330,7 +1408,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 const onDrag = (isStart, e) => {
                     console.log(`Dragging ${isStart ? 'start' : 'end'} point`, e);
                     const updatedLatLngs = [...clickedLatLngs];
-                    const updatedPoint = { lat: e.target.getLatLng().lat, lng: e.target.getLatLng().lng };
+                    const updatedPoint = {lat: e.target.getLatLng().lat, lng: e.target.getLatLng().lng};
 
                     if (isStart) {
                         updatedLatLngs[0] = updatedPoint;
@@ -1347,7 +1425,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                     map.dragging.enable(); // Habilitar interacción del mapa
 
                     const updatedLatLngs = [...clickedLatLngs];
-                    const updatedPoint = { lat: e.target.getLatLng().lat, lng: e.target.getLatLng().lng };
+                    const updatedPoint = {lat: e.target.getLatLng().lat, lng: e.target.getLatLng().lng};
 
                     if (isStart) {
                         updatedLatLngs[0] = updatedPoint;
@@ -1359,7 +1437,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                     setLines(lines.map(line => {
                         if (line.polyline === clickedLine) {
                             console.log("Updating line in state", line);
-                            return { ...line, polyline: clickedLine, _latlngs: clickedLine.getLatLngs() };
+                            return {...line, polyline: clickedLine, _latlngs: clickedLine.getLatLngs()};
                         }
                         return line;
                     }));
@@ -1422,7 +1500,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             for (let j = i + 1; j < coordinates.length; j++) {
                 const point1 = turfPoint(coordinates[i]);
                 const point2 = turfPoint(coordinates[j]);
-                const distance = turfDistance(point1, point2, { units: 'meters' });
+                const distance = turfDistance(point1, point2, {units: 'meters'});
 
                 if (distance > maxDistance) {
                     maxDistance = distance;
@@ -1436,7 +1514,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
     const calculateTotalLength = (coordinates) => {
         const [startPoint, endPoint] = calculateExtremePoints(coordinates);
-        return turfDistance(turfPoint(startPoint), turfPoint(endPoint), { units: 'meters' });
+        return turfDistance(turfPoint(startPoint), turfPoint(endPoint), {units: 'meters'});
     };
 
     const calculateDominantOrientation = (coordinates) => {
@@ -1450,11 +1528,11 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         const dominantOrientation = calculateDominantOrientation(coordinates);
 
         const [startLng, startLat] = calculateExtremePoints(coordinates)[0];
-        const destination = turfDestination(turfPoint([startLng, startLat]), totalLength / 1000, dominantOrientation, { units: 'kilometers' });
+        const destination = turfDestination(turfPoint([startLng, startLat]), totalLength / 1000, dominantOrientation, {units: 'kilometers'});
 
         const updatedLatLngs = [
-            { lat: startLat, lng: startLng },
-            { lat: destination.geometry.coordinates[1], lng: destination.geometry.coordinates[0] }
+            {lat: startLat, lng: startLng},
+            {lat: destination.geometry.coordinates[1], lng: destination.geometry.coordinates[0]}
         ];
 
         const newPolyline = L.polyline(updatedLatLngs, line.polyline.options);
@@ -1483,7 +1561,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
         const lineString1 = turfLineString(coords1);
         for (let coord of coords2) {
             const point = turfPoint(coord);
-            const distance = turfPointToLineDistance(point, lineString1, { units: 'kilometers' });
+            const distance = turfPointToLineDistance(point, lineString1, {units: 'kilometers'});
             if (distance > maxDistance) {
                 return false;
             }
@@ -1529,7 +1607,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
 
     const toggleUnfilteredLines = () => setShowUnfilteredLines(prevState => !prevState);
 
-        return (
+    return (
         <>
 
 
@@ -1550,6 +1628,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 filterValues={filterValues}
                 polygonProperties={polygonsProperties}
                 popupInfo={popupInfo}
+                setPopupInfo={setPopupInfo}
                 showIntersections={showIntersections}
                 mapRef={mapRef}
                 userId={userData.ID_USUARIO}
@@ -1562,6 +1641,7 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
                 onSelectLote={onSelectLote}
                 onHoverLote={onHoverLote}
                 areasSuperpuestas={areasSuperpuestas}
+                setImgLaflet={setImgLaflet}
             />
             {isKml && (
                 <FloatingToolsAerialApplications
@@ -1582,7 +1662,8 @@ const AerialApplications = ({ idAnalisis, tipoAnalisis, onAreasCalculated, onPro
             )}
 
             {polygons.length > 0 && lines.length === 0 && (
-                <BarIndicator filterType={activeFilter ? activeFilter : "aerialApplicationsTraslape"} isHistory={false} onLabelClick={handleLabelClick} />
+                <BarIndicator filterType={activeFilter ? activeFilter : "aerialApplicationsTraslape"} isHistory={false}
+                              onLabelClick={handleLabelClick}/>
             )}
 
             <MapDialog

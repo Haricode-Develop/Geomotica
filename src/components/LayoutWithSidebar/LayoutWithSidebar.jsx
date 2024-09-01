@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import SideBar from "../SideBar";
-import Navbar from "../Navbar";
+import SideBar from "../SideBar/SideBar";
+import Navbar from "../Navbar/Navbar";
 import { LayoutContainer, MainContent, ContentWrapper } from './LayoutWithSidebarStyle';
 
 const LayoutWithSidebar = ({ children }) => {

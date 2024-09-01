@@ -1,43 +1,8 @@
 // src/utils/mapUtils.js
 
-import leafletImage from 'leaflet-image';
 import axios from "axios";
 import {API_BASE_URL} from "./config";
 import {toast} from "react-toastify";
-
-/**
- * Captura la imagen del mapa actual y la devuelve como una Data URL.
- *
- * @param {Object} localMapRef - La referencia al mapa de Leaflet.
- * @returns {Promise<string>} Una promesa que se resuelve con la imagen en formato Data URL.
- */
-export const captureAndReturnMapImage = (localMapRef) => {
-    return new Promise((resolve, reject) => {
-
-        if (localMapRef.current) {
-
-            leafletImage(localMapRef.current, (err, canvas) => {
-                if (err) {
-                    console.error("Error al capturar la imagen del mapa:", err);
-                    reject(err);
-                    return;
-                }
-
-
-                // Convertir el canvas a un Data URL y resolver la promesa
-                const imgData = canvas.toDataURL('image/jpg');
-
-                resolve(imgData);
-            });
-        } else {
-            const error = new Error("localMapRef.current no está disponible.");
-            console.error("Error:", error.message);
-            reject(error);
-        }
-    });
-};
-
-
 
 
 export const ultimoAnalisis = async (selectedAnalysisTypeRef, idUsuario) => {

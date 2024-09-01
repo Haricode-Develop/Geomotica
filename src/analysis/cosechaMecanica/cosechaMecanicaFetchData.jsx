@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../../utils/Constants";
+import {API_BASE_URL_DASHBOARD} from "../../utils/config";
 import { ultimoAnalisis } from "../../utils/mapUtils";
 import {obtenerDatosCompletosCm} from "../../utils/Constants";
 
@@ -6,7 +7,7 @@ import {obtenerDatosCompletosCm} from "../../utils/Constants";
 export const fetchDataCosechaMecanica = async (idAnalisisCosechaMecanica, setDatosAnalisis) => {
     try {
         const data = await obtenerDatosCompletosCm(idAnalisisCosechaMecanica);
-
+        console.log("ESTE ES EL DATA: ", data);
         const datos = {
             nombreResponsable: data.nombreResponsable || '',
             fechaInicio: data.fechaInicio || '',
@@ -46,14 +47,47 @@ export const cargaDatosCosechaMecanica = async (userData, selectedAnalysisTypeRe
         try {
             const response = await ultimoAnalisis(selectedAnalysisTypeRef, userData.ID_USUARIO);
             if (response && response.data && response.data.ID_ANALISIS) {
-                console.log("CARGA DATOS DE COSECHA MECANICA: ", response.data.ID_ANALISIS);
                 setIdAnalisisCosechaMecanica(response.data.ID_ANALISIS);
                 return response;
             } else {
-                console.error("Respuesta del último análisis no contiene datos esperados");
             }
         } catch (error) {
             console.error("Error al obtener último análisis:", error);
         }
     }
+};
+
+export const processCosechaMecanicaData = (datosAnalisis, indicadores) => ({
+    analisis: "COSECHA_MECANICA",
+    ...datosAnalisis,
+    indicadores: {
+        ...indicadores,
+        nombreMaquina: datosAnalisis.nombreMaquina,
+        areaBrutaCm: datosAnalisis.areaBrutaCm,
+        horaInicio: datosAnalisis.horaInicio,
+        horaFin: datosAnalisis.horaFin,
+        tiempoTotalActividad: datosAnalisis.tiempoTotalActividad,
+        consumoCombustible: datosAnalisis.consumoCombustible,
+        calidadGps: datosAnalisis.calidadGps,
+        eficienciaCm: datosAnalisis.eficienciaCm,
+        promedioVelocidad: datosAnalisis.promedioVelocidad,
+        rpm: datosAnalisis.rpm,
+        tch: datosAnalisis.tch,
+        tah: datosAnalisis.tah,
+        presionCortadorBase: datosAnalisis.presionCortadorBase,
+        porcentajeAreaPilotoCm: datosAnalisis.porcentajeAreaPilotoCm,
+        porcentajeAreaAutoTrackerCm: datosAnalisis.porcentajeAreaAutoTrackerCm,
+        porcentajeModoCortadorBaseCm: datosAnalisis.porcentajeModoCortadorBaseCm,
+        codigoParcelaResponsable: datosAnalisis.codigoParcelaResponsable
+    }
+});
+
+
+export const fetchDataCosechaMecanicaIndicators = async () => {
+    const response = await fetch(`${API_BASE_URL_DASHBOARD}api/indicators/cosecha-mecanica`);
+    const data = await response.json();
+    return data.map(item => ({
+        title: item.indicatorName,
+        value: item.indicatorValue,
+    }));
 };

@@ -1,18 +1,18 @@
-import React, {useEffect, useState, useRef, useContext } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import { useSocket } from '../../context/SocketContext';
 import Papa from 'papaparse';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import JSZip from 'jszip';
 import pako from 'pako';
-import {API_BASE_PYTHON_SERVICE, API_BASE_URL} from '../../utils/config';
+import { API_BASE_PYTHON_SERVICE, API_BASE_URL } from '../../utils/config';
 import ProgressBar from "../../components/ProgressBar/ProgressBar";
 import MapSection from './MapSection/MapSection';
 import DataSection from './DataSection/DataSection';
 import Tutorial from '../../components/Tutorial/Tutorial';
 import ToolbarComponent from "../../components/ToolbarComponent/ToolbarComponent";
 import FilterToolbar from "../../components/FilterToolbar/FilterToolbar";
-import {Box, CircularProgress} from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import LoadingBar from "../../components/LoadingBar/LoadingBar";
 import {
     DashboardContainer,
@@ -21,21 +21,24 @@ import {
     MapSectionContainer,
     AnalysisSection,
 } from './DashboardStyle';
-import {sendDashboardData} from '../../utils/DashboardUtils';
-import {SidebarContext} from "../../context/SidebarContext";
+import { sendDashboardData } from '../../utils/DashboardUtils';
+import { SidebarContext } from "../../context/SidebarContext";
 import analysisConfig from "../../utils/analysisConfig";
 import sidebarOptionsConfig from "../../utils/sidebarOptionsConfig";
-import {manejarSubidaArchivo} from "../../utils/fileHandler";
-import {insertarUltimoAnalisis, obtenerLoteMasReciente} from "../../utils/mapUtils";
-import {ejecutarProcesoCosechaMecanica, ejecutarProcesoSinArchivoCosechaMecanica} from "../../analysis/cosechaMecanica/cosechaMecanicaProcess";
-import {ejecutarProcesoAps, ejecutarProcesoSinArchivoAps} from "../../analysis/aps/apsProcess";
-import {ejecutarProcesoHerbicidas, ejecutarProcesoSinArchivoHerbicidas} from "../../analysis/herbicidas/herbicidasProcess";
-import {ejecutarProcesoFertilizacion, ejecutarProcesoSinArchivoFertilizacion} from "../../analysis/fertilizacion/fertilizacionProcess";
-import {ejecutarProcesoConteoPalmas} from "../../analysis/conteoPalmas/conteoPalmasProcess";
-import {APLICACIONES_AEREAS, COSECHA_MECANICA, HERBICIDAS, FERTILIZACION, CONTEO_PALMA} from "../../utils/Constants";
-const Dashboard = React.memo(({ isSidebarOpen }) => {
+import { manejarSubidaArchivo } from "../../utils/fileHandler";
+import { insertarUltimoAnalisis, obtenerLoteMasReciente } from "../../utils/mapUtils";
+import { ejecutarProcesoCosechaMecanica, ejecutarProcesoSinArchivoCosechaMecanica } from "../../analysis/cosechaMecanica/cosechaMecanicaProcess";
+import { ejecutarProcesoAps, ejecutarProcesoSinArchivoAps } from "../../analysis/aps/apsProcess";
+import { ejecutarProcesoHerbicidas, ejecutarProcesoSinArchivoHerbicidas } from "../../analysis/herbicidas/herbicidasProcess";
+import { ejecutarProcesoFertilizacion, ejecutarProcesoSinArchivoFertilizacion } from "../../analysis/fertilizacion/fertilizacionProcess";
+import { ejecutarProcesoConteoPalmas } from "../../analysis/conteoPalmas/conteoPalmasProcess";
+import { APLICACIONES_AEREAS, COSECHA_MECANICA, HERBICIDAS, FERTILIZACION, CONTEO_PALMA } from "../../utils/Constants";
+import {CompanyContext} from "../../context/CompanyContext";
 
-    const userData = JSON.parse(localStorage.getItem("userData"));
+const Dashboard = React.memo(({ isSidebarOpen }) => {
+    const { logo } = useContext(CompanyContext);
+
+    const userData = JSON.parse(localStorage.getItem("userData")) || {};
     const [runTutorial, setRunTutorial] = useState(false);
     const [tutorialKey, setTutorialKey] = useState(0);
     const [progress, setProgress] = useState(0);
@@ -86,10 +89,10 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
     const [loading, setLoading] = useState(true);
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
     const socketContext = useSocket();
-    const { socket, socketSessionID } = socketContext;
+    const { socket, socketSessionID } = socketContext || {};
     const [indicadores, setIndicadores] = useState('');
     const [imgLaflet, setImgLaflet] = useState(null);
-    const { selectedSidebarOption } = useContext(SidebarContext);
+    const { selectedSidebarOption } = useContext(SidebarContext) || {};
     const [filterOptions, setFilterOptions] = useState([]);
     const [analysisOptions, setAnalysisOptions] = useState([]);
     const [ultimoAnalisis, setUltimoAnalisis] = useState(null);
@@ -97,9 +100,17 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
     const [northWestCoords, setNorthWestCoords] = useState(null);
     const [southEastCoords, setSouthEastCoords] = useState(null);
     const [conteoPalmas, setConteoPalmas] = useState(0);
+    const [highlightedLote, setHighlightedLote] = useState(null);
+    const [isAnalysisPerformed, setIsAnalysisPerformed] = useState(false);
+    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+    const mapRef = useRef(null);
 
     useEffect(() => {
-        obtenerLoteMasReciente(setLoading, setPolygonsData, userData.ID_USUARIO);
+        try {
+            obtenerLoteMasReciente(setLoading, setPolygonsData, userData.ID_USUARIO);
+        } catch (error) {
+            console.error("Error en obtenerLoteMasReciente:", error);
+        }
     }, []);
 
     useEffect(() => {
@@ -109,19 +120,21 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
         };
     }, [setDatosMapeo, setSelectedFile]);
 
-
-
     useEffect(() => {
         if (socket) {
             socket.on(`${socketSessionID}:progressUpdate`, (data) => {
-                const progressNumber = Number(data.progress);
-                const message = data.message;
-                setProgress(progressNumber);
-                setProgressMessage(message);
-                setShowProgressBar(progressNumber < 100);
-                if (progressNumber === 80) {
-                    socket.emit(`${socketSessionID}:progressUpdate`, {progress: 100, message: "Finalizado"});
-                    setShowProgressBar(false);
+                try {
+                    const progressNumber = Number(data.progress);
+                    const message = data.message;
+                    setProgress(progressNumber);
+                    setProgressMessage(message);
+                    setShowProgressBar(progressNumber < 100);
+                    if (progressNumber === 80) {
+                        socket.emit(`${socketSessionID}:progressUpdate`, { progress: 100, message: "Finalizado" });
+                        setShowProgressBar(false);
+                    }
+                } catch (error) {
+                    console.error("Error en el manejador de progressUpdate:", error);
                 }
             });
 
@@ -141,27 +154,37 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
         }
     }, [socket, socketSessionID]);
 
-
-
     useEffect(() => {
+        console.log("ESTE ES EL SELECTED ANALYSIS TYPE: ", selectedAnalysisType);
         const config = analysisConfig[selectedAnalysisType];
-
+        console.log("ESTE ES EL CONFIG: ", config);
         if (config && config.fetchData) {
-
-            config.fetchData(idAnalisisUltimoAnalisis, setDatosAnalisis);
+            try {
+                if (selectedAnalysisType === 'CONTEO_PALMA') {
+                    config.fetchData(conteoPalmas, setDatosAnalisis); // Pasar conteoPalmas directamente
+                } else {
+                    config.fetchData(idAnalisisUltimoAnalisis, setDatosAnalisis);
+                }
+            } catch (error) {
+                console.error("Error en config.fetchData:", error);
+            }
         }
-    }, [idAnalisisCosechaMecanica, idAnalisisAps, idAnalisisHerbicidas, idAnalisisFertilizacion]);
+    }, [idAnalisisCosechaMecanica, idAnalisisAps, idAnalisisHerbicidas, idAnalisisFertilizacion, conteoPalmas]);
 
 
     useEffect(() => {
         const config = analysisConfig[selectedAnalysisType];
-        if (config && config.shouldEnableExecBash) {
-            setExecBashEnabled(config.shouldEnableExecBash(selectedFile || selectedZipFile));
-        } else {
+        try {
+            if (config && config.shouldEnableExecBash) {
+                setExecBashEnabled(config.shouldEnableExecBash(selectedFile || selectedZipFile));
+            } else {
+                setExecBashEnabled(false);
+            }
+        } catch (error) {
+            console.error("Error en config.shouldEnableExecBash:", error);
             setExecBashEnabled(false);
         }
     }, [selectedAnalysisType, selectedFile, selectedZipFile]);
-
 
     useEffect(() => {
         selectedAnalysisTypeRef.current = selectedAnalysisType;
@@ -173,46 +196,64 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
 
     useEffect(() => {
         const config = sidebarOptionsConfig[selectedSidebarOption];
-
-        if (config) {
-            setAnalysisOptions(config.analysisOptions || []);
-            setFilterOptions(config.filterOptions || []);
+        try {
+            if (config) {
+                setAnalysisOptions(config.analysisOptions || []);
+                setFilterOptions(config.filterOptions || []);
+            }
+        } catch (error) {
+            console.error("Error en config de sidebarOptionsConfig:", error);
+            setAnalysisOptions([]);
+            setFilterOptions([]);
         }
     }, [selectedSidebarOption]);
 
     useEffect(() => {
-        if(idAnalisisUltimoAnalisis){
-            setIdAnalisisAps(idAnalisisUltimoAnalisis);
-            setIdAnalisisCosechaMecanica(idAnalisisUltimoAnalisis);
-            setIdAnalisisFertilizacion(idAnalisisUltimoAnalisis);
-            setIdAnalisisHerbicidas(idAnalisisUltimoAnalisis);
+        try {
+            if (idAnalisisUltimoAnalisis) {
+                setIdAnalisisAps(idAnalisisUltimoAnalisis);
+                setIdAnalisisCosechaMecanica(idAnalisisUltimoAnalisis);
+                setIdAnalisisFertilizacion(idAnalisisUltimoAnalisis);
+                setIdAnalisisHerbicidas(idAnalisisUltimoAnalisis);
+            }
+        } catch (error) {
+            console.error("Error en setIdAnalisis:", error);
         }
     }, [idAnalisisUltimoAnalisis]);
 
     const handleDatosInsertados = async () => {
-        const config = analysisConfig[selectedAnalysisTypeRef.current];
-        if (config && config.cargaDatos) {
-            setUltimoAnalisis(await config.cargaDatos(userData, selectedAnalysisTypeRef, setIdAnalisisUltimoAnalisis));
-        } else {
-            toast.warn('Debes seleccionar un tipo de análisis.', {
-                position: "top-right",
-                autoClose: 5000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-            });
+        try {
+            const config = analysisConfig[selectedAnalysisTypeRef.current];
+            if (config && config.cargaDatos) {
+                setUltimoAnalisis(await config.cargaDatos(userData, selectedAnalysisTypeRef, setIdAnalisisUltimoAnalisis));
+            } else {
+                toast.warn('Debes seleccionar un tipo de análisis.', {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                });
+            }
+        } catch (error) {
+            console.error("Error en handleDatosInsertados:", error);
         }
     };
+
     function nombreAnalisis(idAnalisis) {
-        const entry = Object.entries(analysisConfig).find(([, config]) => config.id === idAnalisis);
-        return entry ? entry[0] : "";
+        try {
+            const entry = Object.entries(analysisConfig).find(([, config]) => config.id === idAnalisis);
+            return entry ? entry[0] : "";
+        } catch (error) {
+            console.error("Error en nombreAnalisis:", error);
+            return "";
+        }
     }
 
     const handleFileUpload = async (event) => {
         try {
-            // Primero subir el archivo y procesar
             await manejarSubidaArchivo(
                 event,
                 setTitleLoader,
@@ -234,71 +275,84 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
     };
 
     const execBash = async () => {
-        setShowProgressBar(true);
-        setTitleLoader("Cargando Análisis");
-        const idUsuario = userData.ID_USUARIO;
+        try {
+            setIsAnalysisPerformed(true);
+            setShowProgressBar(true);
+            setTitleLoader("Cargando Análisis");
+            const idUsuario = userData.ID_USUARIO;
 
-        if (!idAnalisisBash) {
-            toast.error('Debe seleccionar un análisis antes de continuar', {
-                position: toast.POSITION.TOP_RIGHT,
-                autoClose: 5000,
-                hideProgressBar: true,
-            });
-            return;
-        }
+            if (!idAnalisisBash) {
+                toast.error('Debe seleccionar un análisis antes de continuar', {
+                    position: toast.POSITION.TOP_RIGHT,
+                    autoClose: 5000,
+                    hideProgressBar: true,
+                });
+                return;
+            }
 
-        if (!selectedFile) {
-            ejecutarProcesoSinArchivo();
-            return;
-        }
+            if (!selectedFile) {
+                await ejecutarProcesoSinArchivo();
+                return;
+            }
 
-        if (idAnalisisBash === APLICACIONES_AEREAS) {
-            await ejecutarProcesoAps({
-                selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID, activarEdicionInteractiva, setShowProgressBar, setProgress, setTitleLoader
-            });
-        } else if (idAnalisisBash === COSECHA_MECANICA) {
-            await ejecutarProcesoCosechaMecanica({
-                selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID, setShowProgressBar, setProgress, setTitleLoader, setLoadingProgress
-            });
-        } else if (idAnalisisBash === HERBICIDAS) {
-            await ejecutarProcesoHerbicidas({
-                selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID
-            });
-        } else if (idAnalisisBash === FERTILIZACION) {
-            await ejecutarProcesoFertilizacion({
-                selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID
-            });
+            if (idAnalisisBash === APLICACIONES_AEREAS) {
+                await ejecutarProcesoAps({
+                    selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID, activarEdicionInteractiva, setShowProgressBar, setProgress, setTitleLoader
+                });
+            } else if (idAnalisisBash === COSECHA_MECANICA) {
+                await ejecutarProcesoCosechaMecanica({
+                    selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID, setShowProgressBar, setProgress, setTitleLoader, setLoadingProgress
+                });
+            } else if (idAnalisisBash === HERBICIDAS) {
+                await ejecutarProcesoHerbicidas({
+                    selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID
+                });
+            } else if (idAnalisisBash === FERTILIZACION) {
+                await ejecutarProcesoFertilizacion({
+                    selectedFile, selectedZipFile, idMax, idUsuario, setProcessingFinished, socket, socketSessionID
+                });
+            }
+        } catch (error) {
+            console.error("Error en execBash:", error);
         }
     };
 
     const ejecutarProcesoSinArchivo = async () => {
-        const idUsuario = userData.ID_USUARIO;
+        try {
+            const idUsuario = userData.ID_USUARIO;
 
-        if (idAnalisisBash === APLICACIONES_AEREAS) {
-            await ejecutarProcesoSinArchivoAps({
-                idMax, idUsuario, setProcessingFinished
-            });
-        } else if (idAnalisisBash === COSECHA_MECANICA) {
-            await ejecutarProcesoSinArchivoCosechaMecanica({
-                idMax, idUsuario, setProcessingFinished
-            });
-        } else if (idAnalisisBash === HERBICIDAS) {
-            await ejecutarProcesoSinArchivoHerbicidas({
-                idMax, idUsuario, setProcessingFinished
-            });
-        } else if (idAnalisisBash === FERTILIZACION) {
-            await ejecutarProcesoSinArchivoFertilizacion({
-                idMax, idUsuario, setProcessingFinished
-            });
-        } else if (idAnalisisBash === CONTEO_PALMA) {
-            await ejecutarProcesoConteoPalmas({
-                selectedZipFile, setProcessingFinished, setImageUrl, setNorthWestCoords, setSouthEastCoords, setConteoPalmas, socket, socketSessionID, setProgress, setTitleLoader, setShowProgressBar
-            });
+            if (idAnalisisBash === APLICACIONES_AEREAS) {
+                await ejecutarProcesoSinArchivoAps({
+                    idMax, idUsuario, setProcessingFinished
+                });
+            } else if (idAnalisisBash === COSECHA_MECANICA) {
+                await ejecutarProcesoSinArchivoCosechaMecanica({
+                    idMax, idUsuario, setProcessingFinished
+                });
+            } else if (idAnalisisBash === HERBICIDAS) {
+                await ejecutarProcesoSinArchivoHerbicidas({
+                    idMax, idUsuario, setProcessingFinished
+                });
+            } else if (idAnalisisBash === FERTILIZACION) {
+                await ejecutarProcesoSinArchivoFertilizacion({
+                    idMax, idUsuario, setProcessingFinished
+                });
+            } else if (idAnalisisBash === CONTEO_PALMA) {
+                await ejecutarProcesoConteoPalmas({
+                    selectedZipFile, setProcessingFinished, setImageUrl, setNorthWestCoords, setSouthEastCoords, setConteoPalmas, socket, socketSessionID, setProgress, setTitleLoader, setShowProgressBar
+                });
+            }
+        } catch (error) {
+            console.error("Error en ejecutarProcesoSinArchivo:", error);
         }
     };
 
     const handleAnalysisTypeChange = (event) => {
-        setSelectedAnalysisType(event.target.value);
+        try {
+            setSelectedAnalysisType(event.target.value);
+        } catch (error) {
+            console.error("Error en handleAnalysisTypeChange:", error);
+        }
     };
 
     const esValorValido = (valor) => {
@@ -306,59 +360,88 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
     };
 
     const toggleEdicionInteractiva = () => {
-        setActivarEdicionInteractiva(prev => !prev);
+        try {
+            setActivarEdicionInteractiva(prev => !prev);
+        } catch (error) {
+            console.error("Error en toggleEdicionInteractiva:", error);
+        }
     };
 
-
-    //*********** LOTES INICIALES
-
-    const [highlightedLote, setHighlightedLote] = useState(null);
-
     const onHoverLote = (loteId) => {
-        setHighlightedLote(loteId);
+        try {
+            setHighlightedLote(loteId);
+        } catch (error) {
+            console.error("Error en onHoverLote:", error);
+        }
     };
 
     const onLeaveLote = () => {
-        setHighlightedLote(null);
+        try {
+            setHighlightedLote(null);
+        } catch (error) {
+            console.error("Error en onLeaveLote:", error);
+        }
     };
-
 
     const onSelectLote = (loteId) => {
-        setActiveLotes((prevActiveLotes) =>
-            prevActiveLotes.includes(loteId)
-                ? prevActiveLotes.filter((id) => id !== loteId)
-                : [...prevActiveLotes, loteId]
-        );
+        try {
+            setActiveLotes((prevActiveLotes) =>
+                prevActiveLotes.includes(loteId)
+                    ? prevActiveLotes.filter((id) => id !== loteId)
+                    : [...prevActiveLotes, loteId]
+            );
+        } catch (error) {
+            console.error("Error en onSelectLote:", error);
+        }
     };
-
 
     const clearAllLotes = () => {
-        setActiveLotes([]);
+        try {
+            setActiveLotes([]);
+        } catch (error) {
+            console.error("Error en clearAllLotes:", error);
+        }
     };
-
 
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" height="65vh">
-                <CircularProgress/>
+                <CircularProgress />
             </Box>
         );
     }
 
-    const handleSendDashboardData = async () => {
-        if(imgLaflet){
-            await sendDashboardData(imgLaflet, indicadores);
-        }else{
-            console.warn("No se ha generado el mapa");
+    const handleSendDashboardData = async (imgData) => {
+        try {
+            if (imgData) {
+                await sendDashboardData(imgData, indicadores, userData.ID_USUARIO, logo);
+            } else {
+                console.error("No se pudo capturar la imagen del mapa.");
+            }
+        } catch (error) {
+            console.error("Error en handleSendDashboardData:", error);
+        } finally {
+            setIsGeneratingReport(false); // Finaliza el loader cuando termine el proceso
         }
-    }
-
-    // Generar mapeos
-
-    const openFilterDialog = () => setIsFilterDialogOpen(true);
-    const closeFilterDialog = () => setIsFilterDialogOpen(false);
+    };
 
 
+
+    const openFilterDialog = () => {
+        try {
+            setIsFilterDialogOpen(true);
+        } catch (error) {
+            console.error("Error en openFilterDialog:", error);
+        }
+    };
+
+    const closeFilterDialog = () => {
+        try {
+            setIsFilterDialogOpen(false);
+        } catch (error) {
+            console.error("Error en closeFilterDialog:", error);
+        }
+    };
 
     return (
         <DashboardContainer>
@@ -400,8 +483,12 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
                             setUploadedZipFileName={setUploadedZipFileName}
                             setOpenSnackbar={setOpenSnackbar}
                             setIsKMLFile={setIsKMLFile}
+                            mapRef={mapRef}
+                            setImgLaflet={setImgLaflet}
+                            isGeneratingReport={isGeneratingReport}
+                            setIsGeneratingReport={setIsGeneratingReport}
                         />
-                        <FilterToolbar isSidebarOpen={isSidebarOpen} isDashboardIndicators={false} filterOptions={filterOptions}/>
+                        <FilterToolbar isSidebarOpen={isSidebarOpen} isDashboardIndicators={false} filterOptions={filterOptions} />
                     </DashboardControls>
                     <MapSectionContainer>
                         <MapSection
@@ -440,6 +527,8 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
                             imageUrl={imageUrl}
                             northWestCoords={northWestCoords}
                             southEastCoords={southEastCoords}
+                            isAnalysisPerformed={isAnalysisPerformed}
+                            mapRef={mapRef}
                         />
                     </MapSectionContainer>
                     <AnalysisSection ref={dashboardRef}>
@@ -465,7 +554,6 @@ const Dashboard = React.memo(({ isSidebarOpen }) => {
                     </AnalysisSection>
                 </div>
             </MainContent>
-
         </DashboardContainer>
     );
 });

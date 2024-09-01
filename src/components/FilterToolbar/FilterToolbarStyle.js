@@ -12,7 +12,7 @@ export const FilterBar = styled(AppBar)(({ isSidebarOpen, isDashboardIndicators 
     top: isDashboardIndicators ? 'auto' : '135px',
     width: isDashboardIndicators ? '100%' : isSidebarOpen ? 'calc(100% - 250px)' : 'calc(100% - 160px)',
     transition: 'width 0.5s ease',
-    zIndex: isDashboardIndicators ? 'auto' : 1099,
+    zIndex: isDashboardIndicators ? 'auto' : 1000,
 }));
 
 export const FilterButton = styled(Button)({

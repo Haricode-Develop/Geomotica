@@ -2,9 +2,11 @@ import React, {useEffect, useRef, useState} from 'react';
 import axios from 'axios';
 import CommonMap from "../components/CommonMap/CommonMap";
 
-const PalmsCount = ({ imageUrl, activeLotes, polygonsData, southEastCoords, northWestCoords }) => {
+const PalmsCount = ({imageUrl, activeLotes, polygonsData, southEastCoords, northWestCoords, setImgLaflet, mapRef}) => {
+
+
     const [imageData, setImageData] = useState(null);
-    const mapRef = useRef(null);
+
     const [mapCenter, setMapCenter] = useState([0, 0]);
     const [zoom, setZoom] = useState(3);
 
@@ -13,7 +15,6 @@ const PalmsCount = ({ imageUrl, activeLotes, polygonsData, southEastCoords, nort
             setImageData(imageUrl);
         }
     }, [imageUrl]);
-
 
 
     return (
@@ -26,6 +27,7 @@ const PalmsCount = ({ imageUrl, activeLotes, polygonsData, southEastCoords, nort
             polygonsData={polygonsData}
             southEastCoords={southEastCoords}
             northWestCoords={northWestCoords}
+            setImgLaflet={setImgLaflet}
         />
     );
 };

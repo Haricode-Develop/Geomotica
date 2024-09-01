@@ -105,7 +105,7 @@ const procesarArchivoCsv = async (
     const CancelToken = axios.CancelToken;
     let cancel;
 
-    const worker = new Worker('FileWorkerChunking.js');
+    const worker = new Worker('Workers/FileWorkerChunking.js');
 
     const chunkSize = 1024 * 1024; // 1MB por fragmento
     const totalChunks = Math.ceil(archivoConvertido.size / chunkSize);
@@ -211,7 +211,6 @@ export const manejarSubidaZip = async (
     setIsKMLFile
 ) => {
     const file = event.target.files[0];
-    console.log("ESTE ES EL FILE: ", file);
     setSelectedZipFile(file);
 
     if (file) {
