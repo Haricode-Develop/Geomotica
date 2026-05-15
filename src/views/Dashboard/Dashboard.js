@@ -69,6 +69,7 @@ import {
     obtenerNombreOperadorAps,
     obtenerTiempoTotalActividadesAps,
     obtenerResponsableAps,
+    obtenerDatosCompletosAps,
     //HERBICIDAS
     obtenerAreaBrutaHerbicidas,
     obtenerEficienciaHerbicidas,
@@ -339,34 +340,36 @@ function Dashboard() {
 
     // Indicadores APS
     useEffect(() => {
-        // Solo ejecutar si idAnalisisAps está definido
         if (!idAnalisisAps) return;
+
+        const formatListValue = (value) => {
+            if (Array.isArray(value)) return value.filter(Boolean).join(', ');
+            return value || null;
+        };
 
         const fetchData = async () => {
             try {
-                // Espera a que todas las promesas se resuelvan
-                await Promise.all([
-                    obtenerResponsableAps(idAnalisisAps),
-                    obtenerFechaInicioCosechaAps(idAnalisisAps),
-                    obtenerFechaFinCosechaAps(idAnalisisAps),
-                    obtenerNombreFincaAps(idAnalisisAps),
-                    obtenerCodigoParcelasAps(idAnalisisAps),
-                    obtenerNombreOperadorAps(idAnalisisAps),
-                    obtenerEquipoAps(idAnalisisAps),
-                    obtenerActividadAps(idAnalisisAps),
-                    obtenerAreaNetaAps(idAnalisisAps),
-                    obtenerAreaBrutaAps(idAnalisisAps),
-                    obtenerDiferenciaEntreAreasAps(idAnalisisAps),
-                    obtenerHoraInicioAps(idAnalisisAps),
-                    obtenerHoraFinalAps(idAnalisisAps),
-                    obtenerTiempoTotalActividadesAps(idAnalisisAps),
-                    obtenerEficienciaAps(idAnalisisAps),
-                    obtenerPromedioVelocidadAps(idAnalisisAps)
-                ]);
-                // Actualiza el estado después de completar todas las promesas
+                const data = await obtenerDatosCompletosAps(idAnalisisAps);
+                if (!data) return;
+
+                setResponsableAps(data.nombreResponsable);
+                setFechaInicioCosechaAps(data.fechaInicio);
+                setFechaFinCosechaAps(data.fechaFin);
+                setNombreFincaAps(formatListValue(data.nombresFincaLista) || data.nombreFinca);
+                setCodigoParcelasAps(formatListValue(data.codigosLoteLista) || formatListValue(data.lotesLista) || data.codigoLote);
+                setNombreOperadorAps(data.nombreOperador);
+                setEquipoAps(data.equipo || data.codigoEquipo);
+                setActividadAps(data.actividad);
+                setAreaNetaAps(data.areaNeta || data.areaAplicada || data.areaAplicadaConUnidad);
+                setAreaBrutaAps(data.areaBruta || data.areaTotal || data.areaTotalConUnidad);
+                setDiferenciaEntreAreasAps(data.diferenciaEntreAreas || data.areaNoAplicada || data.areaNoAplicadaConUnidad);
+                setHoraInicioAps(data.horaInicio);
+                setHoraFinalAps(data.horaFin);
+                setTiempoTotalActividadesAps(data.tiempoTotal);
+                setEficienciaAps(data.eficiencia);
+                setPromedioVelocidadAps(data.velocidadConUnidad || data.velocidad);
                 setDatosCargadosAps(true);
             } catch (error) {
-                // Manejo de errores en caso de que alguna de las promesas falle
                 console.error("Error al cargar datos de APS:", error);
             }
         };
@@ -535,10 +538,15 @@ function Dashboard() {
         }
     };
 
-    const insertarUltimoAnalisis = async() =>{
+    const insertarUltimoAnalisis = async(detalles = null) =>{
 
-        if(selectedAnalysisTypeRef.current !== null || selectedAnalysisTypeRef.current !== ''){
-            return await axios.post(`${API_BASE_URL}dashboard/insert_analisis/${userData.ID_USUARIO}/${nombreAnalisis(idAnalisisBash)}`)
+        if(selectedAnalysisTypeRef.current){
+            const payload = detalles ? { detalles } : {};
+
+            return await axios.post(
+                `${API_BASE_URL}dashboard/insert_analisis/${nombreAnalisis(idAnalisisBash)}/${userData.ID_USUARIO}`,
+                payload
+            )
         }else{
             toast.warn('No se pudo insertar el análisis', {
                 position: "top-right",
@@ -611,6 +619,108 @@ function Dashboard() {
         COSECHA_MECANICA: "/templates/COSECHA_MECANICA.csv",
         FERTILIZACION: "/templates/FERTILIZACION.csv",
         HERBICIDAS: "/templates/HERBICIDAS.csv"
+    };
+
+    const isApsAnalysis = selectedAnalysisType === 'APS';
+    const [apsManualData, setApsManualData] = useState({
+        plataforma: 'DRONE',
+        responsable: '',
+        nombreOperador: '',
+        nombreFinca: '',
+        codigoLotes: '',
+        fechaInicio: '',
+        fechaFinal: '',
+        horaInicio: '',
+        horaFin: '',
+        codigoMaquina: '',
+        eficiencia: '',
+        dosisTeorica: '',
+        volumenAgua: '',
+        dosisProducto: '',
+        producto: '',
+        humedadCultivo: '',
+        tchEstimado: ''
+    });
+
+    const handleApsManualChange = (field, value) => {
+        setApsManualData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const splitLotes = (value) => String(value || '')
+        .split(/[;,|]/g)
+        .map(item => item.trim())
+        .filter(Boolean);
+
+    const buildApsDetalles = () => {
+        const lotes = splitLotes(apsManualData.codigoLotes);
+        return {
+            NOMBRE_FINCA: apsManualData.nombreFinca.trim(),
+            NOMBRES_FINCA: apsManualData.nombreFinca.trim() ? [apsManualData.nombreFinca.trim()] : [],
+            CODIGO_LOTE: lotes.join(', '),
+            CODIGOS_LOTE: lotes,
+            LOTE: lotes.join(', '),
+            PLATAFORMA: apsManualData.plataforma,
+            RESPONSABLE: apsManualData.responsable.trim(),
+            NOMBRE_DE_OPERADOR: apsManualData.nombreOperador.trim(),
+            FECHA_INICIO: apsManualData.fechaInicio,
+            FECHA_FINAL: apsManualData.fechaFinal,
+            PRODUCTO: apsManualData.producto.trim()
+        };
+    };
+
+    const formatDateForCsv = (value) => {
+        if (!value) return '';
+        const [year, month, day] = value.split('-');
+        return year && month && day ? `${day}/${month}/${year}` : value;
+    };
+
+    const buildApsManualCsvFile = (idAnalisisActual) => {
+        const headers = [
+            'RESPONSABLE',
+            'NOMBRE_DE_OPERADOR',
+            'FECHA_INICIO',
+            'FECHA_FINAL',
+            'HORA_INICIO',
+            'HORA_FIN',
+            'CODIGO_DE_MAQUINA',
+            'EFICIENCIA',
+            'DOSIS_TEORICA',
+            'VOLUMEN_DE_AGUA',
+            'DOSIS_DE_PRODUCTO',
+            'PRODUCTO',
+            'HUMEDAD_DEL_CULTIVO',
+            'TCH_ESTIMADO',
+            'TIEMPO_TOTAL',
+            'ID_ANALISIS'
+        ];
+        const row = [
+            apsManualData.responsable || 'N/A',
+            apsManualData.nombreOperador || 'N/A',
+            formatDateForCsv(apsManualData.fechaInicio),
+            formatDateForCsv(apsManualData.fechaFinal || apsManualData.fechaInicio),
+            apsManualData.horaInicio || '00:00:00',
+            apsManualData.horaFin || apsManualData.horaInicio || '00:00:00',
+            apsManualData.codigoMaquina || apsManualData.plataforma,
+            apsManualData.eficiencia || '0',
+            apsManualData.dosisTeorica || '0',
+            apsManualData.volumenAgua || '0',
+            apsManualData.dosisProducto || '0',
+            apsManualData.producto || 'N/A',
+            apsManualData.humedadCultivo || '0',
+            apsManualData.tchEstimado || '0',
+            '00:00:00',
+            idAnalisisActual
+        ];
+        const csv = Papa.unparse({ fields: headers, data: [row] });
+        return new File([new Blob([csv], { type: 'text/csv' })], 'aps_datos_manuales.csv', { type: 'text/csv' });
+    };
+
+    const handleAnalysisTypeChange = (value) => {
+        setSelectedAnalysisType(value);
+        setSelectedFile(null);
+        setDatosMapeo([]);
+        setIdMax(null);
+        setProcessingFinished(false);
     };
 
     const CancelToken = axios.CancelToken;
@@ -807,8 +917,17 @@ function Dashboard() {
     const execBash = async () => {
         let validar = "ok";
 
-        if (!selectedFile || !selectedZipFile) {
-            toast.warn('Por favor, selecciona ambos archivos.', {
+        if (!idAnalisisBash) {
+            toast.error('Debe seleccionar un análisis antes de continuar', {
+                position: toast.POSITION.TOP_RIGHT,
+                autoClose: 5000,
+                hideProgressBar: true,
+            });
+            return;
+        }
+
+        if (!selectedZipFile) {
+            toast.warn('Por favor, selecciona tu archivo geoespacial.', {
                 position: "top-right",
                 autoClose: 5000,
                 hideProgressBar: false,
@@ -818,53 +937,86 @@ function Dashboard() {
                 progress: undefined,
             });
             return;
-        } else if (!idAnalisisBash) {
-            toast.error('Debe seleccionar un análisis antes de continuar', {
-                position: toast.POSITION.TOP_RIGHT,
+        }
+
+        let csvFileToProcess = selectedFile;
+        let idAnalisisActual = idMax;
+
+        if (isApsAnalysis) {
+            if (!apsManualData.nombreFinca.trim() || splitLotes(apsManualData.codigoLotes).length === 0) {
+                toast.warn('Para aplicaciones aéreas debes ingresar nombre de finca y código(s) de lote.', {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                });
+                return;
+            }
+
+            if (!idAnalisisActual) {
+                const response = await insertarUltimoAnalisis(buildApsDetalles());
+                idAnalisisActual = response?.data?.idAnalisis;
+                setIdMax(idAnalisisActual);
+            }
+
+            csvFileToProcess = buildApsManualCsvFile(idAnalisisActual);
+            setSelectedFile(csvFileToProcess);
+        } else if (!csvFileToProcess) {
+            toast.warn('Por favor, selecciona tu CSV y tu archivo geoespacial.', {
+                position: "top-right",
                 autoClose: 5000,
-                hideProgressBar: true,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
             });
             return;
         }
 
-        // Leer el archivo seleccionado para estimar el tamaño del lote
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const content = e.target.result;
-            const lines = content.split(/\r\n|\n/).length - 1;
+        const processCsvFile = (file) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const content = e.target.result || '';
+                const lines = Math.max(content.split(/\r\n|\n/).filter(line => line.trim() !== '').length - 1, 1);
 
-            const tamanoLote = 10000;
-            let offset = 0;
-            let esPrimeraIteracion = true;
+                const tamanoLote = 10000;
+                let offset = 0;
+                let esPrimeraIteracion = true;
+                setShowProgressBar(true);
+                setProgress(10);
+                setProgressMessage('Iniciando análisis');
 
-            while (offset < lines) {
-                const formData = new FormData();
-                formData.append('csv', selectedFile);
-                formData.append('polygon', selectedZipFile);
-                formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
+                while (offset < lines) {
+                    const formData = new FormData();
+                    formData.append('csv', file);
+                    formData.append('polygon', selectedZipFile);
+                    formData.append('esPrimeraIteracion', esPrimeraIteracion ? 'true' : 'false');
 
-                try {
-                    const response = await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idMax}/${offset}/${validar}/${lines}`, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                        },
-                    });
-                    offset += tamanoLote;
-                    esPrimeraIteracion = false;
-                    if (esPrimeraIteracion) {
-                        setShowProgressBar(false);
+                    try {
+                        await axios.post(`${API_BASE_URL}dashboard/execBash/${userData.ID_USUARIO}/${idAnalisisBash}/${idAnalisisActual}/${offset}/${validar}/${lines}`, formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                            },
+                        });
+                        offset += tamanoLote;
                         esPrimeraIteracion = false;
+                    } catch (error) {
+                        console.error("Error al procesar el lote:", error);
+                        setShowProgressBar(false);
+                        break;
                     }
-                } catch (error) {
-                    console.error("Error al procesar el lote:", error);
-                    setShowProgressBar(false);
-                    break; // Rompe el bucle en caso de error
                 }
-            }
-            setProcessingFinished(true);
+                setProcessingFinished(true);
+            };
+            reader.onerror = (error) => console.log(error);
+            reader.readAsText(file);
         };
-        reader.onerror = (error) => console.log(error);
-        reader.readAsText(selectedFile);
+
+        processCsvFile(csvFileToProcess);
     };
 
     const handleOpenTutorial = () => {
@@ -886,7 +1038,7 @@ function Dashboard() {
                     <div>
                         <h1 className="dashboard-title">Resumen de Análisis</h1>
                         <section className="map-section">
-                            {selectedZipFile && selectedFile && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} onAreaCalculated={handleAreaCalculation} percentageAutoPilot={handlePercentageCalculation} progressFinish={processingFinished}/>}
+                            {selectedZipFile && (selectedFile || isApsAnalysis) && <MapComponent csvData={datosMapeo} zipFile={selectedZipFile} onAreaCalculated={handleAreaCalculation} percentageAutoPilot={handlePercentageCalculation} progressFinish={processingFinished}/>}
 
                         </section>
                     </div>
@@ -903,6 +1055,12 @@ function Dashboard() {
                                         </DataCard>
                                         <DataCard title="Fecha Fin">
                                             {displayValue(fechaFinCosechaAps)}
+                                        </DataCard>
+                                        <DataCard title="Nombre Finca">
+                                            {displayValue(nombreFincaAps)}
+                                        </DataCard>
+                                        <DataCard title="Código(s) de lote">
+                                            {displayValue(codigoParcelasAps)}
                                         </DataCard>
                                         <DataCard title="Nombre operador">
                                             {displayValue(nombreOperadorAps)}
@@ -1129,15 +1287,17 @@ function Dashboard() {
                         </section>
 
                         <div className="analysis-controls">
-                            <label htmlFor="csv-file" className="custom-file-upload subir-csv">
-                                <input
-                                    id="csv-file"
-                                    type="file"
-                                    accept=".csv"
-                                    onChange={manejarSubidaArchivo}
-                                />
-                                Selecciona tu CSV
-                            </label>
+                            {!isApsAnalysis && selectedAnalysisType && (
+                                <label htmlFor="csv-file" className="custom-file-upload subir-csv">
+                                    <input
+                                        id="csv-file"
+                                        type="file"
+                                        accept=".csv"
+                                        onChange={manejarSubidaArchivo}
+                                    />
+                                    Selecciona tu CSV
+                                </label>
+                            )}
                             <label htmlFor="zip-file" className="custom-file-upload subir-zip">
                                 <input
                                     id="zip-file"
@@ -1149,15 +1309,44 @@ function Dashboard() {
                                 />
                                 Subir Shape File
                             </label>
-                            <a href={selectedAnalysisType ? analysisTemplates[selectedAnalysisType] : "#"} download className="download-template descargar-plantilla">
-                                Descargar plantilla
-                            </a>
-                            <select value={selectedAnalysisType} onChange={e => setSelectedAnalysisType(e.target.value)} className="type-selector tipo-analisis">
+                            {!isApsAnalysis && selectedAnalysisType && (
+                                <a href={analysisTemplates[selectedAnalysisType]} download className="download-template descargar-plantilla">
+                                    Descargar plantilla
+                                </a>
+                            )}
+                            <select value={selectedAnalysisType} onChange={e => handleAnalysisTypeChange(e.target.value)} className="type-selector tipo-analisis">
                                 <option value="">Seleccionar tipo de análisis</option>
                                 {Object.keys(analysisTemplates).map(type => (
                                     <option value={type} key={type}>{type.replace(/_/g, ' ')}</option>
                                 ))}
                             </select>
+                            {isApsAnalysis && (
+                                <div className="aps-manual-panel">
+                                    <h3>Datos manuales de Aplicaciones Aéreas</h3>
+                                    <p>Estos datos se usan para drone, avioneta o helicóptero cuando el archivo no trae la finca o los lotes.</p>
+                                    <select value={apsManualData.plataforma} onChange={e => handleApsManualChange('plataforma', e.target.value)}>
+                                        <option value="DRONE">Drone</option>
+                                        <option value="AIRPLANE">Avioneta</option>
+                                        <option value="HELICOPTER">Helicóptero</option>
+                                    </select>
+                                    <input placeholder="Nombre finca" value={apsManualData.nombreFinca} onChange={e => handleApsManualChange('nombreFinca', e.target.value)} />
+                                    <input placeholder="Código(s) de lote separados por coma" value={apsManualData.codigoLotes} onChange={e => handleApsManualChange('codigoLotes', e.target.value)} />
+                                    <input placeholder="Responsable" value={apsManualData.responsable} onChange={e => handleApsManualChange('responsable', e.target.value)} />
+                                    <input placeholder="Nombre operador" value={apsManualData.nombreOperador} onChange={e => handleApsManualChange('nombreOperador', e.target.value)} />
+                                    <input type="date" value={apsManualData.fechaInicio} onChange={e => handleApsManualChange('fechaInicio', e.target.value)} />
+                                    <input type="date" value={apsManualData.fechaFinal} onChange={e => handleApsManualChange('fechaFinal', e.target.value)} />
+                                    <input type="time" value={apsManualData.horaInicio} onChange={e => handleApsManualChange('horaInicio', e.target.value)} />
+                                    <input type="time" value={apsManualData.horaFin} onChange={e => handleApsManualChange('horaFin', e.target.value)} />
+                                    <input placeholder="Equipo / código de máquina" value={apsManualData.codigoMaquina} onChange={e => handleApsManualChange('codigoMaquina', e.target.value)} />
+                                    <input placeholder="Producto" value={apsManualData.producto} onChange={e => handleApsManualChange('producto', e.target.value)} />
+                                    <input type="number" step="any" placeholder="Eficiencia" value={apsManualData.eficiencia} onChange={e => handleApsManualChange('eficiencia', e.target.value)} />
+                                    <input type="number" step="any" placeholder="Dosis teórica" value={apsManualData.dosisTeorica} onChange={e => handleApsManualChange('dosisTeorica', e.target.value)} />
+                                    <input type="number" step="any" placeholder="Volumen de agua" value={apsManualData.volumenAgua} onChange={e => handleApsManualChange('volumenAgua', e.target.value)} />
+                                    <input type="number" step="any" placeholder="Dosis de producto" value={apsManualData.dosisProducto} onChange={e => handleApsManualChange('dosisProducto', e.target.value)} />
+                                    <input type="number" step="any" placeholder="Humedad del cultivo" value={apsManualData.humedadCultivo} onChange={e => handleApsManualChange('humedadCultivo', e.target.value)} />
+                                    <input type="number" step="any" placeholder="TCH estimado" value={apsManualData.tchEstimado} onChange={e => handleApsManualChange('tchEstimado', e.target.value)} />
+                                </div>
+                            )}
                             <button onClick={execBash} className="action-button realizar-analisis">
                                 Realizar análisis
                             </button>

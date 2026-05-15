@@ -164,6 +164,17 @@ export const obtenerPromedioVelocidadAps = async (idAnalisisAps, setPromedioVelo
         console.error("Error en obtenerPromedioVelocidadAps:", error);
     }
 };
+
+export const obtenerDatosCompletosAps = async (idAnalisisAps) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}dashboard/aps/completo/${idAnalisisAps}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error en obtenerDatosCompletosAps:", error);
+        return null;
+    }
+};
+
 /*======================================================
 *  PETICIONES DE COSECHA_MECANICA
 * ======================================================*/
