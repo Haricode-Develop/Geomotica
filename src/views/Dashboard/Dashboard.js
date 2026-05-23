@@ -358,7 +358,16 @@ function Dashboard() {
                 setNombreFincaAps(formatListValue(data.nombresFincaLista) || data.nombreFinca);
                 setCodigoParcelasAps(formatListValue(data.codigosLoteLista) || formatListValue(data.lotesLista) || data.codigoLote);
                 setNombreOperadorAps(data.nombreOperador);
-                setEquipoAps(data.equipo || data.codigoEquipo);
+                setEquipoAps(
+                    normalizeEquipoAps(
+                        data.equipo ||
+                        data.equipoSeleccionado ||
+                        data.equiposTexto ||
+                        data.EQUIPOS_TEXTO ||
+                        (Array.isArray(data.equiposLista) ? data.equiposLista[0] : data.equiposLista) ||
+                        data.codigoEquipo
+                    )
+                );
                 setActividadAps(data.actividad);
                 setAreaNetaAps(data.areaNeta || data.areaAplicada || data.areaAplicadaConUnidad);
                 setAreaBrutaAps(data.areaBruta || data.areaTotal || data.areaTotalConUnidad);
@@ -651,6 +660,15 @@ function Dashboard() {
         .map(item => item.trim())
         .filter(Boolean);
 
+    const normalizeEquipoAps = (value) => {
+        const text = String(value || '').trim();
+        const normalized = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        if (['drone', 'dron', 'uav'].includes(normalized)) return 'Dron';
+        if (['helicopter', 'helicoptero', 'heli'].includes(normalized)) return 'Helicóptero';
+        if (['airplane', 'avion', 'avioneta', 'aeroplano', 'plane'].includes(normalized)) return 'Avioneta';
+        return text;
+    };
+
     const buildApsDetalles = () => {
         const lotes = splitLotes(apsManualData.codigoLotes);
         return {
@@ -659,7 +677,10 @@ function Dashboard() {
             CODIGO_LOTE: lotes.join(', '),
             CODIGOS_LOTE: lotes,
             LOTE: lotes.join(', '),
-            PLATAFORMA: apsManualData.plataforma,
+            PLATAFORMA: normalizeEquipoAps(apsManualData.plataforma),
+            EQUIPO: normalizeEquipoAps(apsManualData.plataforma),
+            EQUIPOS: normalizeEquipoAps(apsManualData.plataforma),
+            EQUIPOS_TEXTO: normalizeEquipoAps(apsManualData.plataforma),
             RESPONSABLE: apsManualData.responsable.trim(),
             NOMBRE_DE_OPERADOR: apsManualData.nombreOperador.trim(),
             FECHA_INICIO: apsManualData.fechaInicio,
